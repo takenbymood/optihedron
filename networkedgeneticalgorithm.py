@@ -57,12 +57,13 @@ class NetworkedGeneticAlgorithm:
     	genomeSize,
     	islePop,
     	evaluate = defaultEvalMax,
+    	sel = defaultSelTournament,
     	net = networks.createIslands(10),
+    	subroutine = defaultAlgorithmEaSimple,
     	mate = defaultTwoPoint,
     	mut = defaultMutFlipBit,
-    	sel = defaultSelTournament,
-    	subroutine = defaultAlgorithmEaSimple,
-    	atMigration=lambda x: None):
+    	beforeMigration=lambda x: None,
+    	afterMigration=lambda x: None):
 
         
         self.toolbox = base.Toolbox()
@@ -82,7 +83,8 @@ class NetworkedGeneticAlgorithm:
         self.net = net
         self.subroutine = subroutine
         self.islePop = islePop
-        self.atMigration = atMigration
+        self.beforeMigration = beforeMigration
+        self.afterMigration = afterMigration
 
     
 
@@ -126,7 +128,7 @@ class NetworkedGeneticAlgorithm:
                         dest = network.nodes().index(edge)
                         #print("migrating " + str(ind) + " from " + str(i)  + " to " + str(dest))
                         islands[dest][random.randint(0,len(islands[dest])-1)] = ind
-                    return
+                    return islands
                 else:
                     t+=f
 
@@ -145,16 +147,17 @@ class NetworkedGeneticAlgorithm:
     	return tools.HallOfFame(size, similar=numpy.array_equal)
         
 
-    def run(self,ngen,freq):
+    def run(self,ngen,freq,migr):
         self.metrics = []
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
         for i in range(0, ngen, freq):
-            results = self.toolbox.map(self.algorithm, self.islands)
-            self.islands = [pop for pop, logbook in results]
-            # print([d for d in logbook for pop, logbook in results])
-            self.metrics += map(self.genMetrics,[i]*len(results),[n for n in range(len(results))], [logbook for pop, logbook in results])
-            self.atMigration(self)
-            self.migration(self.islands)
+            self.results = self.toolbox.map(self.algorithm, self.islands)
+            self.islands = [pop for pop, logbook in self.results]
+            self.metrics += map(self.genMetrics,[i]*len(self.results),[n for n in range(len(self.results))], [logbook for pop, logbook in self.results])
+            self.beforeMigration(self)
+            for i in range(0,migr):
+            	self.islands = self.migration(self.islands)
+            self.afterMigration(self)
         self.metrics = [val for sublist in self.metrics for val in sublist]
         self.metrics = sorted(sorted(self.metrics, key=lambda k: k['island']), key=lambda k: k['gen']) 
         self.accMetrics = (self.accumulateStats(self.metrics))

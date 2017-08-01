@@ -39,6 +39,8 @@ parser.add_argument('-c','--cxpb', default=0.5,  type=float,
                     help='independant probability of crossover')
 parser.add_argument('-m','--mutpb', default=0.2, type=float,
                     help='independant probability of mutation')
+parser.add_argument('-mg','--migrations', default=1, type=int,
+                    help='number of migrations to do each time')
 parser.add_argument('-mpb','--mindpb', default=0.05, type=float,
                     help='independant probability of a bit flip')
 parser.add_argument('-t','--tournsize', default=3, type=int,
@@ -66,35 +68,7 @@ SEED = args.seed
 TSIZE = args.tournsize
 MINPDB = args.mindpb
 GENOMESIZE = args.genomesize
-
-
-def cxTwoPointCopy(ind1, ind2):
-    size = len(ind1)
-    cxpoint1 = random.randint(1, size)
-    cxpoint2 = random.randint(1, size - 1)
-    if cxpoint2 >= cxpoint1:
-        cxpoint2 += 1
-    else: # Swap the two cx points
-        cxpoint1, cxpoint2 = cxpoint2, cxpoint1
-
-    ind1[cxpoint1:cxpoint2], ind2[cxpoint1:cxpoint2] \
-        = ind2[cxpoint1:cxpoint2].copy(), ind1[cxpoint1:cxpoint2].copy()
-        
-    return ind1, ind2
-
-def evalOneMax(individual):
-    return sum(individual),
-
-def selTournament(pop,k):
-    return tools.selTournament(pop,k,TSIZE)
-
-def mutFlipBit(individual):
-    return tools.mutFlipBit(individual,MINPDB)
-
-
-def algorithm(pop,toolbox,stats,hof):
-    return algorithms.eaSimple(pop,toolbox=toolbox,
-        cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
+MIGR = args.migrations
 
 def saveMetrics(lis,filename='out.csv'):
     with open(filename,'wb') as out:
@@ -103,7 +77,23 @@ def saveMetrics(lis,filename='out.csv'):
         for row in lis:
             csv_out.writerow(row)
 
-def atMigration(ga):
+def evaluate(individual):
+    return sum(individual),
+
+def sel(pop,k):
+    return tools.selTournament(pop,k,TSIZE)
+
+def mut(individual):
+    return tools.mutFlipBit(individual,MINPDB)
+
+def algorithm(pop,toolbox,stats,hof):
+    return algorithms.eaSimple(pop,toolbox=toolbox,
+        cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
+
+def beforeMigration(ga):
+    return
+
+def afterMigration(ga):
     return
 
 def main():
@@ -121,16 +111,17 @@ def main():
 
     random.seed(args.seed)
     ga = nga.NetworkedGeneticAlgorithm(
-        GENOMESIZE,
-        ISLESIZE,
-        evalOneMax,
-        network,
-        cxTwoPointCopy,
-        mutFlipBit,
-        selTournament,
-        algorithm,
-        atMigration)
-    results = ga.run(NGEN,FREQ)
+        genomeSize = GENOMESIZE,
+        islePop = ISLESIZE,
+        evaluate = evaluate,
+        sel = sel,
+        net = network,
+        subroutine = algorithm,
+        mut = mut,
+        beforeMigration = beforeMigration,
+        afterMigration = afterMigration)
+
+    results = ga.run(NGEN,FREQ,MIGR)
     #print(results[0][0][0])
     saveMetrics(results[-1])
 
