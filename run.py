@@ -92,20 +92,14 @@ def mutFlipBit(individual):
     return tools.mutFlipBit(individual,MINPDB)
 
 
-def algorithm(pop,toolbox):
-    hof = tools.HallOfFame(1, similar=numpy.array_equal)
-    stats = tools.Statistics(lambda ind: ind.fitness.values)
-    stats.register("avg", numpy.mean)
-    stats.register("std", numpy.std)
-    stats.register("min", numpy.min)
-    stats.register("max", numpy.max)
+def algorithm(pop,toolbox,stats,hof):
     return algorithms.eaSimple(pop,toolbox=toolbox,
         cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
 
 def saveMetrics(lis,filename='out.csv'):
     with open(filename,'wb') as out:
-        csv_out=csv.writer(out)
-        csv_out.writerow(['gen','avg','std','min','max'])
+        csv_out=csv.DictWriter(out,lis[-1].keys())
+        csv_out.writeheader()
         for row in lis:
             csv_out.writerow(row)
 
@@ -113,9 +107,6 @@ def atMigration(ga):
     return
 
 def main():
-
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    creator.create("Individual", numpy.ndarray, fitness=creator.FitnessMax)
 
     if args.graph == 'singlet':
         network = networks.createSinglets(NISLES)
@@ -129,17 +120,18 @@ def main():
         raw_input('malformed network option, continue with islands? (Enter)')
 
     random.seed(args.seed)
-    ga = nga.NetworkedGeneticAlgorithm(creator,
+    ga = nga.NetworkedGeneticAlgorithm(
         GENOMESIZE,
+        ISLESIZE,
         evalOneMax,
+        network,
         cxTwoPointCopy,
         mutFlipBit,
         selTournament,
-        network,
         algorithm,
-        ISLESIZE,
         atMigration)
     results = ga.run(NGEN,FREQ)
+    #print(results[0][0][0])
     saveMetrics(results[-1])
 
 
