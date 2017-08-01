@@ -3,6 +3,7 @@ import random
 import math
 import csv
 import argparse
+import time
 
 import itertools
 import operator
@@ -23,14 +24,41 @@ from distributed.joblib import DaskDistributedBackend
 
 import networkedgeneticalgorithm as nga
 
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('-n','--ngen', default=100,type=int,
+                    help='number of generations')
+parser.add_argument('-f','--freq', default=2, type=int,
+                    help='number of generations between migrations')
+parser.add_argument('-d','--demes', default=10, type=int,
+                    help='number of demes to run over')
+parser.add_argument('-p','--pop', default=10, type=int,
+                    help='population of each deme')
+parser.add_argument('-c','--cxpb', default=0.5,  type=float,
+                    help='independant probability of crossover')
+parser.add_argument('-m','--mutpb', default=0.2, type=float,
+                    help='independant probability of mutation')
+parser.add_argument('-v','--verbose', default=False, action='store_true',
+                    help='option to run in verbose mode')
+parser.add_argument('-g','--graph', default='islands', 
+                    choices=['singlet','islands','star','megastar'],
+                    help='type of network to use')
+parser.add_argument('-s','--seed', default=int(time.time()), type=int,
+                    help='seed for the RNG')
+
+
+
+args = parser.parse_args()
+print(args.demes)
+
 NSPOKES = 2
-NISLES = 11
-ISLESIZE = 5
-CXPB=0.5
-MUTPB=0.2
-NGEN, FREQ = 100, 2
-VERBOSE=False
-mStar = networks.createMegaStar(NSPOKES,int(math.ceil((NISLES-3)*0.25)),int(math.floor((NISLES-3)*0.25)))
+NISLES = args.demes
+ISLESIZE = args.pop
+CXPB=args.cxpb
+MUTPB=args.mutpb
+NGEN, FREQ = args.ngen, args.freq
+VERBOSE=args.verbose
+SEED = args.seed
+
 
 def cxTwoPointCopy(ind1, ind2):
     size = len(ind1)
@@ -79,14 +107,25 @@ def main():
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     creator.create("Individual", numpy.ndarray, fitness=creator.FitnessMax)
 
-    random.seed(64)
+    if args.graph == 'singlet':
+        network = networks.createSinglets(NISLES)
+    elif args.graph == 'islands':
+        network = networks.createIslands(NISLES)
+    elif args.graph == 'star':
+        network = networks.createStar(NISLES-1)
+    elif args.graph == 'megastar':
+        network = networks.createMegaStar(NSPOKES,int(math.ceil((NISLES-3)*0.25)),int(math.floor((NISLES-3)*0.25)))
+    else:
+        raw_input('malformed network option, continue with islands? (Enter)')
+
+    random.seed(args.seed)
     ga = nga.NetworkedGeneticAlgorithm(creator,
         100,
         evalOneMax,
         cxTwoPointCopy,
         mutFlipBit,
         selTournament,
-        mStar,
+        network,
         algorithm,
         10)
     results = ga.run(NGEN,FREQ)
