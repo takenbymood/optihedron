@@ -22,7 +22,7 @@ from distributed.joblib import DaskDistributedBackend
 
 class NetworkedGeneticAlgorithm:
 
-    def __init__(self,creator,genomeSize,evaluate,mate,mut,sel,net,subroutine,islePop):
+    def __init__(self,creator,genomeSize,evaluate,mate,mut,sel,net,subroutine,islePop,atMigration=lambda x: None):
 
         
         self.toolbox = base.Toolbox()
@@ -42,6 +42,7 @@ class NetworkedGeneticAlgorithm:
         self.net = net
         self.subroutine = subroutine
         self.islePop = islePop
+        self.atMigration = atMigration
 
     def genMetrics(self,gen,island,logbook):
         return (gen,island, numpy.max([d['max'] for d in logbook]))
@@ -80,15 +81,16 @@ class NetworkedGeneticAlgorithm:
         
 
     def run(self,ngen,freq):
-        metrics = []
+        self.metrics = []
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
         for i in range(0, ngen, freq):
             results = self.toolbox.map(self.algorithm, self.islands)
             self.islands = [pop for pop, logbook in results]
-            metrics.append(map(self.genMetrics,[i+freq]*len(results),[n for n in range(len(results))], [logbook for pop, logbook in results]))
+            self.metrics.append(map(self.genMetrics,[i+freq]*len(results),[n for n in range(len(results))], [logbook for pop, logbook in results]))
+            self.atMigration(self)
             self.migration(self.islands)
-        metrics = list(self.accumulateMetrics(metrics))
-        return self.islands, metrics
+        self.metrics = list(self.accumulateMetrics(self.metrics))
+        return self.islands, self.metrics
 
 
 

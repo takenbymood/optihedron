@@ -33,10 +33,16 @@ parser.add_argument('-d','--demes', default=10, type=int,
                     help='number of demes to run over')
 parser.add_argument('-p','--pop', default=10, type=int,
                     help='population of each deme')
+parser.add_argument('-gs','--genomesize', default=100, type=int,
+                    help='number of bits in the genome')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
                     help='independant probability of crossover')
 parser.add_argument('-m','--mutpb', default=0.2, type=float,
                     help='independant probability of mutation')
+parser.add_argument('-mpb','--mindpb', default=0.05, type=float,
+                    help='independant probability of a bit flip')
+parser.add_argument('-t','--tournsize', default=3, type=int,
+                    help='size of selection tournaments')
 parser.add_argument('-v','--verbose', default=False, action='store_true',
                     help='option to run in verbose mode')
 parser.add_argument('-g','--graph', default='islands', 
@@ -48,7 +54,6 @@ parser.add_argument('-s','--seed', default=int(time.time()), type=int,
 
 
 args = parser.parse_args()
-print(args.demes)
 
 NSPOKES = 2
 NISLES = args.demes
@@ -58,6 +63,9 @@ MUTPB=args.mutpb
 NGEN, FREQ = args.ngen, args.freq
 VERBOSE=args.verbose
 SEED = args.seed
+TSIZE = args.tournsize
+MINPDB = args.mindpb
+GENOMESIZE = args.genomesize
 
 
 def cxTwoPointCopy(ind1, ind2):
@@ -78,10 +86,10 @@ def evalOneMax(individual):
     return sum(individual),
 
 def selTournament(pop,k):
-    return tools.selTournament(pop,k,3)
+    return tools.selTournament(pop,k,TSIZE)
 
 def mutFlipBit(individual):
-    return tools.mutFlipBit(individual,0.05)
+    return tools.mutFlipBit(individual,MINPDB)
 
 
 def algorithm(pop,toolbox):
@@ -94,13 +102,15 @@ def algorithm(pop,toolbox):
     return algorithms.eaSimple(pop,toolbox=toolbox,
         cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
 
-def saveMetrics(lis):
-    with open('ur file.csv','wb') as out:
+def saveMetrics(lis,filename='out.csv'):
+    with open(filename,'wb') as out:
         csv_out=csv.writer(out)
         csv_out.writerow(['gen','avg','std','min','max'])
         for row in lis:
             csv_out.writerow(row)
 
+def atMigration(ga):
+    return
 
 def main():
 
@@ -120,14 +130,15 @@ def main():
 
     random.seed(args.seed)
     ga = nga.NetworkedGeneticAlgorithm(creator,
-        100,
+        GENOMESIZE,
         evalOneMax,
         cxTwoPointCopy,
         mutFlipBit,
         selTournament,
         network,
         algorithm,
-        10)
+        ISLESIZE,
+        atMigration)
     results = ga.run(NGEN,FREQ)
     saveMetrics(results[-1])
 
