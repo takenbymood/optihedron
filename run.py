@@ -11,6 +11,7 @@ import operator
 import numpy
 from customMap import customMap
 import networks
+from phenome import Phenome
 
 from deap import algorithms
 from deap import base
@@ -78,6 +79,7 @@ def saveMetrics(lis,filename='out.csv'):
             csv_out.writerow(row)
 
 def evaluate(individual):
+    Phenome(individual)
     return sum(individual),
 
 def sel(pop,k):
