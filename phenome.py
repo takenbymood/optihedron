@@ -12,5 +12,6 @@ class Phenome:
 		print(ge.readCode(test))
 
 	def constructPhenome(self,genome):
+		#phenome construction goes here for inherited classes
 		return
 
