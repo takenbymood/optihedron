@@ -25,6 +25,8 @@ from distributed.joblib import DaskDistributedBackend
 
 import networkedgeneticalgorithm as nga
 
+from nanoparticle import NanoParticlePhenome
+
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('-n','--ngen', default=100,type=int,
                     help='number of generations')
@@ -79,7 +81,7 @@ def saveMetrics(lis,filename='out.csv'):
             csv_out.writerow(row)
 
 def evaluate(individual):
-    Phenome(individual)
+    NanoParticlePhenome(individual,6,4,0,10)
     return sum(individual),
 
 def sel(pop,k):

@@ -23,8 +23,11 @@ def grayToBin(bits):
 	for nextb in bits[1:]: b.append(b[-1] ^ nextb)
 	return b
 
-def genCode(n):
+def max(bits):
+	return float(2**len(bits))
+
+def generate(n):
 	return binToGray(genBin(n))
 
-def readCode(bits):
+def read(bits):
 	return readBin(grayToBin(bits))

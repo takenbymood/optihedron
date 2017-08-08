@@ -7,11 +7,10 @@ class Phenome:
 		self.constructPhenome(self.genome)
 
 	def constructGenome(self,ind):
-		test = ge.genCode(5)
-		print(test)
-		print(ge.readCode(test))
+		#genome construction goes here for inherited classes
+		return None
 
 	def constructPhenome(self,genome):
 		#phenome construction goes here for inherited classes
-		return
+		return None
 
