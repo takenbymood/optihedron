@@ -56,6 +56,7 @@ class NetworkedGeneticAlgorithm:
     	self,
     	genomeSize,
     	islePop,
+        hofSize,
     	evaluate = defaultEvalMax,
     	sel = defaultSelTournament,
     	net = networks.createIslands(10),
@@ -85,6 +86,7 @@ class NetworkedGeneticAlgorithm:
         self.islePop = islePop
         self.beforeMigration = beforeMigration
         self.afterMigration = afterMigration
+        self.hof = self.buildHOF(hofSize)
 
     
 
@@ -133,7 +135,7 @@ class NetworkedGeneticAlgorithm:
                     t+=f
 
     def algorithm(self,pop):
-        return self.subroutine(pop,self.toolbox,self.buildStats(),self.buildHOF())
+        return self.subroutine(pop,self.toolbox,self.buildStats(),self.hof)
 
     def buildStats(self):
         stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -146,7 +148,6 @@ class NetworkedGeneticAlgorithm:
     def buildHOF(self,size=1):
     	return tools.HallOfFame(size, similar=numpy.array_equal)
         
-
     def run(self,ngen,freq,migr):
         self.metrics = []
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
@@ -162,7 +163,7 @@ class NetworkedGeneticAlgorithm:
         self.metrics = sorted(sorted(self.metrics, key=lambda k: k['island']), key=lambda k: k['gen']) 
         self.accMetrics = (self.accumulateStats(self.metrics))
         #self.metrics = list(self.accumulate(self.metrics))
-        return self.islands, self.metrics, self.accMetrics
+        return self.islands, self.hof, self.metrics, self.accMetrics
 
 
 

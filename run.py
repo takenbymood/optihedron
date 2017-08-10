@@ -9,9 +9,11 @@ import itertools
 import operator
 import numpy
 import joblib
+import subprocess
 
 from joblib import Parallel, delayed, parallel_backend
 from distributed.joblib import DaskDistributedBackend
+from threading import Timer
 
 from deap import algorithms
 from deap import base
@@ -59,6 +61,8 @@ parser.add_argument('-g','--graph', default='islands',
                     help='type of network to use')
 parser.add_argument('-s','--seed', default=int(time.time()), type=int,
                     help='seed for the RNG')
+parser.add_argument('-hof','--hofsize', default=5, type=int,
+                    help='hall of fame size')
 
 
 args = parser.parse_args()
@@ -76,6 +80,7 @@ TSIZE = args.tournsize
 MINPDB = args.mindpb
 GENOMESIZE = args.genomesize
 MIGR = args.migrations
+HOFSIZE = args.hofsize
 
 def kill(p):
     try:
@@ -94,6 +99,83 @@ def saveMetrics(lis,filename='out.csv'):
         for row in lis:
             csv_out.writerow(row)
 
+def evaluateNPWrapping(outFilename):
+    minFit = 1E-8
+    if(not os.path.exists(outFilename)):
+            #print "no outfile"
+            return minFit,
+
+    with open(outFilename, 'r+') as f:
+        lines = f.readlines()
+        for i in range(len(lines)):
+            if self.runtime in lines[i]:
+                lines[i] = ""
+                break
+            lines[i] = ""
+
+        for line in lines:
+            if line != "":
+                outData.append(line.replace("\n","").replace(" ",","))
+
+
+    os.remove(outFilename)
+
+    if len(outData)<50:
+        #print str(outData)
+        return minFit,
+
+    outVectors = {}
+    for line in outData:
+        slist = line.split(",")
+        if(len(slist)<3):
+            return minFit,
+        if int(slist[0]) in outVectors:
+            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2])})
+        else:
+            outVectors[int(slist[0])] = []
+            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2])})
+
+    magnitudes = []
+    boxsize = 20
+    for key, value in outVectors.iteritems():
+        if key == 3:
+            for v in value:
+                inrange = 0
+                fmag = 0
+                for v2 in outVectors[1]:
+                    xd = v['x']-v2['x']
+                    yd = v['y']-v2['y']
+                    m = math.sqrt(xd*xd+yd*yd)
+                    if(m<7):
+                        inrange+=1
+                if(inrange>0):
+                    magnitudes.append(inrange)
+
+    if len(magnitudes)<1:
+        #print str(num) + " protein out of range"
+        return minFit,
+
+    msum = 0
+    for m in magnitudes:
+        msum += 1.0/m
+
+    if(msum == 0):
+        #print "no msum"
+        return minFit,
+
+    return msum,
+
+def runCmd(cmd,timeout):
+    try:
+        proc = subprocess.Popen(cmd,shell=True)
+        t = Timer(45, kill, [proc])
+        t.start()
+        proc.wait()
+        t.cancel()
+    except Exception as e: 
+        print cmd
+        print e
+
 def evaluate(individual):
     phenome = NanoParticlePhenome(individual,6,4,0,10)
     np = phenome.particle
@@ -107,21 +189,17 @@ def evaluate(individual):
         wd+'/Data/relaxed-membrane.xyz'
         )
     sim.saveFiles()
-    path = wd+"/"+sim.filedir
-    try:
-        proc = subprocess.Popen("cd "+ path + " && lammps -in "+sim.scriptName+" > lammps.out",shell=True)
-        t = Timer(45, kill, [proc])
-        t.start()
-        proc.wait()
-        t.cancel()
-    except: 
-        #individual.fitness.valid = False
-        #print "crashed or failed"
-        return sum(individual),
-
+    path = (wd+"/"+sim.filedir).replace(' ','\ ')
+    cmd = "cd "+ path + " && lammps -in "+sim.scriptName+" > lammps.out"
+    runCmd(cmd,45)
+    time.sleep(0.1)
     sim.deleteFiles()
-
-    return sum(individual),
+    outpath = path+sim.outdir
+    outFile = outpath+sim.name+"_out.xyz"
+    f = 1E-8,
+    f = evaluateNPWrapping(outFile)
+    os.remove(outFile.replace('\ ',' '))
+    return f
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
@@ -138,6 +216,23 @@ def beforeMigration(ga):
 
 def afterMigration(ga):
     return
+
+def saveHOF(hof):
+    i = 0
+    for ind in hof:
+        i+=1
+        phenome = NanoParticlePhenome(ind,6,4,0,10)
+        np = phenome.particle
+        sim = MembraneSimulation(
+            'hof_'+str(i),
+            np,
+            100000,
+            0.005,
+            '../out/',
+            'hof/',
+            wd+'/Data/relaxed-membrane.xyz'
+            )
+        sim.saveFiles()
 
 def main():
 
@@ -156,6 +251,7 @@ def main():
     ga = nga.NetworkedGeneticAlgorithm(
         genomeSize = GENOMESIZE,
         islePop = ISLESIZE,
+        hofSize = HOFSIZE,
         evaluate = evaluate,
         sel = sel,
         net = network,
@@ -167,7 +263,7 @@ def main():
     results = ga.run(NGEN,FREQ,MIGR)
     #print(results[0][0][0])
     saveMetrics(results[-1])
-
+    saveHOF(results[1])
 
 
 if __name__ == "__main__":
