@@ -88,6 +88,21 @@ class LammpsData:
 		self.masses = []
 		self.angles = []
 
+	def addXyzFile(self,filename):
+		nAtoms = 0
+		startId = len(self.atoms)
+		if os.path.exists(filename):
+			with open(filename, 'rb') as f:
+				try:
+					content = f.readlines()
+					for l in content:
+						atomData = l.replace('\n','').split(' ')
+						nAtoms+=1
+						self.addAtom(int(atomData[0]),float(atomData[1]),float(atomData[2]),float(atomData[3]))
+				except : 
+					print(str(filename) + " does not exist")
+		return (startId,nAtoms)
+
 	def addAtom(self,atomType,x,y,z=0,moleculeId=-1):
 		atomId = len(self.atoms)+1
 		if(moleculeId == -1):
@@ -181,10 +196,10 @@ class LammpsScript:
 		self.fixes.append(s)
 
 	def addPostFixLine(self,line):
-		self.postlines.append(str(line))
+		self.postLines.append(str(line))
 
 	def addPreFixLine(self,line):
-		self.prelines.append(str(line))
+		self.preLines.append(str(line))
 
 	def __init__(
 		self,
@@ -240,7 +255,7 @@ class LammpsScript:
 		s="dimension"+d+self.dimension+"\n"
 		s+="units"+d+self.units+"\n"
 		s+="atom_style"+d+self.atom_style+"\n"
-		s+="boundary f f p\n"
+		s+="boundary p p p\n"
 		s+="atom_modify"+d+self.atom_modify+"\n"
 		s+="\n"
 		s+="read_data"+d+self.read_data+"\n"
@@ -285,7 +300,7 @@ class LammpsScript:
 		s=""
 		for l in self.preLines:
 			s+=l
-		s+="\n"
+			s+="\n"
 		return s
 
 	def buildFixes(self):
@@ -303,7 +318,7 @@ class LammpsScript:
 		s=""
 		for l in self.postLines:
 			s+=l
-		s+="\n"
+			s+="\n"
 		return s
 
 	def buildFooter(self):
@@ -323,22 +338,22 @@ class LammpsScript:
 		s += self.buildPreFixLines()
 		s += self.buildFixes()
 		s += self.buildPostFixLines()
+		s += self.buildFooter()
 		return s	
 
 	def __str__(self):
-		self.buildFile()
+		return self.buildFile()
 		
 
 class LammpsSimulation:
 
 	def __init__(self,name,run,filedir=""):
-
 		self.name = name
-		self.scriptName = name+"_script"
-		self.dataName = name+"_data"
+		self.scriptName = name+"_script.in"
+		self.dataName = name+"_data.data"
 		self.filedir = filedir
-		self.scripts =[]
-		self.data = []
+		self.script = None
+		self.data = None
 
 	def __del__(self):
 		name = ""
@@ -348,40 +363,24 @@ class LammpsSimulation:
 		script = None
 		data = None
 
-	def addScript(self,script):
-		if isinstance(script,LammpsScript):
-			self.scripts.append(script)
-			return self.scriptName + "_" + str(len(self.scripts))
-		else:
-			print("object is not a LammpsScript instance")
-			return None
+	def setScript(self,script):
+		self.script = script
 
-	def addData(self,data):
-		if isinstance(data,LammpsData):
-			self.data.append(data)
-			return self.dataName + "_" + str(len(self.data))
-		else:
-			print("object is not a LammpsData instance")
-			return None
+	def setData(self,data):
+		self.data = data
 
 	def saveFiles(self):
-		i = 0
-		for s in self.scripts:
-			i+=1
-			with open(self.filedir+self.scriptName+"_"+str(i), 'w') as file_:
-				file_.write(s.buildFile())
-		i=0
-		for d in self.data:
-			i+=1
-			with open(self.filedir+self.dataName+"_"+str(i), 'w') as file_:
-				file_.write(d.buildFile())
+		if self.script != None:
+			with open(self.filedir+self.scriptName, 'w') as file_:
+				file_.write(str(self.script))
+
+		if self.data != None:
+			with open(self.filedir+self.dataName, 'w') as file_:
+				file_.write(str(self.data))
 
 	def deleteFiles(self):
-		i = 0
-		for s in self.scripts:
-			i+=1
-			os.remove(self.filedir+self.scriptName+"_"+str(i))
-		i=0
-		for d in self.data:
-			i+=1
-			os.remove(self.filedir+self.dataName+"_"+str(i))
+		os.remove(self.filedir+self.scriptName)
+		os.remove(self.filedir+self.dataName)
+
+	def __str__(self):
+		return self.name + "\n" + str(self.script) + "\n" + str(self.data)

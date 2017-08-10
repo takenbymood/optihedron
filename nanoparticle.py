@@ -39,6 +39,19 @@ class NanoParticle:
 		if(isinstance(ligand,Ligand)):
 			self.ligands.append(ligand)
 
+	def spaceIsOccupied(self,targetAngle):
+		for l in self.ligands:
+			if targetAngle < l.ang + 0.64 and targetAngle > l.ang - 0.64:
+				return True
+		return False
+
+	def findNearestSpace(self,targetAngle,spacing):
+		freeSpace = targetAngle
+		if self.spaceIsOccupied(targetAngle):
+			return(self.findNearestSpace(targetAngle+float(random.randint(0,2)-1)*spacing,spacing))
+		else:
+			return freeSpace
+
 	def __str__(self):
 		protstr = "x:"+str(self.x)+", y:"+str(self.y)+", m:"+str(self.mass)
 		protstr += ", eps:"+str(self.eps)+", sig:"+str(self.sig)+", cut:"+str(self.cutoff)
@@ -85,5 +98,6 @@ class NanoParticlePhenome(phenome.Phenome):
 	def constructPhenome(self,ind):
 		self.particle = NanoParticle()
 		for g in self.genome:
-			self.particle.addLigand(Ligand(g['eps'],1,4,g['ang']))
+			if not self.particle.isSpaceOccupied(g['ang']):
+				self.particle.addLigand(Ligand(g['eps'],1,4,g['ang']))
 		return self.particle

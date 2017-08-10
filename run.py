@@ -1,3 +1,4 @@
+import os
 import array
 import random
 import math
@@ -22,16 +23,16 @@ from GA import networks
 from GA import phenome
 from GA import networkedgeneticalgorithm as nga
 
-
 from Sims import lammpsbuilder as lb
 
 from Tools import misctools
 from Tools import listtools
 
 from nanoparticle import NanoParticlePhenome
+from membranesimulation import MembraneSimulation
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('-n','--ngen', default=100,type=int,
+parser.add_argument('-n','--ngen', default=50,type=int,
                     help='number of generations')
 parser.add_argument('-f','--freq', default=2, type=int,
                     help='number of generations between migrations')
@@ -60,8 +61,8 @@ parser.add_argument('-s','--seed', default=int(time.time()), type=int,
                     help='seed for the RNG')
 
 
-
 args = parser.parse_args()
+wd = os.path.dirname(os.path.realpath(__file__))
 
 NSPOKES = 2
 NISLES = args.demes
@@ -96,9 +97,29 @@ def saveMetrics(lis,filename='out.csv'):
 def evaluate(individual):
     phenome = NanoParticlePhenome(individual,6,4,0,10)
     np = phenome.particle
-    sim = lb.LammpsSimulation('sim_'+misctools.randomStr(10),10000)
-    for l in np.ligands:
-        print(str(l))
+    sim = MembraneSimulation(
+        'sim_'+misctools.randomStr(10),
+        np,
+        100000,
+        0.005,
+        '../out/',
+        'run/',
+        wd+'/Data/relaxed-membrane.xyz'
+        )
+    sim.saveFiles()
+    path = wd+"/"+sim.filedir
+    try:
+        proc = subprocess.Popen("cd "+ path + " && lammps -in "+sim.scriptName+" > lammps.out",shell=True)
+        t = Timer(45, kill, [proc])
+        t.start()
+        proc.wait()
+        t.cancel()
+    except: 
+        #individual.fitness.valid = False
+        #print "crashed or failed"
+        return 0,
+
+    sim.deleteFiles()
 
     return sum(individual),
 
