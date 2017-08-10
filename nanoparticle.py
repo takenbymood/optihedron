@@ -98,6 +98,6 @@ class NanoParticlePhenome(phenome.Phenome):
 	def constructPhenome(self,ind):
 		self.particle = NanoParticle()
 		for g in self.genome:
-			if not self.particle.isSpaceOccupied(g['ang']):
+			if not self.particle.spaceIsOccupied(g['ang']):
 				self.particle.addLigand(Ligand(g['eps'],1,4,g['ang']))
 		return self.particle
