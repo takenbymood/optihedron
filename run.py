@@ -117,7 +117,7 @@ def evaluate(individual):
     except: 
         #individual.fitness.valid = False
         #print "crashed or failed"
-        return 0,
+        return sum(individual),
 
     sim.deleteFiles()
 
