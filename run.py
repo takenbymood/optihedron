@@ -4,26 +4,29 @@ import math
 import csv
 import argparse
 import time
-
 import itertools
 import operator
-
 import numpy
-from customMap import customMap
-import networks
-from phenome import Phenome
+import joblib
+
+from joblib import Parallel, delayed, parallel_backend
+from distributed.joblib import DaskDistributedBackend
 
 from deap import algorithms
 from deap import base
 from deap import creator
 from deap import tools
 
-import joblib
+from GA import customMap
+from GA import networks
+from GA import phenome
+from GA import networkedgeneticalgorithm as nga
 
-from joblib import Parallel, delayed, parallel_backend
-from distributed.joblib import DaskDistributedBackend
 
-import networkedgeneticalgorithm as nga
+from Sims import lammpsbuilder as lb
+
+from Tools import misctools
+from Tools import listtools
 
 from nanoparticle import NanoParticlePhenome
 
@@ -73,6 +76,16 @@ MINPDB = args.mindpb
 GENOMESIZE = args.genomesize
 MIGR = args.migrations
 
+def kill(p):
+    try:
+        print "killing "+str(p) 
+        p.kill()
+    except OSError:
+        pass # ignore
+
+def exit(signal, frame):
+        os._exit(1)
+
 def saveMetrics(lis,filename='out.csv'):
     with open(filename,'wb') as out:
         csv_out=csv.DictWriter(out,lis[-1].keys())
@@ -81,7 +94,12 @@ def saveMetrics(lis,filename='out.csv'):
             csv_out.writerow(row)
 
 def evaluate(individual):
-    NanoParticlePhenome(individual,6,4,0,10)
+    phenome = NanoParticlePhenome(individual,6,4,0,10)
+    np = phenome.particle
+    sim = lb.LammpsSimulation('sim_'+misctools.randomStr(10),10000)
+    for l in np.ligands:
+        print(str(l))
+
     return sum(individual),
 
 def sel(pop,k):

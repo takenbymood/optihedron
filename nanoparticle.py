@@ -1,6 +1,6 @@
-from phenome import Phenome
-import grayencoder as ge
-import listtools as lt
+from GA import phenome
+from GA import grayencoder as ge
+from Tools import listtools as lt
 
 class Ligand:
 	def __init__(self,eps,sig,rad,ang,mass=1,cutoff=2.5):
@@ -49,7 +49,7 @@ class NanoParticle:
 			protstr += "\nligand " + str(i) +" - "+ str(l)
 		return protstr
 
-class NanoParticlePhenome(Phenome):
+class NanoParticlePhenome(phenome.Phenome):
 
 	def __init__(
 		self,
@@ -63,7 +63,7 @@ class NanoParticlePhenome(Phenome):
 		self.angPlaces = angPlaces
 		self.minEps = minEps
 		self.maxEps = maxEps
-		Phenome.__init__(self,ind)
+		phenome.Phenome.__init__(self,ind)
 
 	def constructGenome(self,ind):
 		geneSize = self.epsPlaces+self.angPlaces
