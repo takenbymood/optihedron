@@ -86,7 +86,7 @@ class NetworkedGeneticAlgorithm:
         self.islePop = islePop
         self.beforeMigration = beforeMigration
         self.afterMigration = afterMigration
-        self.hof = self.buildHOF(hofSizeo)
+        self.hof = self.buildHOF(hofSize)
 
     
 
