@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+#*.lammps
+#*.log
+#*.out
+
 *.in
 *.data
 *.script
