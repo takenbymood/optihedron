@@ -99,8 +99,9 @@ def saveMetrics(lis,filename='out.csv'):
         for row in lis:
             csv_out.writerow(row)
 
-def evaluateNPWrapping(outFilename):
+def evaluateNPWrapping(outFilename,runtime):
     minFit = 1E-8
+    outData = []
     if(not os.path.exists(outFilename)):
             #print "no outfile"
             return minFit,
@@ -108,7 +109,7 @@ def evaluateNPWrapping(outFilename):
     with open(outFilename, 'r+') as f:
         lines = f.readlines()
         for i in range(len(lines)):
-            if self.runtime in lines[i]:
+            if str(runtime) in lines[i]:
                 lines[i] = ""
                 break
             lines[i] = ""
@@ -123,6 +124,8 @@ def evaluateNPWrapping(outFilename):
     if len(outData)<50:
         #print str(outData)
         return minFit,
+
+    print(outData)
 
     outVectors = {}
     for line in outData:
@@ -193,12 +196,12 @@ def evaluate(individual):
     cmd = "cd "+ path + " && lammps -in "+sim.scriptName+" > lammps.out"
     runCmd(cmd,45)
     time.sleep(0.1)
-    sim.deleteFiles()
-    outpath = path+sim.outdir
+    outpath = wd+"/out/"
     outFile = outpath+sim.name+"_out.xyz"
     f = 1E-8,
-    f = evaluateNPWrapping(outFile)
-    os.remove(outFile.replace('\ ',' '))
+    f = evaluateNPWrapping(outFile,100000)
+    sim.deleteFiles()
+    #os.remove(outFile.replace('\ ',' '))
     return f
 
 def sel(pop,k):
