@@ -64,7 +64,8 @@ class NetworkedGeneticAlgorithm:
     	mate = defaultTwoPoint,
     	mut = defaultMutFlipBit,
     	beforeMigration=lambda x: None,
-    	afterMigration=lambda x: None):
+    	afterMigration=lambda x: None,
+        verbose = False):
 
         
         self.toolbox = base.Toolbox()
@@ -87,6 +88,7 @@ class NetworkedGeneticAlgorithm:
         self.beforeMigration = beforeMigration
         self.afterMigration = afterMigration
         self.hof = self.buildHOF(hofSize)
+        self.verbose = verbose
 
     
 
@@ -152,6 +154,8 @@ class NetworkedGeneticAlgorithm:
         self.metrics = []
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
         for i in range(0, ngen, freq):
+            if self.verbose:
+                print "GEN: " + str(i+1) + "/" + str(ngen)
             self.results = self.toolbox.map(self.algorithm, self.islands)
             self.islands = [pop for pop, logbook in self.results]
             self.metrics += map(self.genMetrics,[i]*len(self.results),[n for n in range(len(self.results))], [logbook for pop, logbook in self.results])

@@ -11,8 +11,8 @@ import numpy
 import joblib
 import subprocess
 
-from joblib import Parallel, delayed, parallel_backend
-from distributed.joblib import DaskDistributedBackend
+# from joblib import Parallel, delayed, parallel_backend
+# from distributed.joblib import DaskDistributedBackend
 from threading import Timer
 
 from deap import algorithms
@@ -125,7 +125,7 @@ def evaluateNPWrapping(outFilename,runtime):
         #print str(outData)
         return minFit,
 
-    print(outData)
+
 
     outVectors = {}
     for line in outData:
@@ -160,7 +160,7 @@ def evaluateNPWrapping(outFilename,runtime):
 
     msum = 0
     for m in magnitudes:
-        msum += 1.0/m
+        msum += m
 
     if(msum == 0):
         #print "no msum"
@@ -170,17 +170,23 @@ def evaluateNPWrapping(outFilename,runtime):
 
 def runCmd(cmd,timeout):
     try:
-        proc = subprocess.Popen(cmd,shell=True)
-        t = Timer(45, kill, [proc])
-        t.start()
-        proc.wait()
-        t.cancel()
+        with open('log.log', 'w+') as f:
+            proc = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdout=f, 
+                stderr=f
+                )
+            t = Timer(45, kill, [proc])
+            t.start()
+            proc.wait()
+            t.cancel()
     except Exception as e: 
         print cmd
         print e
 
 def evaluate(individual):
-    phenome = NanoParticlePhenome(individual,6,4,0,10)
+    phenome = NanoParticlePhenome(individual,8,8,0,10)
     np = phenome.particle
     sim = MembraneSimulation(
         'sim_'+misctools.randomStr(10),
@@ -224,7 +230,7 @@ def saveHOF(hof):
     i = 0
     for ind in hof:
         i+=1
-        phenome = NanoParticlePhenome(ind,6,4,0,10)
+        phenome = NanoParticlePhenome(ind,8,8,0,10)
         np = phenome.particle
         sim = MembraneSimulation(
             'hof_'+str(i),
@@ -261,7 +267,8 @@ def main():
         subroutine = algorithm,
         mut = mut,
         beforeMigration = beforeMigration,
-        afterMigration = afterMigration)
+        afterMigration = afterMigration,
+        verbose = VERBOSE)
 
     results = ga.run(NGEN,FREQ,MIGR)
     #print(results[0][0][0])
