@@ -1,7 +1,7 @@
 display depthcue off 
 display projection orthographic
 set sel_M [atomselect top "all"]
-$sel_M set radius 1.5
+$sel_M set radius 1.0
 set sel_M [atomselect top "element H"]
 $sel_M set radius 0.5
 set sel_M [atomselect top "element He"]

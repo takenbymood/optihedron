@@ -41,7 +41,7 @@ class NanoParticle:
 
 	def spaceIsOccupied(self,targetAngle):
 		for l in self.ligands:
-			if targetAngle < l.ang + 0.7 and targetAngle > l.ang - 0.7:
+			if targetAngle < l.ang + 0.65 and targetAngle > l.ang - 0.65:
 				return True
 		return False
 
@@ -84,6 +84,8 @@ class NanoParticlePhenome(phenome.Phenome):
 			print("genome too short to construct phenome")
 			return None
 		genelist = lt.subdivide(list(ind),geneSize)
+		if len(genelist[-1]) < geneSize:
+			genelist = genelist[:-1]
 		genes = []
 		for g in genelist:
 			gene = {}

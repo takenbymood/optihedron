@@ -54,9 +54,9 @@ class MembraneSimulation(lb.LammpsSimulation):
 		self.data.angleTypes = 1
 		self.data.addMass(1,1)
 		self.data.addMass(2,1)
-		self.data.addMass(3,3)
+		self.data.addMass(3,1)
 		for i in range(len(protein.ligands)):
-			self.data.addMass(4+i,0.01)
+			self.data.addMass(4+i,1)
 
 		#startX = -(0.5*mLength*spacing)
 
@@ -97,13 +97,14 @@ class MembraneSimulation(lb.LammpsSimulation):
 			self.script.addPair("1",str(aType),l.eps,l.sig,l.sig*l.cutoff)
 			aType+=1
 		
-		self.script.addPair(1,3,100,4.5,5.0)
-		self.script.addPair(1,1,100,1.0,1.12246)
-		self.script.addPair(1,2,100,1.0,1.12246)
+		self.script.addPair(1,3,100,4,4.45)
+		self.script.addPair(1,1,100,1.0,1.12)
+		self.script.addPair(1,2,100,1.0,1.12)
 		self.script.addPairModify("shift yes")
 
 		self.script.addGroup("move",[1])
 		self.script.addGroup("anchor",[2])
+		self.script.addGroup("lipid",[1,2])
 		pGroup = [3]
 		for i in range(len(protein.ligands)):
 			pGroup.append(i+4)
@@ -111,6 +112,6 @@ class MembraneSimulation(lb.LammpsSimulation):
 		self.script.addPreFixLine("velocity move create 1.0 1")
 		self.script.addPreFixLine("velocity protein set 0 -2 0")
 		self.script.addFix("all","enforce2d")
-		self.script.addFix("move","nph x 0.0 0.0 1.0 y 0.0 0.0 1.0 couple xy")
+		self.script.addFix("lipid","nph x 0.0 0.0 1.0 y 0.0 0.0 1.0 couple xy")
 		self.script.addFix("protein","rigid/nve molecule")
 		self.script.addFix("all","langevin 1 1 1 1000")

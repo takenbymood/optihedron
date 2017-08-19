@@ -149,7 +149,7 @@ def evaluateNPWrapping(outFilename,runtime):
                     xd = v['x']-v2['x']
                     yd = v['y']-v2['y']
                     m = math.sqrt(xd*xd+yd*yd)
-                    if(m<7):
+                    if(m<7.0):
                         inrange+=1
                 if(inrange>0):
                     magnitudes.append(inrange)
@@ -191,8 +191,8 @@ def evaluate(individual):
     sim = MembraneSimulation(
         'sim_'+misctools.randomStr(10),
         np,
-        100000,
-        0.005,
+        250000,
+        0.01,
         '../out/',
         'run/',
         wd+'/Data/relaxed-membrane.xyz'
@@ -205,7 +205,7 @@ def evaluate(individual):
     outpath = wd+"/out/"
     outFile = outpath+sim.name+"_out.xyz"
     f = 1E-8,
-    f = evaluateNPWrapping(outFile,100000)
+    f = evaluateNPWrapping(outFile,250000)
     sim.deleteFiles()
     #os.remove(outFile.replace('\ ',' '))
     return f
@@ -235,8 +235,8 @@ def saveHOF(hof):
         sim = MembraneSimulation(
             'hof_'+str(i),
             np,
-            100000,
-            0.005,
+            250000,
+            0.01,
             '../out/',
             'hof/',
             wd+'/Data/relaxed-membrane.xyz'
