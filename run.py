@@ -24,6 +24,7 @@ from GA import customMap
 from GA import networks
 from GA import phenome
 from GA import networkedgeneticalgorithm as nga
+from GA import grayencoder as ge
 
 from Sims import lammpsbuilder as lb
 
@@ -81,6 +82,7 @@ MINPDB = args.mindpb
 GENOMESIZE = args.genomesize
 MIGR = args.migrations
 HOFSIZE = args.hofsize
+
 
 def kill(p):
     try:
@@ -185,6 +187,25 @@ def runCmd(cmd,timeout):
         print cmd
         print e
 
+def makeXYPair(individual,xMax,xMin,yMax,yMin):
+    halfs = listtools.subdivide(individual,int(len(individual)*0.5))
+    a = ge.read(halfs[0])
+    b = ge.read(halfs[1])
+    maxA = ge.max(halfs[0])
+    maxB = ge.max(halfs[1])
+    xRange = xMax -xMin
+    yRange = yMax -yMin
+    x=float((a/float(maxA))*xRange + xMin)
+    y=float((b/float(maxB))*yRange +yMin)
+    return x,y
+
+def performanceTest(individual):
+    x,y = makeXYPair(individual,2,-2,2,-2)
+    f1 = (x + y + 1)
+    f2 = (2*x - 3*y)
+    f = -(1 + (f1*f1)*(19 - 14*x + 3*x*x - 14*y + 6*x*y + 3*y*y))*(30 + (f2*f2)*(18 - 32*x + 12*x*x + 48*y - 36*x*y + 27*y*y))
+    return f,
+
 def evaluate(individual):
     phenome = NanoParticlePhenome(individual,8,8,0,10)
     np = phenome.particle
@@ -224,6 +245,18 @@ def beforeMigration(ga):
     return
 
 def afterMigration(ga):
+    outFile = ""
+    isleNum = 0
+    i = 0
+    for isle in ga.islands:
+        isleNum += 1
+        points = [makeXYPair(p,2,-2,2,-2) for p in isle]
+        fit = [p.fitness.values[-1] for p in isle]
+        for p in points:
+            i+=1
+            outFile += str(i)+","+str(p[0])+","+str(p[1])+"\n"
+    with open("coords.csv", 'a') as file_:
+        file_.write(outFile)
     return
 
 def saveHOF(hof):
@@ -271,9 +304,12 @@ def main():
         verbose = VERBOSE)
 
     results = ga.run(NGEN,FREQ,MIGR)
+
+    
     #print(results[0][0][0])
     saveMetrics(results[-1])
-    saveHOF(results[1])
+
+    #saveHOF(results[1])
 
 
 if __name__ == "__main__":

@@ -89,6 +89,7 @@ class NetworkedGeneticAlgorithm:
         self.afterMigration = afterMigration
         self.hof = self.buildHOF(hofSize)
         self.verbose = verbose
+        self.gen = 0
 
     
 
@@ -154,6 +155,7 @@ class NetworkedGeneticAlgorithm:
         self.metrics = []
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
         for i in range(0, ngen, freq):
+            self.gen = i
             if self.verbose:
                 print "GEN: " + str(i+1) + "/" + str(ngen)
             self.results = self.toolbox.map(self.algorithm, self.islands)
