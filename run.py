@@ -294,7 +294,7 @@ def main():
         genomeSize = GENOMESIZE,
         islePop = ISLESIZE,
         hofSize = HOFSIZE,
-        evaluate = evaluate,
+        evaluate = performanceTest,
         sel = sel,
         net = network,
         subroutine = algorithm,
