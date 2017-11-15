@@ -371,16 +371,16 @@ class LammpsSimulation:
 
 	def saveFiles(self):
 		if self.script != None:
-			with open(self.filedir+self.scriptName, 'w') as file_:
+			with open(os.path.join(self.filedir,self.scriptName), 'w') as file_:
 				file_.write(str(self.script))
 
 		if self.data != None:
-			with open(self.filedir+self.dataName, 'w') as file_:
+			with open(os.path.join(self.filedir,self.dataName), 'w') as file_:
 				file_.write(str(self.data))
 
 	def deleteFiles(self):
-		os.remove(self.filedir+self.scriptName)
-		os.remove(self.filedir+self.dataName)
+		os.remove(os.path.join(self.filedir,self.scriptName))
+		os.remove(os.path.join(self.filedir,self.dataName))
 
 	def __str__(self):
 		return self.name + "\n" + str(self.script) + "\n" + str(self.data)

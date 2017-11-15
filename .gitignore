@@ -113,3 +113,5 @@ ENV/
 *.jpg
 *.png
 *.jpeg
+
+/venv/*

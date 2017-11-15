@@ -1,4 +1,4 @@
-import grayencoder as ge
+from . import grayencoder as ge
 
 class Phenome:
 	def __init__(self,ind):

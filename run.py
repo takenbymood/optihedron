@@ -20,7 +20,6 @@ from deap import base
 from deap import creator
 from deap import tools
 
-from GA import customMap
 from GA import networks
 from GA import phenome
 from GA import networkedgeneticalgorithm as nga
@@ -31,20 +30,22 @@ from Sims import lammpsbuilder as lb
 from Tools import misctools
 from Tools import listtools
 
+from lammps import lammps, PyLammps
+
 from nanoparticle import NanoParticlePhenome
 from membranesimulation import MembraneSimulation
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('-n','--ngen', default=50,type=int,
-                    help='number of generations')
-parser.add_argument('-f','--freq', default=2, type=int,
+parser.add_argument('-n','--ngen',type=int,
+                    help='number of generations', required=True)
+parser.add_argument('-d','--demes', type=int,
+                    help='number of demes to run over', required=True)
+parser.add_argument('-p','--pop', type=int,
+                    help='population of each deme', required=True)
+parser.add_argument('-gs','--genomesize', type=int,
+                    help='number of bits in the genome', required=True)
+parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
-parser.add_argument('-d','--demes', default=10, type=int,
-                    help='number of demes to run over')
-parser.add_argument('-p','--pop', default=10, type=int,
-                    help='population of each deme')
-parser.add_argument('-gs','--genomesize', default=100, type=int,
-                    help='number of bits in the genome')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
                     help='independant probability of crossover')
 parser.add_argument('-m','--mutpb', default=0.2, type=float,
@@ -64,6 +65,18 @@ parser.add_argument('-s','--seed', default=int(time.time()), type=int,
                     help='seed for the RNG')
 parser.add_argument('-hof','--hofsize', default=5, type=int,
                     help='hall of fame size')
+parser.add_argument('-eps','--epsplaces', default=8, type=int,
+                    help='number of bits for epsilon')
+parser.add_argument('-ang','--angplaces', default=8, type=int,
+                    help='number of bits for polar angle')
+parser.add_argument('-epmn','--epsmin', default=0, type=float,
+                    help='minimum value for epsilon')
+parser.add_argument('-epmx','--epsmax', default=50, type=float,
+                    help='maximum value for epsilon')
+parser.add_argument('-r','--runtime', default=10000, type=int,
+                    help='lammps timesteps')
+parser.add_argument('-ts','--timestep', default=0.01, type=int,
+                    help='lammps timestep size')
 
 
 args = parser.parse_args()
@@ -74,7 +87,7 @@ NISLES = args.demes
 ISLESIZE = args.pop
 CXPB=args.cxpb
 MUTPB=args.mutpb
-NGEN, FREQ = args.ngen, args.freq
+NGEN, FREQ = args.ngen, args.migfreq
 VERBOSE=args.verbose
 SEED = args.seed
 TSIZE = args.tournsize
@@ -82,11 +95,18 @@ MINPDB = args.mindpb
 GENOMESIZE = args.genomesize
 MIGR = args.migrations
 HOFSIZE = args.hofsize
+EPSPLACES = args.epsplaces
+ANGPLACES = args.angplaces
+EPSMAX = args.epsmax
+EPSMIN = args.epsmin
+RUNTIME = args.runtime
+TIMESTEP = args.timestep
+
 
 
 def kill(p):
     try:
-        print "killing "+str(p) 
+        print("killing "+str(p))
         p.kill()
     except OSError:
         pass # ignore
@@ -104,6 +124,7 @@ def saveMetrics(lis,filename='out.csv'):
 def evaluateNPWrapping(outFilename,runtime):
     minFit = 1E-8
     outData = []
+    print(outFilename)
     if(not os.path.exists(outFilename)):
             #print "no outfile"
             return minFit,
@@ -128,7 +149,6 @@ def evaluateNPWrapping(outFilename,runtime):
         return minFit,
 
 
-
     outVectors = {}
     for line in outData:
         slist = line.split(",")
@@ -150,6 +170,7 @@ def evaluateNPWrapping(outFilename,runtime):
                 for v2 in outVectors[1]:
                     xd = v['x']-v2['x']
                     yd = v['y']-v2['y']
+                    print(xd)
                     m = math.sqrt(xd*xd+yd*yd)
                     if(m<7.0):
                         inrange+=1
@@ -172,20 +193,20 @@ def evaluateNPWrapping(outFilename,runtime):
 
 def runCmd(cmd,timeout):
     try:
-        with open('log.log', 'w+') as f:
+        with open('subprocess.log', 'w+') as f:
             proc = subprocess.Popen(
                 cmd,
                 shell=True,
                 stdout=f, 
                 stderr=f
                 )
-            t = Timer(45, kill, [proc])
+            t = Timer(timeout, kill, [proc])
             t.start()
             proc.wait()
             t.cancel()
     except Exception as e: 
-        print cmd
-        print e
+        print(cmd)
+        print(e)
 
 def makeXYPair(individual,xMax,xMin,yMax,yMin):
     halfs = listtools.subdivide(individual,int(len(individual)*0.5))
@@ -206,27 +227,38 @@ def performanceTest(individual):
     f = -(1 + (f1*f1)*(19 - 14*x + 3*x*x - 14*y + 6*x*y + 3*y*y))*(30 + (f2*f2)*(18 - 32*x + 12*x*x + 48*y - 36*x*y + 27*y*y))
     return f,
 
+def evaluatePyLammps(individual):
+
+    
+
+    return 1,
+
 def evaluate(individual):
-    phenome = NanoParticlePhenome(individual,8,8,0,10)
+    
+    phenome = NanoParticlePhenome(individual,EPSPLACES,ANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle
     sim = MembraneSimulation(
         'sim_'+misctools.randomStr(10),
         np,
-        250000,
-        0.01,
-        '../out/',
-        'run/',
-        wd+'/Data/relaxed-membrane.xyz'
+        RUNTIME,
+        TIMESTEP,
+        os.path.join(wd,'out'),
+        os.path.join(wd,'run'),
+        os.path.join(wd,'Data/relaxed-membrane.xyz')
         )
     sim.saveFiles()
-    path = (wd+"/"+sim.filedir).replace(' ','\ ')
-    cmd = "cd "+ path + " && lammps -in "+sim.scriptName+" > lammps.out"
-    runCmd(cmd,45)
-    time.sleep(0.1)
-    outpath = wd+"/out/"
-    outFile = outpath+sim.name+"_out.xyz"
+    scriptPath=os.path.join(sim.filedir,sim.scriptName)
+    outpath = os.path.join(wd,"out")
+    outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
+
+    # cmd = "cd "+ path + " && lammps -in "+sim.scriptName+" > lammps.out"
+    # runCmd(cmd,45)
+    lmp = lammps()
+    lmp.file(scriptPath)
+    lmp.close()
+    
     f = 1E-8,
-    f = evaluateNPWrapping(outFile,250000)
+    f = evaluateNPWrapping(outFilePath,RUNTIME)
     sim.deleteFiles()
     #os.remove(outFile.replace('\ ',' '))
     return f
@@ -263,18 +295,23 @@ def saveHOF(hof):
     i = 0
     for ind in hof:
         i+=1
-        phenome = NanoParticlePhenome(ind,8,8,0,10)
+        phenome = NanoParticlePhenome(ind,EPSPLACES,ANGPLACES,EPSMIN,EPSMAX)
         np = phenome.particle
         sim = MembraneSimulation(
             'hof_'+str(i),
             np,
-            250000,
-            0.01,
-            '../out/',
-            'hof/',
-            wd+'/Data/relaxed-membrane.xyz'
+            RUNTIME,
+            TIMESTEP,
+            os.path.join(wd,'out'),
+            os.path.join(wd,'hof'),
+            os.path.join(wd,'Data/relaxed-membrane.xyz')
             )
+        hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
+        lmp = lammps()
+        lmp.file(hofScriptPath)
+        lmp.close()
+
 
 def main():
 
@@ -294,7 +331,7 @@ def main():
         genomeSize = GENOMESIZE,
         islePop = ISLESIZE,
         hofSize = HOFSIZE,
-        evaluate = performanceTest,
+        evaluate = evaluate,
         sel = sel,
         net = network,
         subroutine = algorithm,
@@ -305,11 +342,9 @@ def main():
 
     results = ga.run(NGEN,FREQ,MIGR)
 
-    
     #print(results[0][0][0])
     saveMetrics(results[-1])
-
-    #saveHOF(results[1])
+    saveHOF(results[1])
 
 
 if __name__ == "__main__":

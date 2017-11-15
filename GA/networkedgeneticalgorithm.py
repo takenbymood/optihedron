@@ -6,8 +6,8 @@ import itertools
 import operator
 
 import numpy
-from customMap import customMap
-import networks
+
+from . import networks
 
 from deap import algorithms
 from deap import base
@@ -119,7 +119,7 @@ class NetworkedGeneticAlgorithm:
 
     def migration(self,islands):
         network = self.net
-        rFitness = 1.0/numpy.sum(map(self.getTotalFitness,islands))
+        rFitness = 1.0/(numpy.sum(list(map(self.getTotalFitness,islands))))
         s = random.uniform(0,1)
         t = 0.0
         for i in range(len(islands)):
@@ -157,10 +157,10 @@ class NetworkedGeneticAlgorithm:
         for i in range(0, ngen, freq):
             self.gen = i
             if self.verbose:
-                print "GEN: " + str(i+1) + "/" + str(ngen)
+                print("GEN: " + str(i+1) + "/" + str(ngen))
             self.results = self.toolbox.map(self.algorithm, self.islands)
             self.islands = [pop for pop, logbook in self.results]
-            self.metrics += map(self.genMetrics,[i]*len(self.results),[n for n in range(len(self.results))], [logbook for pop, logbook in self.results])
+            self.metrics += map(self.genMetrics,[i]*len(list(self.results)),[n for n in range(len(list(self.results)))], [logbook for pop, logbook in self.results])
             self.beforeMigration(self)
             for i in range(0,migr):
             	self.islands = self.migration(self.islands)

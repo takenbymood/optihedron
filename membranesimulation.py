@@ -37,7 +37,7 @@ class MembraneSimulation(lb.LammpsSimulation):
 			'all create 1.0 1000',
 			'lj/cut 5.04',
 			'molecular',
-			read_data=self.dataName
+			read_data=os.path.join(filedir,self.dataName)
 			))
 		self.setData(lb.LammpsData(
 			-75,
@@ -48,7 +48,7 @@ class MembraneSimulation(lb.LammpsSimulation):
 			1
 			))
 		self.outdir = outdir
-		self.script.dump = "id all xyz "+dumpres+" "+outdir+name +"_out.xyz"
+		self.script.dump = "id all xyz "+dumpres+" "+os.path.join(outdir,name +"_out.xyz")
 		self.data.atomTypes = 3+len(protein.ligands)
 		self.data.bondTypes = 1
 		self.data.angleTypes = 1
@@ -111,7 +111,7 @@ class MembraneSimulation(lb.LammpsSimulation):
 		self.script.addGroup("protein",pGroup)
 		self.script.addPreFixLine("velocity move create 1.0 1")
 		self.script.addPreFixLine("velocity protein set 0 -2 0")
-		self.script.addFix("all","enforce2d")
 		self.script.addFix("lipid","nph x 0.0 0.0 1.0 y 0.0 0.0 1.0 couple xy")
 		self.script.addFix("protein","rigid/nve molecule")
 		self.script.addFix("all","langevin 1 1 1 1000")
+		self.script.addFix("all","enforce2d")
