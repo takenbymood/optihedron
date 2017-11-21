@@ -58,19 +58,8 @@ class MembraneSimulation(lb.LammpsSimulation):
 		for i in range(len(protein.ligands)):
 			self.data.addMass(4+i,1)
 
-		#startX = -(0.5*mLength*spacing)
-
-		#self.data.addAtom(2,startX,0)
-
-		# for i in range(mLength-2):
-		# 	self.data.addAtom(1,startX+spacing*i+2,0)
-		# 	self.data.addBond(1,i+1,i+2)
-		# 	self.data.addAngle(1,i+1,i+2,i+3)
 		if os.path.exists(membraneFile):
 			a = self.data.addXyzFile(membraneFile)
-
-		#self.data.addAtom(2,startX+spacing*mLength,0)
-		#self.data.addBond(1,mLength-1,mLength)
 
 		for i in range(2,a[1]+1):
 			pAtom = a[0]+i

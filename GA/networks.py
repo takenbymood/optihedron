@@ -8,7 +8,6 @@ import random
 
 def createMegaStar(l,r,k):
 	G = nx.DiGraph()
-	#G.add_node(0)
 	G.add_node(1)
 	cn = 2
 	npl = r+k
@@ -16,7 +15,6 @@ def createMegaStar(l,r,k):
 	for i in range(l):
 		for j in range(0,r):
 			G.add_node(cn)
-			#G.add_edge(0,cn)
 			cn += 1
 		G.add_node(cn)
 		an = cn

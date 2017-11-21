@@ -9,6 +9,7 @@ import itertools
 import operator
 import numpy
 import joblib
+import sys
 import subprocess
 
 # from joblib import Parallel, delayed, parallel_backend
@@ -43,7 +44,7 @@ parser.add_argument('-d','--demes', type=int,
 parser.add_argument('-p','--pop', type=int,
                     help='population of each deme', required=True)
 parser.add_argument('-gs','--genomesize', type=int,
-                    help='number of bits in the genome', required=True)
+                    help='number of bits in the genome', default=320)
 parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
@@ -73,7 +74,7 @@ parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
 parser.add_argument('-epmx','--epsmax', default=50, type=float,
                     help='maximum value for epsilon')
-parser.add_argument('-r','--runtime', default=10000, type=int,
+parser.add_argument('-r','--runtime', default=100000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=int,
                     help='lammps timestep size')
@@ -101,6 +102,8 @@ EPSMAX = args.epsmax
 EPSMIN = args.epsmin
 RUNTIME = args.runtime
 TIMESTEP = args.timestep
+GENESIZE = (EPSPLACES+ANGPLACES)
+GENES = math.floor(GENOMESIZE/GENESIZE)
 
 
 
@@ -124,9 +127,7 @@ def saveMetrics(lis,filename='out.csv'):
 def evaluateNPWrapping(outFilename,runtime):
     minFit = 1E-8
     outData = []
-    print(outFilename)
     if(not os.path.exists(outFilename)):
-            #print "no outfile"
             return minFit,
 
     with open(outFilename, 'r+') as f:
@@ -170,7 +171,6 @@ def evaluateNPWrapping(outFilename,runtime):
                 for v2 in outVectors[1]:
                     xd = v['x']-v2['x']
                     yd = v['y']-v2['y']
-                    print(xd)
                     m = math.sqrt(xd*xd+yd*yd)
                     if(m<7.0):
                         inrange+=1
@@ -178,7 +178,6 @@ def evaluateNPWrapping(outFilename,runtime):
                     magnitudes.append(inrange)
 
     if len(magnitudes)<1:
-        #print str(num) + " protein out of range"
         return minFit,
 
     msum = 0
@@ -186,7 +185,6 @@ def evaluateNPWrapping(outFilename,runtime):
         msum += m
 
     if(msum == 0):
-        #print "no msum"
         return minFit,
 
     return msum,
@@ -251,8 +249,6 @@ def evaluate(individual):
     outpath = os.path.join(wd,"out")
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
-    # cmd = "cd "+ path + " && lammps -in "+sim.scriptName+" > lammps.out"
-    # runCmd(cmd,45)
     lmp = lammps()
     lmp.file(scriptPath)
     lmp.close()
@@ -260,7 +256,6 @@ def evaluate(individual):
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
     sim.deleteFiles()
-    #os.remove(outFile.replace('\ ',' '))
     return f
 
 def sel(pop,k):
@@ -312,6 +307,21 @@ def saveHOF(hof):
         lmp.file(hofScriptPath)
         lmp.close()
 
+def geneWiseTwoPoint(ind1,ind2):
+    size = len(ind1)
+    cxpoint1 = random.randint(1, GENES)*GENESIZE
+    cxpoint2 = random.randint(1, GENES-1)*GENESIZE
+    if cxpoint2 >= cxpoint1:
+        cxpoint2 += GENESIZE
+    else: # Swap the two cx points
+        cxpoint1, cxpoint2 = cxpoint2, cxpoint1
+
+    ind1[cxpoint1:cxpoint2], ind2[cxpoint1:cxpoint2] \
+        = ind2[cxpoint1:cxpoint2].copy(), ind1[cxpoint1:cxpoint2].copy()
+        
+    return ind1, ind2
+
+
 
 def main():
 
@@ -327,6 +337,7 @@ def main():
         raw_input('malformed network option, continue with islands? (Enter)')
 
     random.seed(args.seed)
+    print(GENES)
     ga = nga.NetworkedGeneticAlgorithm(
         genomeSize = GENOMESIZE,
         islePop = ISLESIZE,
@@ -338,7 +349,8 @@ def main():
         mut = mut,
         beforeMigration = beforeMigration,
         afterMigration = afterMigration,
-        verbose = VERBOSE)
+        verbose = VERBOSE,
+        mate = geneWiseTwoPoint)
 
     results = ga.run(NGEN,FREQ,MIGR)
 
