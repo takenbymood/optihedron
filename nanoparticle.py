@@ -41,7 +41,7 @@ class NanoParticle:
 
 	def spaceIsOccupied(self,targetAngle):
 		for l in self.ligands:
-			if targetAngle < l.ang + 0.65 and targetAngle > l.ang - 0.65:
+			if targetAngle < l.ang + 0.5 and targetAngle > l.ang - 0.5:
 				return True
 		return False
 

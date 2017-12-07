@@ -11,6 +11,8 @@ import numpy
 import joblib
 import sys
 import subprocess
+import parlammps
+from multiprocessing import Pool, TimeoutError
 
 # from joblib import Parallel, delayed, parallel_backend
 # from distributed.joblib import DaskDistributedBackend
@@ -44,7 +46,7 @@ parser.add_argument('-d','--demes', type=int,
 parser.add_argument('-p','--pop', type=int,
                     help='population of each deme', required=True)
 parser.add_argument('-gs','--genomesize', type=int,
-                    help='number of bits in the genome', default=320)
+                    help='number of bits in the genome', default=160)
 parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
@@ -227,8 +229,6 @@ def performanceTest(individual):
 
 def evaluatePyLammps(individual):
 
-    
-
     return 1,
 
 def evaluate(individual):
@@ -249,9 +249,7 @@ def evaluate(individual):
     outpath = os.path.join(wd,"out")
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
-    lmp = lammps()
-    lmp.file(scriptPath)
-    lmp.close()
+    parlammps.runSim(scriptPath,2,30)
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
@@ -337,7 +335,6 @@ def main():
         raw_input('malformed network option, continue with islands? (Enter)')
 
     random.seed(args.seed)
-    print(GENES)
     ga = nga.NetworkedGeneticAlgorithm(
         genomeSize = GENOMESIZE,
         islePop = ISLESIZE,
@@ -355,6 +352,7 @@ def main():
     results = ga.run(NGEN,FREQ,MIGR)
 
     #print(results[0][0][0])
+    
     saveMetrics(results[-1])
     saveHOF(results[1])
 
