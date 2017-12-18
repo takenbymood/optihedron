@@ -1,8 +1,6 @@
 import networkx as nx
 import pydotplus
 from networkx.drawing.nx_pydot import graphviz_layout
-import matplotlib as mpl
-mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 import random
 
