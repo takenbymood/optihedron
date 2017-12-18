@@ -18,6 +18,7 @@ if [ ! -f ${LAMMPSDIR}/src/liblammps.so ]; then
 	make yes-rigid yes-molecule yes-python yes-gpu yes-opt
 	cd ${LAMMPSDIR}/lib/gpu && make -f Makefile.mpi CUDA_LIB="-L${CUDA_HOME}/lib"
 	cd ${LAMMPSDIR}/src
+	make mpi LMP_INC="-DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_EXCEPTIONS" JPG_LIB="-lpng -ljpeg" gpu_SYSPATH="-L${CUDA_HOME}/lib"
 	make mpi mode=shlib LMP_INC="-DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_EXCEPTIONS" JPG_LIB="-lpng -ljpeg" gpu_SYSPATH="-L${CUDA_HOME}/lib"
 fi
 if [ ! -d ${wdir}/venv ]; then
