@@ -1,7 +1,6 @@
 import networkx as nx
 import pydotplus
 from networkx.drawing.nx_pydot import graphviz_layout
-import matplotlib.pyplot as plt
 import random
 
 def createMegaStar(l,r,k):
@@ -67,8 +66,8 @@ def createSinglets(n):
 		G.add_node(i)
 	return G
 
-def drawGraph(G):
-	pos=nx.spring_layout(G)
-	nx.draw(G)
-	plt.savefig("node_colormap.png") # save as png
-	plt.show() # display
+# def drawGraph(G):
+# 	pos=nx.spring_layout(G)
+# 	nx.draw(G)
+# 	plt.savefig("node_colormap.png") # save as png
+# 	plt.show() # display
