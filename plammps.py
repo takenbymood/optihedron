@@ -14,7 +14,7 @@ def startScript(script):
     if(os.path.isfile(script)):
         runLammps(script)
         return True
-        print("file does not exist")
+    print("file does not exist")
     return False
 
 if __name__ == '__main__':
