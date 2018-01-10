@@ -53,7 +53,7 @@ fi
 cd ${WDIR}
 if [ ! -d ${WDIR}/venv ]; then
 	pip install virtualenv
-	virtualenv venv
+	virtualenv -p `which python2.7` venv
 fi
 source ./activate.sh
 source ${WDIR}/pipinstall.sh
