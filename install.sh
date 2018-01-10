@@ -35,25 +35,27 @@ if [ ! -d ${WDIR}/lammps ]; then
 	wget -qO- http://lammps.sandia.gov/tars/lammps-stable.tar.gz | tar xvz 
 	mv lammps* lammps
 fi
-cd lammps
+#copy src files to lammps folder
+cd ${WDIR}/lammps
 LAMMPSDIR=$(pwd)
 if [ ! -f ${LAMMPSDIR}/src/liblammps.so ]; then
-	cd src
+	cd ${LAMMPSDIR}/src
 	make clean-all
 	make no-all
 	make yes-dipole yes-rigid yes-molecule yes-python yes-opt #yes-gpu
 	#cd ${LAMMPSDIR}/lib/gpu && make -f Makefile.mpi CUDA_LIB="-L${CUDA_HOME}/lib"
-	cd ${LAMMPSDIR}/src
+	cp -rf ${WDIR}/src/*.h ${LAMMPSDIR}/src
+	cp -rf ${WDIR}/src/*.cpp ${LAMMPSDIR}/src
 	make -j4 mpi #LMP_INC="-DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_EXCEPTIONS" JPG_LIB="-lpng -ljpeg" gpu_SYSPATH="-L${CUDA_HOME}/lib"
 	make -j4 mpi mode=shlib #LMP_INC="-DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_EXCEPTIONS" JPG_LIB="-lpng -ljpeg" gpu_SYSPATH="-L${CUDA_HOME}/lib"
-fi
-if [ ! -d ${WDIR}/venv ]; then
-	pip install virtualenv
-	cd $WDIR
-	virtualenv venv
+	make install-python
 fi
 cd ${WDIR}
-source ${WDIR}/activate.sh
+if [ ! -d ${WDIR}/venv ]; then
+	pip install virtualenv
+	virtualenv venv
+fi
+source ./activate.sh
 source ${WDIR}/pipinstall.sh
 cd ${LAMMPSDIR}/python
 python install.py

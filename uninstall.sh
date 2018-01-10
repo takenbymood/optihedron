@@ -16,6 +16,7 @@ while test $# -gt 0; do
                         ;;
                 -r|--remove)
 						rm -rf ${WDIR}/lammps
+                        break
                         ;;
                 *)
                         break
@@ -23,17 +24,18 @@ while test $# -gt 0; do
         esac
 done
 
-
-cd lammps
-LAMMPSDIR=$(pwd)
-if [ -f ${LAMMPSDIR}/src/liblammps.so ]; then
-	rm ${LAMMPSDIR}/src/liblammps.so
-	rm ${LAMMPSDIR}/src/lmp_mpi
-	rm ${LAMMPSDIR}/src/lmp_serial
-	rm ${LAMMPSDIR}/src/lammps
-	cd src
-	make clean-all
-	make no-all
+if [ -d ${WDIR}/lammps ]; then
+	cd ${WDIR}/lammps
+	LAMMPSDIR=$(pwd)
+	if [ -f ${LAMMPSDIR}/src/liblammps.so ]; then
+		rm ${LAMMPSDIR}/src/liblammps.so
+		rm ${LAMMPSDIR}/src/lmp_mpi
+		rm ${LAMMPSDIR}/src/lmp_serial
+		rm ${LAMMPSDIR}/src/lammps
+		cd src
+		make clean-all
+		make no-all
+	fi
 fi
 cd ${WDIR}
 if [ -d ${WDIR}/venv ]; then
