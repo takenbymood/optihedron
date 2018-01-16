@@ -237,7 +237,6 @@ def evaluatePyLammps(individual):
     return 1,
 
 def evaluate(individual):
-    
     phenome = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle
     simName = misctools.randomStr(10)

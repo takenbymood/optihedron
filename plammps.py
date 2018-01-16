@@ -6,7 +6,10 @@ import os.path
 
 def runLammps(script):
     lmp = lammps()
-    lmp.file(script)
+    try:
+        lmp.file(script)
+    except:
+        print("error")
     lmp.close()
     return
 
