@@ -98,7 +98,10 @@ def runSim(script,np,timeout):
         print('Process timed out')
 
 def runSimSerial(script):
-    plammps.startScript(script)
+    try:
+        plammps.startScript(script)
+    except:
+        print('Process crashed')
 
 def runSims(scripts,np,timeout):
     processes = []

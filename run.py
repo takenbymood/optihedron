@@ -23,13 +23,13 @@ from deap import base
 from deap import creator
 from deap import tools
 
-from GA import networks
-from GA import phenome
-from GA import networkedgeneticalgorithm as nga
-from GA import grayencoder as ge
+from ga import networks
+from ga import phenome
+from ga import networkedgeneticalgorithm as nga
+from ga import grayencoder as ge
 
-from Tools import misctools
-from Tools import listtools
+from tools import misctools
+from tools import listtools
 
 from lammps import lammps, PyLammps
 
@@ -76,7 +76,7 @@ parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
 parser.add_argument('-epmx','--epsmax', default=50, type=float,
                     help='maximum value for epsilon')
-parser.add_argument('-r','--runtime', default=100000, type=int,
+parser.add_argument('-r','--runtime', default=1000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=int,
                     help='lammps timestep size')
@@ -256,7 +256,8 @@ def evaluate(individual):
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
     #parlammps.runSim(scriptPath,2,30)
-    parlammps.runSimSerial(scriptPath)    
+    #parlammps.runSim(scriptPath,4,180)
+    parlammps.runSimSerial(scriptPath)
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)

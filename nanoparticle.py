@@ -1,6 +1,6 @@
-from GA import phenome
-from GA import grayencoder as ge
-from Tools import listtools as lt
+from ga import phenome
+from ga import grayencoder as ge
+from tools import listtools as lt
 
 class Ligand:
 	def __init__(self,eps,sig,rad,polAng,aziAng,mass=1,cutoff=2.5):
