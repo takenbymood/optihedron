@@ -93,7 +93,7 @@ def execute(cmd, timeout=None):
 
 def runSim(script,np,timeout):
     try:
-        execute(['mpirun','-np',str(np),'python','./plammps.py','-s',str(script)],timeout)
+        execute(['mpirun','-np',str(np),'./venv/bin/python','./plammps.py','-s',str(script)],timeout)
     except:
         print('Process timed out')
 
