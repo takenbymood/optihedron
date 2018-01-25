@@ -31,7 +31,7 @@ from ga import grayencoder as ge
 from tools import misctools
 from tools import listtools
 
-from lammps import lammps, PyLammps
+from lammps import lammps
 
 from nanoparticle import NanoParticlePhenome
 from membranesimulation import MembraneSimulation
@@ -76,7 +76,7 @@ parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
 parser.add_argument('-epmx','--epsmax', default=50, type=float,
                     help='maximum value for epsilon')
-parser.add_argument('-r','--runtime', default=1000, type=int,
+parser.add_argument('-r','--runtime', default=100000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=int,
                     help='lammps timestep size')

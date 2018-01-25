@@ -32,7 +32,7 @@ done
 
 CUDA_HOME=/usr/local/cuda
 if [ ! -d ${WDIR}/lammps ]; then
-	wget -qO- http://lammps.sandia.gov/tars/lammps-stable.tar.gz | tar xvz 
+	wget -qO- http://lammps.sandia.gov/tars/lammps-16Feb16.tar.gz | tar xvz 
 	mv lammps* lammps
 fi
 #copy src files to lammps folder

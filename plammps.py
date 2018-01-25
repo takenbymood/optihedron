@@ -1,4 +1,4 @@
-from lammps import lammps, PyLammps
+from lammps import lammps
 import argparse
 
 import os.path

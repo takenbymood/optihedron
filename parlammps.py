@@ -4,7 +4,7 @@ import os
 import subprocess
 import plammps
 
-from lammps import lammps, PyLammps
+from lammps import lammps
 import signal
 
 n = 1
