@@ -76,7 +76,7 @@ parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
 parser.add_argument('-epmx','--epsmax', default=50, type=float,
                     help='maximum value for epsilon')
-parser.add_argument('-r','--runtime', default=2500, type=int,
+parser.add_argument('-r','--runtime', default=25000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=int,
                     help='lammps timestep size')
