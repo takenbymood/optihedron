@@ -5,8 +5,6 @@ $sel_M set radius 1.0
 set sel_M [atomselect top "element H"]
 $sel_M set radius 0.5
 set sel_M [atomselect top "element He"]
-$sel_M set radius 0.5
-set sel_M [atomselect top "element Li"]
 $sel_M set radius 4.0
 
 

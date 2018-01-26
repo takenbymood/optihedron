@@ -1,4 +1,4 @@
-from lammps import lammps, PyLammps
+from lammps import lammps
 import argparse
 
 import os.path
@@ -6,7 +6,10 @@ import os.path
 
 def runLammps(script):
     lmp = lammps()
-    lmp.file(script)
+    try:
+        lmp.file(script)
+    except:
+        print("error")
     lmp.close()
     return
 
@@ -14,7 +17,7 @@ def startScript(script):
     if(os.path.isfile(script)):
         runLammps(script)
         return True
-        print("file does not exist")
+    print("file does not exist")
     return False
 
 if __name__ == '__main__':

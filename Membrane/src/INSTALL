@@ -1,0 +1,50 @@
+
+1.) Create a directory "code" in the root directory and change to 
+    that directory.
+ 
+    mkdir code
+    cd code
+
+2.) Download the latest stable version of LAMMPS from the LAMMPS homepage and 
+    extract it. Here we use the version 30Jul16. If you use a different version, just use your version number for the commands     below.
+
+    wget http://lammps.sandia.gov/tars/lammps-30Jul16.tar.gz
+    tar -xvf lammps-30Jul16.tar.gz
+
+3.) Change to the src directory.
+
+    cd lammps-30Jul16/src/
+
+4.) Install the package DIPOLE.
+
+    make yes-dipole yes-rigid yes-python yes-opt
+
+5.) Update some of the old source files and add the new ones.
+
+    cp ../../../src/*.h ../../../src/*.cpp .
+
+6.) Compile LAMMPS (in parallel on four cores) with 
+
+    make -j4 mpi
+    
+    for the parallel version or with
+    
+    make serial
+    
+    for the serial version.
+    
+
+The current directory should now contain an executable lmp_mpi or lmp_serial depending on which command you used for the compilation. 
+
+You should now be able to run LAMMPS with the input scripts provided. For example, if you want to run sim/in.membrane, first 
+change the directory and then execute LAMMPS with the input file.
+
+    cd ../../../sim
+    mpirun -np 4 ../code/lammps-30Jul16/src/lmp_mpi -in in.membrane
+
+    or
+   
+    ../code/lammps-30Jul16/src/lmp_serial -in in.membrane
+
+
+(Your simulation should be running now.)

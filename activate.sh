@@ -1,5 +1,6 @@
 #!/bin/bash
 
+WDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 TK_LIBRARY=/usr/lib/python2.7/lib-tk:/usr/lib/python2.7/site-packages/PIL:/usr/lib
 TKPATH=/usr/lib/python2.7/lib-tk:/usr/lib/python2.7/site-packages/PIL:/usr/lib 
@@ -9,4 +10,4 @@ export DYLD_FALLBACK_LIBRARY_PATH=$(pwd)/lammps/src:$DYLD_FALLBACK_LIBRARY_PATH
 export TMPDIR=~/tmp
 
 
-source venv/bin/activate
+source ${WDIR}/venv/bin/activate

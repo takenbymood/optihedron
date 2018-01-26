@@ -23,17 +23,15 @@ from deap import base
 from deap import creator
 from deap import tools
 
-from GA import networks
-from GA import phenome
-from GA import networkedgeneticalgorithm as nga
-from GA import grayencoder as ge
+from ga import networks
+from ga import phenome
+from ga import networkedgeneticalgorithm as nga
+from ga import grayencoder as ge
 
-from Sims import lammpsbuilder as lb
+from tools import misctools
+from tools import listtools
 
-from Tools import misctools
-from Tools import listtools
-
-from lammps import lammps, PyLammps
+from lammps import lammps
 
 from nanoparticle import NanoParticlePhenome
 from membranesimulation import MembraneSimulation
@@ -46,7 +44,7 @@ parser.add_argument('-d','--demes', type=int,
 parser.add_argument('-p','--pop', type=int,
                     help='population of each deme', required=True)
 parser.add_argument('-gs','--genomesize', type=int,
-                    help='number of bits in the genome', default=160)
+                    help='number of bits in the genome', default=240)
 parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
@@ -70,13 +68,15 @@ parser.add_argument('-hof','--hofsize', default=5, type=int,
                     help='hall of fame size')
 parser.add_argument('-eps','--epsplaces', default=8, type=int,
                     help='number of bits for epsilon')
-parser.add_argument('-ang','--angplaces', default=8, type=int,
+parser.add_argument('-polang','--polangplaces', default=8, type=int,
                     help='number of bits for polar angle')
+parser.add_argument('-aziang', '--aziangplaces', default=8, type=int,
+                    help='number of bits for azimuthal angle')
 parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
 parser.add_argument('-epmx','--epsmax', default=50, type=float,
                     help='maximum value for epsilon')
-parser.add_argument('-r','--runtime', default=100000, type=int,
+parser.add_argument('-r','--runtime', default=25000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=int,
                     help='lammps timestep size')
@@ -99,12 +99,13 @@ GENOMESIZE = args.genomesize
 MIGR = args.migrations
 HOFSIZE = args.hofsize
 EPSPLACES = args.epsplaces
-ANGPLACES = args.angplaces
+POLANGPLACES = args.polangplaces
+AZIANGPLACES = args.aziangplaces
 EPSMAX = args.epsmax
 EPSMIN = args.epsmin
 RUNTIME = args.runtime
 TIMESTEP = args.timestep
-GENESIZE = (EPSPLACES+ANGPLACES)
+GENESIZE = (EPSPLACES+POLANGPLACES+AZIANGPLACES)
 GENES = math.floor(GENOMESIZE/GENESIZE)
 
 
@@ -126,16 +127,17 @@ def saveMetrics(lis,filename='out.csv'):
         for row in lis:
             csv_out.writerow(row)
 
-def evaluateNPWrapping(outFilename,runtime):
+def evaluateNPWrapping(outFilename,runtime):    
     minFit = 1E-8
     outData = []
-    if(not os.path.exists(outFilename)):
+    if(not os.path.exists(outFilename)):                                
             return minFit,
 
     with open(outFilename, 'r+') as f:
-        lines = f.readlines()
+        lines = f.readlines()        
         for i in range(len(lines)):
-            if str(runtime) in lines[i]:
+            if str('Timestep: {}'.format(runtime)) in lines[i]:            
+                print(lines[i])                
                 lines[i] = ""
                 break
             lines[i] = ""
@@ -144,36 +146,35 @@ def evaluateNPWrapping(outFilename,runtime):
             if line != "":
                 outData.append(line.replace("\n","").replace(" ",","))
 
-
     os.remove(outFilename)
 
     if len(outData)<50:
-        #print str(outData)
-        return minFit,
-
+        #print str(outData)                     
+        return minFit,    
 
     outVectors = {}
     for line in outData:
         slist = line.split(",")
-        if(len(slist)<3):
+        if(len(slist)<3):            
             return minFit,
         if int(slist[0]) in outVectors:
-            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2])})
+            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3])})
         else:
             outVectors[int(slist[0])] = []
-            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2])})
+            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3])})
 
     magnitudes = []
     boxsize = 20
     for key, value in outVectors.iteritems():
-        if key == 3:
+        if key == 2:
             for v in value:
                 inrange = 0
                 fmag = 0
                 for v2 in outVectors[1]:
                     xd = v['x']-v2['x']
                     yd = v['y']-v2['y']
-                    m = math.sqrt(xd*xd+yd*yd)
+                    zd = v['z']-v2['z']
+                    m = math.sqrt(xd*xd+yd*yd+zd*zd)                                          
                     if(m<7.0):
                         inrange+=1
                 if(inrange>0):
@@ -208,51 +209,59 @@ def runCmd(cmd,timeout):
         print(cmd)
         print(e)
 
-def makeXYPair(individual,xMax,xMin,yMax,yMin):
-    halfs = listtools.subdivide(individual,int(len(individual)*0.5))
-    a = ge.read(halfs[0])
-    b = ge.read(halfs[1])
-    maxA = ge.max(halfs[0])
-    maxB = ge.max(halfs[1])
-    xRange = xMax -xMin
-    yRange = yMax -yMin
+def makeXYZTriplet(individual,xMax,xMin,yMax,yMin,zMax,zMin):    
+    thirds = listtools.subdivide(individual,int(len(individual)*(1.0/3.0)))
+    a = ge.read(thirds[0])
+    b = ge.read(thirds[1])
+    c = ge.read(thirds[2])
+    maxA = ge.max(thirds[0])
+    maxB = ge.max(thirds[0])
+    maxC = ge.max(thirds[0])
+    xRange = xMax - xMin
+    yRange = yMax - yMin
+    zRange = zMax - zMin
     x=float((a/float(maxA))*xRange + xMin)
-    y=float((b/float(maxB))*yRange +yMin)
-    return x,y
+    y=float((b/float(maxB))*yRange + yMin)
+    z=float((c/float(maxC))*zRange + zMin)
+    return x,y,z    
 
-def performanceTest(individual):
-    x,y = makeXYPair(individual,2,-2,2,-2)
-    f1 = (x + y + 1)
-    f2 = (2*x - 3*y)
-    f = -(1 + (f1*f1)*(19 - 14*x + 3*x*x - 14*y + 6*x*y + 3*y*y))*(30 + (f2*f2)*(18 - 32*x + 12*x*x + 48*y - 36*x*y + 27*y*y))
-    return f,
+##def performanceTest(individual):
+##    x,y = makeXYPair(individual,2,-2,2,-2)
+##    f1 = (x + y + 1)
+##    f2 = (2*x - 3*y)
+##    f = -(1 + (f1*f1)*(19 - 14*x + 3*x*x - 14*y + 6*x*y + 3*y*y))*(30 + (f2*f2)*(18 - 32*x + 12*x*x + 48*y - 36*x*y + 27*y*y))
+##    return f,
 
 def evaluatePyLammps(individual):
 
     return 1,
 
 def evaluate(individual):
-    
-    phenome = NanoParticlePhenome(individual,EPSPLACES,ANGPLACES,EPSMIN,EPSMAX)
+    phenome = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle
+    simName = misctools.randomStr(10)
     sim = MembraneSimulation(
-        'sim_'+misctools.randomStr(10),
+        'sim_'+simName,
         np,
         RUNTIME,
-        TIMESTEP,
+        TIMESTEP,        
         os.path.join(wd,'out'),
         os.path.join(wd,'run'),
-        os.path.join(wd,'Data/relaxed-membrane.xyz')
+        os.path.join(wd,'Membrane/template/data.template'),
+        os.path.join(wd,'Membrane/template/in.template')        
         )
     sim.saveFiles()
     scriptPath=os.path.join(sim.filedir,sim.scriptName)
     outpath = os.path.join(wd,"out")
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
-    parlammps.runSim(scriptPath,2,30)
+    #parlammps.runSim(scriptPath,2,30)
+    #parlammps.runSim(scriptPath,4,300)
+    parlammps.runSimSerial(scriptPath)
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
+    #print('{} fitness: {}'.format(simName, f))
     sim.deleteFiles()
     return f
 
@@ -275,12 +284,12 @@ def afterMigration(ga):
     i = 0
     for isle in ga.islands:
         isleNum += 1
-        points = [makeXYPair(p,2,-2,2,-2) for p in isle]
+        points = [makeXYZTriplet(p,2,-2,2,-2,2,-2) for p in isle]
         fit = [p.fitness.values[-1] for p in isle]
         for p in points:
             i+=1
-            outFile += str(i)+","+str(p[0])+","+str(p[1])+"\n"
-    with open("coords.csv", 'a') as file_:
+            outFile += str(i)+","+str(p[0])+","+str(p[1])+","+str(p[2])+"\n"
+    with open(os.path.join(wd,'coords.csv'), 'a') as file_:    
         file_.write(outFile)
     return
 
@@ -288,22 +297,25 @@ def saveHOF(hof):
     i = 0
     for ind in hof:
         i+=1
-        phenome = NanoParticlePhenome(ind,EPSPLACES,ANGPLACES,EPSMIN,EPSMAX)
+        phenome = NanoParticlePhenome(ind,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
         np = phenome.particle
         sim = MembraneSimulation(
             'hof_'+str(i),
             np,
             RUNTIME,
-            TIMESTEP,
+            TIMESTEP,            
             os.path.join(wd,'out'),
-            os.path.join(wd,'hof'),
-            os.path.join(wd,'Data/relaxed-membrane.xyz')
+            os.path.join(wd,'hof'),            
+            os.path.join(wd,'Membrane/template/data.template'),
+            os.path.join(wd,'Membrane/template/in.template') 
             )
         hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
-        lmp = lammps()
-        lmp.file(hofScriptPath)
-        lmp.close()
+
+        parlammps.runSimSerial(hofScriptPath)
+        #lmp = lammps()
+        #lmp.file(hofScriptPath)
+        #lmp.close()
 
 def geneWiseTwoPoint(ind1,ind2):
     size = len(ind1)
@@ -323,38 +335,38 @@ def geneWiseTwoPoint(ind1,ind2):
 
 def main():
 
-    if args.graph == 'singlet':
-        network = networks.createSinglets(NISLES)
-    elif args.graph == 'islands':
-        network = networks.createIslands(NISLES)
-    elif args.graph == 'star':
-        network = networks.createStar(NISLES-1)
-    elif args.graph == 'megastar':
-        network = networks.createMegaStar(NSPOKES,int(math.ceil((NISLES-3)*0.25)),int(math.floor((NISLES-3)*0.25)))
-    else:
-        raw_input('malformed network option, continue with islands? (Enter)')
+   if args.graph == 'singlet':
+       network = networks.createSinglets(NISLES)
+   elif args.graph == 'islands':
+       network = networks.createIslands(NISLES)
+   elif args.graph == 'star':
+       network = networks.createStar(NISLES-1)
+   elif args.graph == 'megastar':
+       network = networks.createMegaStar(NSPOKES,int(math.ceil((NISLES-3)*0.25)),int(math.floor((NISLES-3)*0.25)))
+   else:
+       raw_input('malformed network option, continue with islands? (Enter)')
 
-    random.seed(args.seed)
-    ga = nga.NetworkedGeneticAlgorithm(
-        genomeSize = GENOMESIZE,
-        islePop = ISLESIZE,
-        hofSize = HOFSIZE,
-        evaluate = evaluate,
-        sel = sel,
-        net = network,
-        subroutine = algorithm,
-        mut = mut,
-        beforeMigration = beforeMigration,
-        afterMigration = afterMigration,
-        verbose = VERBOSE,
-        mate = geneWiseTwoPoint)
+   random.seed(args.seed)
+   ga = nga.NetworkedGeneticAlgorithm(
+       genomeSize = GENOMESIZE,
+       islePop = ISLESIZE,
+       hofSize = HOFSIZE,
+       evaluate = evaluate,
+       sel = sel,
+       net = network,
+       subroutine = algorithm,
+       mut = mut,
+       beforeMigration = beforeMigration,
+       afterMigration = afterMigration,
+       verbose = VERBOSE,
+       mate = geneWiseTwoPoint)
 
-    results = ga.run(NGEN,FREQ,MIGR)
+   results = ga.run(NGEN,FREQ,MIGR)
 
-    #print(results[0][0][0])
+   #print(results[0][0][0])
     
-    saveMetrics(results[-1])
-    saveHOF(results[1])
+   saveMetrics(results[-1])
+   saveHOF(results[1])
 
 
 if __name__ == "__main__":

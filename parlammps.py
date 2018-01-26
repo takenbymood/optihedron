@@ -4,7 +4,7 @@ import os
 import subprocess
 import plammps
 
-from lammps import lammps, PyLammps
+from lammps import lammps
 import signal
 
 n = 1
@@ -93,9 +93,15 @@ def execute(cmd, timeout=None):
 
 def runSim(script,np,timeout):
     try:
-        execute(['mpirun','-np',str(np),'python','./plammps.py','-s',str(script)],timeout)
+        execute(['mpirun','-np',str(np),'./venv/bin/python','./plammps.py','-s',str(script)],timeout)
     except:
         print('Process timed out')
+
+def runSimSerial(script):
+    try:
+        plammps.startScript(script)
+    except:
+        print('Process crashed')
 
 def runSims(scripts,np,timeout):
     processes = []

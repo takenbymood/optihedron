@@ -1,0 +1,53 @@
+units           lj
+atom_style      hybrid sphere dipole
+
+dimension       3 
+boundary        p p p
+
+read_data       "rigidmembrane.data"
+
+group 				mem     type 1
+
+set group			mem 	dipole 0 0 1
+	
+# membrane parameters
+variable        rc_global    equal    2.6
+variable        rc           equal    2.6
+variable		rc_interact  equal    4.0
+variable        rmin         equal    1.122462
+variable        mu           equal    3
+variable        zeta         equal    4
+variable        eps          equal    4.34
+variable        sigma        equal    1.00
+
+variable        theta0_11    equal    0.0
+
+# only membrane gets velocity, start with Temp=3 to offset the potential energy when relaxed from hex lattice
+variable        Nmem        equal    "count(mem)"
+if "${Nmem} > 1" then "velocity        mem create   3.0  1000 rot yes mom yes "  
+
+# Use hybrid overlay for pair_style membrane and lj/expand
+pair_style      hybrid/overlay  membrane     ${rc_global}
+
+#        same here for intra-membrane interactions
+pair_coeff	*      *        membrane     0.0           0.0            0.0           0.0       0.0      0.0    0.0
+pair_coeff	1      1        membrane     ${eps}        ${sigma}       ${rmin}       ${rc}     ${zeta}  ${mu}  ${theta0_11}
+
+neigh_modify	every 1 delay 1
+
+variable       dofsub      equal  "count(mem)"
+compute	       cT          all    temp/sphere
+compute_modify cT          extra  ${dofsub}
+compute        cP          all    pressure cT
+compute	       cTrot	   mem	  temp/sphere dof rotate
+
+fix		fLANG	    all	    langevin 1.0 1.0 1.0 1000 zero yes
+fix		fNPH  	    mem     nph/sphere x 0.0 0.0 10 y 0.0 0.0 10 &
+		couple xy  update dipole
+fix_modify	fNPH  press thermo_press
+
+dump		id all xyz 1000 relaxmembrane.xyz
+
+timestep       0.01
+thermo         100
+run            200000
