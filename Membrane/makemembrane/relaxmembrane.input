@@ -7,8 +7,6 @@ boundary        p p p
 read_data       "rigidmembrane.data"
 
 group 				mem     type 1
-
-set group			mem 	dipole 0 0 1
 	
 # membrane parameters
 variable        rc_global    equal    2.6
@@ -34,12 +32,6 @@ pair_coeff	*      *        membrane     0.0           0.0            0.0        
 pair_coeff	1      1        membrane     ${eps}        ${sigma}       ${rmin}       ${rc}     ${zeta}  ${mu}  ${theta0_11}
 
 neigh_modify	every 1 delay 1
-
-variable       dofsub      equal  "count(mem)"
-compute	       cT          all    temp/sphere
-compute_modify cT          extra  ${dofsub}
-compute        cP          all    pressure cT
-compute	       cTrot	   mem	  temp/sphere dof rotate
 
 fix		fLANG	    all	    langevin 1.0 1.0 1.0 1000 zero yes
 fix		fNPH  	    mem     nph/sphere x 0.0 0.0 10 y 0.0 0.0 10 &
