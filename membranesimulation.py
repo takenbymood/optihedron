@@ -38,7 +38,7 @@ class MembraneSimulation():
 		shutil.copyfile(self.scripttemplate, simScript)
 
 		ligandMasses = ''		
-		npPositions = '{0} 2 {1} {2} {3}   1 1 0   0 0 0   0 0 0\n'.format(self.nonLigandAtomCount, self.corepos_x, self.corepos_y, self.corepos_z)
+		npPositions = '{0} 2 {1} {2} {3}   1 1 0   0 0 0\n'.format(self.nonLigandAtomCount, self.corepos_x, self.corepos_y, self.corepos_z)
 		npVelocities = '{0} 0 0 0 0 0 0\n'.format(self.nonLigandAtomCount)
 		ligandMembraneInteractions = ''
 
@@ -49,7 +49,7 @@ class MembraneSimulation():
 			ligand_z = self.corepos_z+ligand.rad*math.cos(ligand.polAng)			
 
 			ligandMasses += '{0} {1}\n'.format(2+i, ligand.mass)		
-			npPositions += '{0} {1} {2} {3} {4}  1 1 0   0 0 0   0 0 0\n'.format(self.nonLigandAtomCount+i,2+i,ligand_x,ligand_y,ligand_z)
+			npPositions += '{0} {1} {2} {3} {4}  1 1 0   0 0 0\n'.format(self.nonLigandAtomCount+i,2+i,ligand_x,ligand_y,ligand_z)
 			npVelocities += '{0} 0 0 0 0 0 0\n'.format(self.nonLigandAtomCount+i)
 			ligandMembraneInteractions += 'pair_coeff		1	{}	lj/cut		{}	{}	{}\n'.format(2+i,ligand.eps,ligand.sig,ligand.sig*ligand.cutoff)
 

@@ -38,7 +38,10 @@ fix		fNPH  	    mem     nph/sphere x 0.0 0.0 10 y 0.0 0.0 10 &
 		couple xy  update dipole
 fix_modify	fNPH  press thermo_press
 
-dump		id all xyz 1000 relaxmembrane.xyz
+dump 		coords all xyz 1000 relaxmembrane.xyz
+dump		mus all custom 1000 relaxmembrane.mu mux muy muz
+dump_modify	coords sort id
+dump_modify mus    sort id
 
 timestep       0.01
 thermo         100
