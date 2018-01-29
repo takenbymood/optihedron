@@ -74,9 +74,9 @@ parser.add_argument('-aziang', '--aziangplaces', default=8, type=int,
                     help='number of bits for azimuthal angle')
 parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
-parser.add_argument('-epmx','--epsmax', default=50, type=float,
+parser.add_argument('-epmx','--epsmax', default=20, type=float,
                     help='maximum value for epsilon')
-parser.add_argument('-r','--runtime', default=25000, type=int,
+parser.add_argument('-r','--runtime', default=50000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=int,
                     help='lammps timestep size')
@@ -256,8 +256,8 @@ def evaluate(individual):
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
     #parlammps.runSim(scriptPath,2,30)
-    #parlammps.runSim(scriptPath,4,300)
-    parlammps.runSimSerial(scriptPath)
+    parlammps.runSim(scriptPath,4,1800)
+    #parlammps.runSimSerial(scriptPath)
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
@@ -294,9 +294,8 @@ def afterMigration(ga):
     return
 
 def saveHOF(hof):
-    i = 0
+    i = 1
     for ind in hof:
-        i+=1
         phenome = NanoParticlePhenome(ind,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
         np = phenome.particle
         sim = MembraneSimulation(
@@ -311,8 +310,9 @@ def saveHOF(hof):
             )
         hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
-
-        parlammps.runSimSerial(hofScriptPath)
+        #parlammps.runSimSerial(hofScriptPath)
+        parlammps.runSim(hofScriptPath,4,1800)
+        i+=1
         #lmp = lammps()
         #lmp.file(hofScriptPath)
         #lmp.close()

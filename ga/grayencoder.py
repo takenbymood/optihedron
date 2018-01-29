@@ -10,7 +10,7 @@ def genBin(n):
 	else: return [0]
 
 def readBin(bits):
-	i = 0
+	i = 0.0
 	for bit in bits:
 		i = i * 2 + bit
 	return i

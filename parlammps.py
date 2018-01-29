@@ -3,9 +3,11 @@ import time
 import os
 import subprocess
 import plammps
+import sys
 
 from lammps import lammps
 import signal
+import traceback
 
 n = 1
 nWorkers = 8
@@ -44,7 +46,7 @@ class Retcode(Exception):
 
     def __str__(self):
         return "Command '%s' returned non-zero exit status %d" % \
-               (self.cmd, self.returncode)
+               (self.cmd, self.retcode)
 
 
 def alarm_handler(signum, frame):
@@ -73,7 +75,7 @@ def execute(cmd, timeout=None):
                                    stderr=subprocess.STDOUT, preexec_fn=os.setsid)
 
         # Read the stdout/sterr buffers and retcode
-        output, _ = phandle.communicate()
+        output, error = phandle.communicate()
         retcode = phandle.poll()
     except Signal:
         # Kill the running process
@@ -86,16 +88,21 @@ def execute(cmd, timeout=None):
         signal.alarm(0)
 
     # Raise an exception if the command exited with non-zero exit status
-    if retcode:
-        raise Retcode(cmd, retcode, output=output)
+    # if retcode:
+    #     print("MPI exited with code 1, did you forget to finalize?")
+    #     raise Retcode(cmd, retcode, output=output)
 
-    return output
+    return output, error
 
 def runSim(script,np,timeout):
     try:
-        execute(['mpirun','-np',str(np),'./venv/bin/python','./plammps.py','-s',str(script)],timeout)
-    except:
+        o, e = execute(['mpirun','-np',str(np),'./venv/bin/python','./plammps.py','-s',str(script)],timeout)
+    except TimeoutError:
         print('Process timed out')
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        
 
 def runSimSerial(script):
     try:
