@@ -74,12 +74,21 @@ parser.add_argument('-aziang', '--aziangplaces', default=8, type=int,
                     help='number of bits for azimuthal angle')
 parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
-parser.add_argument('-epmx','--epsmax', default=50, type=float,
+parser.add_argument('-epmx','--epsmax', default=20, type=float,
                     help='maximum value for epsilon')
-parser.add_argument('-r','--runtime', default=25000, type=int,
+parser.add_argument('-r','--runtime', default=50000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=int,
                     help='lammps timestep size')
+
+#MPI Options
+
+parser.add_argument('-mpi','--mpi', default=True, type=bool,
+                    help='option to run in parallel')
+parser.add_argument('-np','--nodes', default=8, type=int,
+                    help='number of cores used per mpi process')
+parser.add_argument('-tm','--timeout', default=1800, type=int,
+                    help='mpirun timeout')
 
 
 args = parser.parse_args()
@@ -107,6 +116,10 @@ RUNTIME = args.runtime
 TIMESTEP = args.timestep
 GENESIZE = (EPSPLACES+POLANGPLACES+AZIANGPLACES)
 GENES = math.floor(GENOMESIZE/GENESIZE)
+
+MPI = args.mpi
+NP = args.nodes
+TIMEOUT = args.timeout
 
 
 
@@ -236,6 +249,9 @@ def evaluatePyLammps(individual):
 
     return 1,
 
+def runSim(path):
+    return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
+
 def evaluate(individual):
     phenome = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle
@@ -255,9 +271,7 @@ def evaluate(individual):
     outpath = os.path.join(wd,"out")
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
-    #parlammps.runSim(scriptPath,2,30)
-    #parlammps.runSim(scriptPath,4,300)
-    parlammps.runSimSerial(scriptPath)
+    runSim(scriptPath)
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
@@ -294,9 +308,8 @@ def afterMigration(ga):
     return
 
 def saveHOF(hof):
-    i = 0
+    i = 1
     for ind in hof:
-        i+=1
         phenome = NanoParticlePhenome(ind,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
         np = phenome.particle
         sim = MembraneSimulation(
@@ -311,8 +324,9 @@ def saveHOF(hof):
             )
         hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
-
-        parlammps.runSimSerial(hofScriptPath)
+        #parlammps.runSimSerial(hofScriptPath)
+        runSim(hofScriptPath)
+        i+=1
         #lmp = lammps()
         #lmp.file(hofScriptPath)
         #lmp.close()
