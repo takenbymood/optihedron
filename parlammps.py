@@ -97,18 +97,21 @@ def execute(cmd, timeout=None):
 def runSim(script,np,timeout):
     try:
         o, e = execute(['mpirun','-np',str(np),'./venv/bin/python','./plammps.py','-s',str(script)],timeout)
+        return True
     except TimeoutError:
         print('Process timed out')
     except Exception as e:
         print(e)
         traceback.print_exc()
-        
+    return False
 
 def runSimSerial(script):
     try:
         plammps.startScript(script)
+        return True
     except:
-        print('Process crashed')
+        print('LAMMPS process crashed')
+    return False
 
 def runSims(scripts,np,timeout):
     processes = []
