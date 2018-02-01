@@ -10,7 +10,7 @@ group				vehicle type 2
 _LIGAND GROUP PLACEHOLDER_
 _NANOPARTICLE GROUP PLACEHOLDER_
 
-velocity np set 0 0 -1
+velocity np set 0 0 -2
 
 #membrane parameters
 variable        rc           equal    2.6

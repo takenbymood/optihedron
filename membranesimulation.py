@@ -11,7 +11,7 @@ def fillTemplate(template, filledTemplate, placeHolder, filledPlaceHolder):
 	os.rename(filledTemplate, template)
 
 class MembraneSimulation():
-	def __init__(self, name, protein, run, timestep, outdir, filedir, datatemplate, scripttemplate, corepos_x=0, corepos_y=0, corepos_z=10, dumpres="100"):
+	def __init__(self, name, protein, run, timestep, outdir, filedir, datatemplate, scripttemplate, corepos_x=0, corepos_y=0, corepos_z=8, dumpres="100"):
 		self.name = name
 		self.scriptName = name+'_script.in'
 		self.dataName = name+"_data.data"
@@ -27,7 +27,7 @@ class MembraneSimulation():
 		self.corepos_y = corepos_y
 		self.corepos_z = corepos_z
 		self.dumpres = dumpres
-		self.nonLigandAtomCount = 11600 + 1
+		self.nonLigandAtomCount = 2900 + 1
 
 	def saveFiles(self):
 		scratch = os.path.join(self.filedir, self.name)		
