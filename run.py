@@ -142,6 +142,7 @@ def saveMetrics(lis,filename='out.csv'):
 
 def evaluateNPWrapping(outFilename,runtime):    
     minFit = 1E-8
+    outHeaderSize = 9
     outData = []
     if(not os.path.exists(outFilename)):                                
             return minFit,
@@ -149,10 +150,10 @@ def evaluateNPWrapping(outFilename,runtime):
     with open(outFilename, 'r+') as f:
         lines = f.readlines()        
         for i in range(len(lines)):
-            if str('Timestep: {}'.format(runtime)) in lines[i]:            
-                print(lines[i])                
-                lines[i] = ""
-                break
+            if str('ITEM: TIMESTEP') in lines[i] and str(runtime) in lines[i+1]:                
+                for j in range(outHeaderSize):                    
+                    lines[i + j] = ""
+                break                
             lines[i] = ""
 
         for line in lines:
@@ -161,13 +162,12 @@ def evaluateNPWrapping(outFilename,runtime):
 
     os.remove(outFilename)
 
-    if len(outData)<50:
-        #print str(outData)                     
+    if len(outData)<50:        
         return minFit,    
 
     outVectors = {}
     for line in outData:
-        slist = line.split(",")
+        slist = line.split(",")[1:]
         if(len(slist)<3):            
             return minFit,
         if int(slist[0]) in outVectors:
@@ -190,17 +190,17 @@ def evaluateNPWrapping(outFilename,runtime):
                     m = math.sqrt(xd*xd+yd*yd+zd*zd)                                          
                     if(m<7.0):
                         inrange+=1
-                if(inrange>0):
+                if(inrange>3):
                     magnitudes.append(inrange)
 
-    if len(magnitudes)<1:
+    if len(magnitudes)<1:        
         return minFit,
 
     msum = 0
     for m in magnitudes:
         msum += m
 
-    if(msum == 0):
+    if(msum == 0):        
         return minFit,
 
     return msum,
@@ -249,7 +249,7 @@ def evaluatePyLammps(individual):
 
     return 1,
 
-def runSim(path):
+def runSim(path):    
     return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
 
 def evaluate(individual):
