@@ -282,7 +282,7 @@ def evaluate(individual):
         try:
             
             pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
-            job = subprocess.Popen(["qsub", "-sync", "y", pbs])
+            job = subprocess.Popen(["qsub", pbs])
             job.wait()
             
         except Exception as e:
