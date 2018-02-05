@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#PBS -N optihedron
+#PBS -q batch
+#PBS -l nodes=1:ppn=8
+#PBS -l nodes=lemon1.biop.phys.ucl.ac.uk
+#PBS -l pmem=800M
+#PBS -l walltime=240:00:00
+#PBS -M joel.forster.16@ucl.ac.uk
+#PBS -m e
+
+
+#PBS -V
+cd _DIR_
+source activate.sh
+mpirun -np _CORES_ ./venv/bin/python ./plammps.py -s _SCRIPT_
+deactivate
+cd ..

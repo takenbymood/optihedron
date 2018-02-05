@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#PBS -N optihedron
+#PBS -q batch
+#PBS -l nodes=1:ppn=8
+#PBS -l nodes=lemon1.biop.phys.ucl.ac.uk
+#PBS -l pmem=800M
+#PBS -l walltime=240:00:00
+#PBS -M joel.forster.16@ucl.ac.uk
+#PBS -m e
+
+
+#PBS -V
+cd /Users/joelforster/Projects/optihedron
+source activate.sh
+mpirun -np 8 ./venv/bin/python ./plammps.py -s /Users/joelforster/Projects/optihedron/run/sim_ALW5LOEHQH_script.in
+deactivate
+cd ..

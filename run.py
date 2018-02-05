@@ -12,7 +12,8 @@ import joblib
 import sys
 import subprocess
 import parlammps
-from multiprocessing import Pool, TimeoutError
+import pathos
+from pathos import pools
 
 # from joblib import Parallel, delayed, parallel_backend
 # from distributed.joblib import DaskDistributedBackend
@@ -83,9 +84,13 @@ parser.add_argument('-ts','--timestep', default=0.01, type=int,
 
 #MPI Options
 
-parser.add_argument('-mpi','--mpi', default=True, type=bool,
+parser.add_argument('-mpi','--mpi', action='store_true',
                     help='option to run in parallel')
-parser.add_argument('-np','--nodes', default=8, type=int,
+parser.add_argument('-q','--qsub', action='store_true',
+                    help='option to qsub to cluster')
+parser.add_argument('-w','--workers', default=6, type=int,
+                    help='number of workers in the mapping pool')
+parser.add_argument('-np','--nodes', default=4, type=int,
                     help='number of cores used per mpi process')
 parser.add_argument('-tm','--timeout', default=1800, type=int,
                     help='mpirun timeout')
@@ -116,11 +121,12 @@ RUNTIME = args.runtime
 TIMESTEP = args.timestep
 GENESIZE = (EPSPLACES+POLANGPLACES+AZIANGPLACES)
 GENES = math.floor(GENOMESIZE/GENESIZE)
+QSUB = args.qsub
+WORKERS = args.workers
 
 MPI = args.mpi
 NP = args.nodes
 TIMEOUT = args.timeout
-
 
 
 def kill(p):
@@ -271,7 +277,13 @@ def evaluate(individual):
     outpath = os.path.join(wd,"out")
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
-    runSim(scriptPath)
+    if(QSUB):
+        pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
+        job = subprocess.Popen(["qsub", "-sync", "y", pbs])
+        job.communicate()
+        os.remove(pbs)
+    else:
+        runSim(scriptPath)
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
@@ -325,7 +337,8 @@ def saveHOF(hof):
         hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
         #parlammps.runSimSerial(hofScriptPath)
-        runSim(hofScriptPath)
+        #runSim(hofScriptPath)
+
         i+=1
         #lmp = lammps()
         #lmp.file(hofScriptPath)
@@ -361,6 +374,7 @@ def main():
        raw_input('malformed network option, continue with islands? (Enter)')
 
    random.seed(args.seed)
+
    ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
@@ -370,6 +384,7 @@ def main():
        net = network,
        subroutine = algorithm,
        mut = mut,
+       mapping = pools.ProcessPool(WORKERS).imap if QSUB else pools.ProcessPool(WORKERS).map,
        beforeMigration = beforeMigration,
        afterMigration = afterMigration,
        verbose = VERBOSE,
@@ -380,7 +395,7 @@ def main():
    #print(results[0][0][0])
     
    saveMetrics(results[-1])
-   saveHOF(results[1])
+   #saveHOF(results[1])
 
 
 if __name__ == "__main__":
