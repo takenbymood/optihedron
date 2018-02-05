@@ -288,6 +288,7 @@ def evaluate(individual):
         except Exception as e:
             print(e)
             traceback.print_exc()
+            return 1E-8
 
     else:
         runSim(scriptPath)
