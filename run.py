@@ -279,17 +279,11 @@ def evaluate(individual):
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
     if(QSUB):
-        try:
-            
-            pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
-            job = subprocess.check_output(["qsub", pbs])
-            print(job)
-            
-        except Exception as e:
-            print(e)
-            traceback.print_exc()
-            return 1E-8
-
+        pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
+        job = subprocess.Popen(["qsub", pbs],stdout=subprocess.PIPE)
+        job.wait()
+        out = job.communicate()[1]
+        print(job)
     else:
         runSim(scriptPath)
     
