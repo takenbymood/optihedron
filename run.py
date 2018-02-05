@@ -283,7 +283,7 @@ def evaluate(individual):
             
             pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
             print(pbs)
-            job = parlammps.execute(["qsub", "-sync", "y", pbs],9E5)
+            job = parlammps.execute(["qsub", "-sync", "y", pbs],int(9E5))
             os.remove(pbs)
         except Exception as e:
             print(e)
