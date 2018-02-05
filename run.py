@@ -14,6 +14,7 @@ import subprocess
 import parlammps
 import pathos
 from pathos import pools
+import traceback
 
 # from joblib import Parallel, delayed, parallel_backend
 # from distributed.joblib import DaskDistributedBackend
@@ -278,10 +279,14 @@ def evaluate(individual):
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
 
     if(QSUB):
-        pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
-        job = subprocess.Popen(["qsub", "-sync", "y", pbs])
-        job.communicate()
-        os.remove(pbs)
+        try:
+            pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
+            job = parlammps.execute(["qsub", "-sync", "y", pbs])
+            os.remove(pbs)
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+
     else:
         runSim(scriptPath)
     
