@@ -1,12 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import os
 import argparse
 
 parser = argparse.ArgumentParser(description='Plot fitness logs from GA')
 parser.add_argument('--in','-i', dest='filepath', required=False,
                   	default=None,
                     help='csv file for plotting')
+
+parser.add_argument('--add','-a', action='append', dest='addfilepath', 
+                    required=False, default=[],
+                    help='additional csv files for plotting')
                     
 parser.add_argument('--out','-o', dest='output', required=False,
                   	default=None,
@@ -21,11 +26,19 @@ outfile = args.output if args.output != None and args.output != "" else "plot.pn
 def tworound(x, base=2):
     return int(base * round(float(x)/base))
 
-# example data
-data = np.genfromtxt(args.filepath, delimiter=',', skip_header=1,
+def datafromtxt(filepath):
+    return np.genfromtxt(filepath, delimiter=',', skip_header=1,
                      skip_footer=0, names=['STD','MAX','AVG','GEN','MIN'])
 
-                     
+# example data
+data = []
+fname = []
+data.append(datafromtxt(args.filepath))
+fname.append(os.path.basename(args.filepath))
+for afilepath in args.addfilepath:
+    data.append(datafromtxt(afilepath))
+    fname.append(os.path.basename(afilepath))
+
                      # These are the "Tableau 20" colors as RGB.    
 tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),    
              (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),    
@@ -38,15 +51,24 @@ for i in range(len(tableau20)):
     r, g, b = tableau20[i]    
     tableau20[i] = (r / 255., g / 255., b / 255.)    
 
-x = data['GEN']
-yorig = data['AVG']
-y = yorig
-y2 = data['MAX']
-err = data['STD']
+x = []
+yorig = []
+y = []
+y2 = []
+err = []
 #errN = map(math.sqrt,data['NV'])
-stdErr = err/10
-errPerc = (stdErr/yorig)
-yerr = y*errPerc
+stdErr = []
+errPerc = []
+yerr = []
+for datum in data:
+    x.append(datum['GEN'])
+    yorig.append(datum['AVG'])
+    y.append(datum['AVG'])
+    y2.append(datum['MAX'])
+    err.append(datum['STD'])
+    stdErr.append(datum['STD']/10)
+    errPerc.append((datum['STD']/10)/datum['AVG'])
+    yerr.append(datum['AVG']*((datum['STD']/10)/datum['AVG']))
 
 fig = plt.figure()
 
@@ -64,11 +86,11 @@ for n in range(0,100,2):
     
 plt.tick_params(axis="both", which="both", bottom="off", top="off",labelbottom="on", left="off", right="off", labelleft="on") 
 
-ax1.plot(x,y2,color=tableau20[2],lw=1.5,label='Maximum')
-ax1.errorbar(x,y, yerr=yerr,color=tableau20[0], markersize='3.5',capsize=2.5, fmt='o')
-ax1.plot(x, y, color=tableau20[0],lw=2, label='Average')
+for x_i, y_i, y2_i, yerr_i, fname_i in zip(x, y, y2, yerr, fname):
+    ax1.plot(x_i,y2_i,lw=1.5,label='Maximum {}'.format(fname_i))
+    ax1.errorbar(x_i,y_i, yerr=yerr_i, markersize='3.5',capsize=2.5, fmt='o-', label='Average {}'.format(fname_i))    
 
-plt.legend(bbox_to_anchor=(0.675, 0.2), loc=2, borderaxespad=0.)
+plt.legend()
 
 
 plt.ylim(tworound(np.min(y)-3),tworound(np.max(y2)+2))
@@ -76,7 +98,5 @@ plt.ylim(tworound(np.min(y)-3),tworound(np.max(y2)+2))
 #plt.ylim(20,60)
 plt.xlim(0,np.max(x)+1)
 
-
 plt.draw()
 plt.savefig(outfile)
-#plt.show()
