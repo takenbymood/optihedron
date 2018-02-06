@@ -90,7 +90,7 @@ ax1.set_ylabel('Fitness')
 
 #plt.fill_between(x, y-yerr,y+yerr, color="#3F5D7D")  
 for n in range(0,100,2):
-    plt.plot([-1,np.max(x)+1], [n,n], "--", lw=0.5, color="black", alpha=0.3)  
+    plt.plot([-1,np.max([np.max(i) for i in x])+1], [n,n], "--", lw=0.5, color="black", alpha=0.3)  
     
 plt.tick_params(axis="both", which="both", bottom="off", top="off",labelbottom="on", left="off", right="off", labelleft="on") 
 
@@ -101,10 +101,11 @@ for x_i, y_i, y2_i, yerr_i, fname_i, color_i in zip(x, y, y2, yerr, fname, table
 plt.legend()
 
 
-plt.ylim(tworound(np.min(y)-3),tworound(np.max(y2)+2))
+plt.ylim(tworound(np.min([np.min(i) for i in y])-3),tworound(np.max([np.max(i) for i in y2])+2))
 
 #plt.ylim(20,60)
-plt.xlim(0,np.max(x)+1)
+
+plt.xlim(0,(np.max([np.max(i) for i in x]))+1)
 
 plt.draw()
 plt.savefig(outfile)
