@@ -16,6 +16,14 @@ parser.add_argument('--add','-a', action='append', dest='addfilepath',
 parser.add_argument('--out','-o', dest='output', required=False,
                   	default=None,
                     help='output filename')
+
+parser.add_argument('--figx', '-x', dest='figurex', required=False,
+                     default=10, type=int,
+                     help='output figure x dimension')
+
+parser.add_argument('--figy', '-y', dest='figurey', required=False,
+                     default=10, type=int,
+                     help='output figure y dimension')
                     
 plt.rcParams.update({'font.size': 14})
 
@@ -70,7 +78,7 @@ for datum in data:
     errPerc.append((datum['STD']/10)/datum['AVG'])
     yerr.append(datum['AVG']*((datum['STD']/10)/datum['AVG']))
 
-fig = plt.figure()
+fig = plt.figure(figsize=(args.figurex,args.figurey))
 
 ax1 = fig.add_subplot(111)
 ax1.spines["top"].set_visible(False)  
@@ -86,9 +94,9 @@ for n in range(0,100,2):
     
 plt.tick_params(axis="both", which="both", bottom="off", top="off",labelbottom="on", left="off", right="off", labelleft="on") 
 
-for x_i, y_i, y2_i, yerr_i, fname_i in zip(x, y, y2, yerr, fname):
-    ax1.plot(x_i,y2_i,lw=1.5,label='Maximum {}'.format(fname_i))
-    ax1.errorbar(x_i,y_i, yerr=yerr_i, markersize='3.5',capsize=2.5, fmt='o-', label='Average {}'.format(fname_i))    
+for x_i, y_i, y2_i, yerr_i, fname_i, color_i in zip(x, y, y2, yerr, fname, tableau20[::2]):
+    ax1.plot(x_i,y2_i,lw=1.5,label='Maximum {}'.format(fname_i),color=color_i)
+    ax1.errorbar(x_i,y_i, yerr=yerr_i, markersize='3.5',capsize=2.5, fmt='o-', label='Average {}'.format(fname_i), color=color_i)    
 
 plt.legend()
 
