@@ -11,8 +11,8 @@
 
 
 #PBS -V
-cd _DIR_
-source activate.sh
+cd _DIR_/..
+source _DIR_/activate.sh
 mpirun -np _CORES_ ./venv/bin/python ./plammps.py -s _SCRIPT_
 deactivate
 cd ..
