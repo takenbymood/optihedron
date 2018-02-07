@@ -388,7 +388,7 @@ def main():
        net = network,
        subroutine = algorithm,
        mut = mut,
-       mapping = pools.ProcessPool(WORKERS).imap if QSUB else pools.ProcessPool(WORKERS).map,
+       mapping = pools.ProcessPool(WORKERS).map,
        beforeMigration = beforeMigration,
        afterMigration = afterMigration,
        verbose = VERBOSE,
