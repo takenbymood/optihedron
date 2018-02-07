@@ -10,7 +10,7 @@ def runCmd(exe):
             break
 
 def hasRQJob(number):
-    jobs = runCmd(['qstat',str(number)])
+    jobs = runCmd(['qstat',str(number).split('.')[0]])
     for line in jobs:
         columns = line.split()
         if columns[-2] in ('Q','R'): return True

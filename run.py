@@ -32,6 +32,7 @@ from ga import grayencoder as ge
 
 from tools import misctools
 from tools import listtools
+from tools import qtools
 
 from lammps import lammps
 
@@ -282,8 +283,9 @@ def evaluate(individual):
         pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
         job = subprocess.Popen(["qsub", pbs],stdout=subprocess.PIPE)
         job.wait()
-        out = job.communicate()[1]
-        print(job)
+        out = job.communicate()[0]
+        while(qtools.hasRQJob(out)):
+            time.sleep(10)
     else:
         runSim(scriptPath)
     
