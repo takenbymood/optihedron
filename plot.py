@@ -18,11 +18,11 @@ parser.add_argument('--out','-o', dest='output', required=False,
                     help='output filename')
 
 parser.add_argument('--figx', '-x', dest='figurex', required=False,
-                     default=10, type=int,
+                     default=None, type=int,
                      help='output figure x dimension')
 
 parser.add_argument('--figy', '-y', dest='figurey', required=False,
-                     default=10, type=int,
+                     default=None, type=int,
                      help='output figure y dimension')
                     
 plt.rcParams.update({'font.size': 14})
@@ -39,9 +39,12 @@ def datafromtxt(filepath):
                      skip_footer=0, names=['STD','MAX','AVG','GEN','MIN'])
 
 data = []
+fname = []
 data.append(datafromtxt(args.filepath))
+fname.append(os.path.basename(args.filepath))
 for afilepath in args.addfilepath:
     data.append(datafromtxt(afilepath))    
+    fname.append(os.path.basename(afilepath))
 
                      # These are the "Tableau 20" colors as RGB.    
 tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),    
@@ -75,7 +78,8 @@ for datum in data:
     y2.append(datum['MAX'])            
     yerr.append(datum['AVG']*((datum['STD']/10)/datum['AVG']))
 
-fig = plt.figure(figsize=(args.figurex,args.figurey))
+
+fig = plt.figure(figsize=(args.figurex,args.figurey)) if args.figurex and args.figurey else plt.figure()
 
 ax1 = fig.add_subplot(111)
 ax1.spines["top"].set_visible(False)  
@@ -91,10 +95,9 @@ for n in range(0,100,2):
     
 plt.tick_params(axis="both", which="both", bottom="off", top="off",labelbottom="on", left="off", right="off", labelleft="on") 
 
-for x_i, y_i, y2_i, yerr_i, data_i, color_i in zip(x, y, y2, yerr, data, tableau20[::2]):
-    fname = os.path.basename(data_i)
-    ax1.plot(x_i, y2_i, color=color_i, lw=1.5, label='Maximum {}'.format(fname))
-    ax1.errorbar(x_i, y_i, yerr=yerr_i, color=color_i, markersize='3.5', capsize=2.5, fmt='o-', label='Average {}'.format(fname))    
+for x_i, y_i, y2_i, yerr_i, fname_i, color_i in zip(x, y, y2, yerr, fname, tableau20[::2]):    
+    ax1.plot(x_i, y2_i, color=color_i, lw=1.5, label='Maximum {}'.format(fname_i))
+    ax1.errorbar(x_i, y_i, yerr=yerr_i, color=color_i, markersize='3.5', capsize=2.5, fmt='o-', label='Average {}'.format(fname_i))    
 
 #plt.legend(bbox_to_anchor=(0.675, 0.2), loc=2, borderaxespad=0.)
 plt.legend()
