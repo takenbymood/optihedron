@@ -10,8 +10,11 @@ def runCmd(exe):
             break
 
 def hasRQJob(number):
-    jobs = runCmd(['qstat',str(number).split('.')[0]])
+    snum = str(number).split('.')
+    if len(snum)<1: 
+        return False
+    jobs = runCmd(['qstat',snum[0]])
     for line in jobs:
         columns = line.split()
-        if columns[-2] in ('Q','R'): return True
+        if len(columns) >= 2 and columns[-2] in ('Q','R'): return True
     return False

@@ -90,7 +90,7 @@ parser.add_argument('-mpi','--mpi', action='store_true',
                     help='option to run in parallel')
 parser.add_argument('-q','--qsub', action='store_true',
                     help='option to qsub to cluster')
-parser.add_argument('-w','--workers', default=6, type=int,
+parser.add_argument('-w','--workers', default=10, type=int,
                     help='number of workers in the mapping pool')
 parser.add_argument('-np','--nodes', default=4, type=int,
                     help='number of cores used per mpi process')
@@ -278,20 +278,27 @@ def evaluate(individual):
     scriptPath=os.path.join(sim.filedir,sim.scriptName)
     outpath = os.path.join(wd,"out")
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
+    time.sleep(1)
 
     if(QSUB):
-        pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
-        job = subprocess.Popen(["qsub", pbs],stdout=subprocess.PIPE)
-        job.wait()
-        out = job.communicate()[0]
-        while(qtools.hasRQJob(out)):
-            time.sleep(10)
+        try:
+            pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
+            job = subprocess.Popen(["qsub", pbs],stdout=subprocess.PIPE)
+            job.wait()
+            out = job.communicate()[0]
+            while(qtools.hasRQJob(out)):
+                time.sleep(1)
+            os.remove(pbs)
+            
+        except Exception as err:
+            traceback.print_exc()
+            print('error in qsub of {}, file: '.format(simName,pbs))
     else:
         runSim(scriptPath)
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
-    #print('{} fitness: {}'.format(simName, f))
+    print('{} fitness: {}'.format(simName, f))
     sim.deleteFiles()
     return f
 
@@ -306,6 +313,7 @@ def algorithm(pop,toolbox,stats,hof):
         cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
 
 def beforeMigration(ga):
+    misctools.removeByPattern(wd,"subhedra")
     return
 
 def afterMigration(ga):
@@ -341,7 +349,7 @@ def saveHOF(hof):
         hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
         #parlammps.runSimSerial(hofScriptPath)
-        #runSim(hofScriptPath)
+        runSim(hofScriptPath)
 
         i+=1
         #lmp = lammps()
@@ -396,10 +404,12 @@ def main():
 
    results = ga.run(NGEN,FREQ,MIGR)
 
+
+
    #print(results[0][0][0])
     
    saveMetrics(results[-1])
-   #saveHOF(results[1])
+   saveHOF(results[1])
 
 
 if __name__ == "__main__":
