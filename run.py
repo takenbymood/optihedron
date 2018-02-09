@@ -263,8 +263,8 @@ def evaluate(individual):
         TIMESTEP,        
         os.path.join(wd,'out'),
         os.path.join(wd,'run'),
-        os.path.join(wd,'Membrane/template/data.template'),
-        os.path.join(wd,'Membrane/template/in.template')        
+        os.path.join(wd,'mem/template/data.template'),
+        os.path.join(wd,'mem/template/in.template')        
         )
     sim.saveFiles()
     scriptPath=os.path.join(sim.filedir,sim.scriptName)
@@ -319,8 +319,8 @@ def saveHOF(hof):
             TIMESTEP,            
             os.path.join(wd,'out'),
             os.path.join(wd,'hof'),            
-            os.path.join(wd,'Membrane/template/data.template'),
-            os.path.join(wd,'Membrane/template/in.template') 
+            os.path.join(wd,'mem/template/data.template'),
+            os.path.join(wd,'mem/template/in.template') 
             )
         hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
