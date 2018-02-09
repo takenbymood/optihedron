@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#PBS -N subhedra
+#PBS -q batch
+#PBS -l nodes=1:ppn=_CORES_
+#PBS -l nodes=lemon1.biop.phys.ucl.ac.uk
+#PBS -l pmem=800M
+#PBS -l walltime=240:00:00
+#PBS -M joel.forster.16@ucl.ac.uk
+#PBS -m f
+
+
+#PBS -V
+cd _DIR_/..
+source _DIR_/activate.sh
+#mpirun -np _CORES_ 
+_DIR_/venv/bin/python _DIR_/plammps.py -s _SCRIPT_
+deactivate
+cd ..

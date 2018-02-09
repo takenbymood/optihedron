@@ -9,6 +9,8 @@ from lammps import lammps
 import signal
 import traceback
 
+from tools import templatetools as tt
+
 n = 1
 nWorkers = 8
 
@@ -104,6 +106,22 @@ def runSim(script,np,timeout):
         print(e)
         traceback.print_exc()
     return False
+
+def createPbs(script,wd,np,name,rundir):
+    try:
+        pbs = os.path.join(wd,"qsubtask.pbs")
+        with open(pbs) as templateFile:
+            content = templateFile.read()
+            content = content.replace('_DIR_',str(wd))
+            content = content.replace('_CORES_',str(np))
+            content = content.replace('_SCRIPT_',str(script))
+            pbsPath = os.path.join(rundir,name+".pbs")
+            with open(pbsPath, "w") as text_file:
+                text_file.write(content)
+            return pbsPath
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
 
 def runSimSerial(script):
     try:

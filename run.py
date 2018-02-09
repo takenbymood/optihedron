@@ -12,7 +12,9 @@ import joblib
 import sys
 import subprocess
 import parlammps
-from multiprocessing import Pool, TimeoutError
+import pathos
+from pathos import pools
+import traceback
 
 # from joblib import Parallel, delayed, parallel_backend
 # from distributed.joblib import DaskDistributedBackend
@@ -30,6 +32,7 @@ from ga import grayencoder as ge
 
 from tools import misctools
 from tools import listtools
+from tools import qtools
 
 from lammps import lammps
 
@@ -83,9 +86,13 @@ parser.add_argument('-ts','--timestep', default=0.01, type=int,
 
 #MPI Options
 
-parser.add_argument('-mpi','--mpi', default=True, type=bool,
+parser.add_argument('-mpi','--mpi', action='store_true',
                     help='option to run in parallel')
-parser.add_argument('-np','--nodes', default=8, type=int,
+parser.add_argument('-q','--qsub', action='store_true',
+                    help='option to qsub to cluster')
+parser.add_argument('-w','--workers', default=10, type=int,
+                    help='number of workers in the mapping pool')
+parser.add_argument('-np','--nodes', default=4, type=int,
                     help='number of cores used per mpi process')
 parser.add_argument('-tm','--timeout', default=1800, type=int,
                     help='mpirun timeout')
@@ -116,11 +123,12 @@ RUNTIME = args.runtime
 TIMESTEP = args.timestep
 GENESIZE = (EPSPLACES+POLANGPLACES+AZIANGPLACES)
 GENES = math.floor(GENOMESIZE/GENESIZE)
+QSUB = args.qsub
+WORKERS = args.workers
 
 MPI = args.mpi
 NP = args.nodes
 TIMEOUT = args.timeout
-
 
 
 def kill(p):
@@ -270,12 +278,27 @@ def evaluate(individual):
     scriptPath=os.path.join(sim.filedir,sim.scriptName)
     outpath = os.path.join(wd,"out")
     outFilePath = os.path.join(outpath,sim.name+"_out.xyz")
+    time.sleep(1)
 
-    runSim(scriptPath)
+    if(QSUB):
+        try:
+            pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
+            job = subprocess.Popen(["qsub", pbs],stdout=subprocess.PIPE)
+            job.wait()
+            out = job.communicate()[0]
+            while(qtools.hasRQJob(out)):
+                time.sleep(1)
+            os.remove(pbs)
+            
+        except Exception as err:
+            traceback.print_exc()
+            print('error in qsub of {}, file: '.format(simName,pbs))
+    else:
+        runSim(scriptPath)
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
-    #print('{} fitness: {}'.format(simName, f))
+    print('{} fitness: {}'.format(simName, f))
     sim.deleteFiles()
     return f
 
@@ -290,6 +313,7 @@ def algorithm(pop,toolbox,stats,hof):
         cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
 
 def beforeMigration(ga):
+    misctools.removeByPattern(wd,"subhedra")
     return
 
 def afterMigration(ga):
@@ -326,6 +350,7 @@ def saveHOF(hof):
         sim.saveFiles()
         #parlammps.runSimSerial(hofScriptPath)
         runSim(hofScriptPath)
+
         i+=1
         #lmp = lammps()
         #lmp.file(hofScriptPath)
@@ -361,6 +386,7 @@ def main():
        raw_input('malformed network option, continue with islands? (Enter)')
 
    random.seed(args.seed)
+
    ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
@@ -370,12 +396,15 @@ def main():
        net = network,
        subroutine = algorithm,
        mut = mut,
+       mapping = pools.ProcessPool(WORKERS).map,
        beforeMigration = beforeMigration,
        afterMigration = afterMigration,
        verbose = VERBOSE,
        mate = geneWiseTwoPoint)
 
    results = ga.run(NGEN,FREQ,MIGR)
+
+
 
    #print(results[0][0][0])
     

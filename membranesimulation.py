@@ -1,14 +1,7 @@
 import os
 import shutil
 import math
-
-def fillTemplate(template, filledTemplate, placeHolder, filledPlaceHolder):
-	with open(template) as templateFile:
-		with open(filledTemplate, 'w') as filledTemplateFile:
-			for line in templateFile:
-				filledTemplateFile.write(line.replace(placeHolder, filledPlaceHolder))
-	os.remove(template)
-	os.rename(filledTemplate, template)
+from tools import templatetools as tt
 
 class MembraneSimulation():
 	def __init__(self, name, protein, run, timestep, outdir, filedir, datatemplate, scripttemplate, corepos_x=0, corepos_y=0, corepos_z=8, dumpres="100"):
@@ -53,19 +46,19 @@ class MembraneSimulation():
 			npVelocities += '{0} 0 0 0 0 0 0\n'.format(self.nonLigandAtomCount+i)
 			ligandMembraneInteractions += 'pair_coeff		1	{}	lj/cut		{}	{}	{}\n'.format(2+i,ligand.eps,ligand.sig,ligand.sig*ligand.cutoff)
 
-		fillTemplate(simData, scratch, '_ATOM COUNT PLACEHOLDER_', '{} atoms\n'.format(self.nonLigandAtomCount+len(self.protein.ligands)))
-		fillTemplate(simData, scratch, '_ATOM TYPE COUNT PLACEHOLDER_', '{} atom types\n'.format(2+len(self.protein.ligands)))
-		fillTemplate(simData, scratch, '_LIGAND MASSES PLACEHOLDER_', ligandMasses)
-		fillTemplate(simData, scratch, '_NANOPARTICLE POSITIONS PLACEHOLDER_', npPositions)
-		fillTemplate(simData, scratch, '_NANOPARTICLE VELOCITIES PLACEHOLDER_', npVelocities)		
-		fillTemplate(simScript, scratch, '_DATA FILE PLACEHOLDER_', 'read_data			"{}"\n'.format(simData))
-		fillTemplate(simScript, scratch, '_LIGAND GROUP PLACEHOLDER_', 'group				ligand 	type {}:{}\n'.format(3,2+len(self.protein.ligands)))
-		fillTemplate(simScript, scratch, '_NANOPARTICLE GROUP PLACEHOLDER_', 'group				np      type 2:{}\n'.format(2+len(self.protein.ligands)))
-		fillTemplate(simScript, scratch, '_LIGAND MEMBRANE INTERACTIONS PLACEHOLDER_', ligandMembraneInteractions)
-		fillTemplate(simScript, scratch, '_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', 'dump			coords all custom {} {} id type x y z\ndump_modify	coords sort id'.format(
+		tt.fillTemplate(simData, scratch, '_ATOM COUNT PLACEHOLDER_', '{} atoms\n'.format(self.nonLigandAtomCount+len(self.protein.ligands)))
+		tt.fillTemplate(simData, scratch, '_ATOM TYPE COUNT PLACEHOLDER_', '{} atom types\n'.format(2+len(self.protein.ligands)))
+		tt.fillTemplate(simData, scratch, '_LIGAND MASSES PLACEHOLDER_', ligandMasses)
+		tt.fillTemplate(simData, scratch, '_NANOPARTICLE POSITIONS PLACEHOLDER_', npPositions)
+		tt.fillTemplate(simData, scratch, '_NANOPARTICLE VELOCITIES PLACEHOLDER_', npVelocities)		
+		tt.fillTemplate(simScript, scratch, '_DATA FILE PLACEHOLDER_', 'read_data			"{}"\n'.format(simData))
+		tt.fillTemplate(simScript, scratch, '_LIGAND GROUP PLACEHOLDER_', 'group				ligand 	type {}:{}\n'.format(3,2+len(self.protein.ligands)))
+		tt.fillTemplate(simScript, scratch, '_NANOPARTICLE GROUP PLACEHOLDER_', 'group				np      type 2:{}\n'.format(2+len(self.protein.ligands)))
+		tt.fillTemplate(simScript, scratch, '_LIGAND MEMBRANE INTERACTIONS PLACEHOLDER_', ligandMembraneInteractions)
+		tt.fillTemplate(simScript, scratch, '_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', 'dump			coords all custom {} {} id type x y z\ndump_modify	coords sort id'.format(
 																								self.dumpres, os.path.join(self.outdir, self.outName)))				
-		fillTemplate(simScript, scratch, '_TIMESTEP PLACEHOLDER_', 'timestep       {}'.format(self.timestep))		
-		fillTemplate(simScript, scratch, '_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))		
+		tt.fillTemplate(simScript, scratch, '_TIMESTEP PLACEHOLDER_', 'timestep       {}'.format(self.timestep))		
+		tt.fillTemplate(simScript, scratch, '_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))		
 
 	def deleteFiles(self):
 		os.remove(os.path.join(self.filedir, self.scriptName))

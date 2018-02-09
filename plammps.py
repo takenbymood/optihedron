@@ -14,6 +14,7 @@ def runLammps(script):
     return
 
 def startScript(script):
+    print(script)
     if(os.path.isfile(script)):
         runLammps(script)
         return True

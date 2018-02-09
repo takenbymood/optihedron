@@ -14,6 +14,10 @@ from deap import base
 from deap import creator
 from deap import tools
 
+from pathos import pools
+
+import time
+
 import joblib
 
 from joblib import Parallel, delayed, parallel_backend
@@ -63,6 +67,7 @@ class NetworkedGeneticAlgorithm:
     	subroutine = defaultAlgorithmEaSimple,
     	mate = defaultTwoPoint,
     	mut = defaultMutFlipBit,
+        mapping = map,
     	beforeMigration=lambda x: None,
     	afterMigration=lambda x: None,
         verbose = False):
@@ -81,7 +86,7 @@ class NetworkedGeneticAlgorithm:
         self.toolbox.register("mate", mate)
         self.toolbox.register("mutate", mut)
         self.toolbox.register("select", sel)
-        self.toolbox.register("map", map)
+        self.toolbox.register("map", mapping)
         self.net = net
         self.subroutine = subroutine
         self.islePop = islePop
@@ -154,11 +159,12 @@ class NetworkedGeneticAlgorithm:
     def run(self,ngen,freq,migr):
         self.metrics = []
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
+        pool = pools.ProcessPool(10)
         for i in range(0, ngen, freq):
             self.gen = i
             if self.verbose:
                 print("GEN: " + str(i+1) + "/" + str(ngen))
-            self.results = self.toolbox.map(self.algorithm, self.islands)
+            self.results = map(self.algorithm, self.islands)
             self.islands = [pop for pop, logbook in self.results]
             self.metrics += map(self.genMetrics,[i]*len(list(self.results)),[n for n in range(len(list(self.results)))], [logbook for pop, logbook in self.results])
             self.beforeMigration(self)
