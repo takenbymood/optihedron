@@ -34,6 +34,8 @@ from tools import misctools
 from tools import listtools
 from tools import qtools
 
+from db import databaseconnection
+
 from lammps import lammps
 
 from nanoparticle import NanoParticlePhenome
@@ -97,6 +99,9 @@ parser.add_argument('-np','--nodes', default=4, type=int,
 parser.add_argument('-tm','--timeout', default=1800, type=int,
                     help='mpirun timeout')
 
+#DB Options
+parser.add_argument('-sr','--saveresults', action='store_true',
+                    help='option to save results to db')
 
 args = parser.parse_args()
 wd = os.path.dirname(os.path.realpath(__file__))
@@ -129,6 +134,10 @@ WORKERS = args.workers
 MPI = args.mpi
 NP = args.nodes
 TIMEOUT = args.timeout
+
+SAVERESULTS = args.saveresults
+if SAVERESULTS:
+    dbconn = databaseconnection.DatabaseConnection(os.path.join(wd,'db/datastore.db'))
 
 
 def kill(p):
@@ -410,6 +419,8 @@ def main():
     
    saveMetrics(results[-1])
    saveHOF(results[1])
+
+   #dbconn.saveMetrics(results[-1])
 
 
 if __name__ == "__main__":
