@@ -70,7 +70,8 @@ class NetworkedGeneticAlgorithm:
         mapping = map,
     	beforeMigration=lambda x: None,
     	afterMigration=lambda x: None,
-        verbose = False):
+        verbose = False,
+        dbconn = None):
 
         
         self.toolbox = base.Toolbox()
@@ -99,6 +100,7 @@ class NetworkedGeneticAlgorithm:
         self.afterMigration = afterMigration
         self.hof = self.buildHOF(hofSize)
         self.verbose = verbose
+        self.dbconn = dbconn
         self.gen = 0
 
     

@@ -136,9 +136,6 @@ NP = args.nodes
 TIMEOUT = args.timeout
 
 SAVERESULTS = args.saveresults
-if SAVERESULTS:
-    dbconn = databaseconnection.DatabaseConnection(os.path.join(wd,'db/datastore.db'))
-
 
 def kill(p):
     try:
@@ -329,9 +326,9 @@ def beforeMigration(ga):
         for isle in ga.islands:
             for individual in isle:
                 np = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-                dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
+                ga.dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
                 ind += 1
-        dbconn.commit()
+        ga.dbconn.commit()
 
     return
 
@@ -406,6 +403,9 @@ def main():
 
    random.seed(args.seed)
 
+   if SAVERESULTS:
+       dbconn = databaseconnection.DatabaseConnection(os.path.join(wd,'db/datastore.db'))
+
    ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
@@ -419,7 +419,8 @@ def main():
        beforeMigration = beforeMigration,
        afterMigration = afterMigration,
        verbose = VERBOSE,
-       mate = geneWiseTwoPoint)
+       mate = geneWiseTwoPoint,
+       dbconn = dbconn)
 
    results = ga.run(NGEN,FREQ,MIGR)
 

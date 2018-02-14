@@ -1,10 +1,8 @@
 from sqlalchemy import create_engine, Column, String, PickleType, Integer, Numeric, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
-from sqlalchemy.types import TypeDecorator
 
 import time
-import json
 
 Base = declarative_base()
 
@@ -65,7 +63,6 @@ class DatabaseConnection:
 		engine = create_engine('sqlite:///{}'.format(dbfile))						
 		Base.metadata.create_all(bind=engine)
 		dbSession = sessionmaker(bind=engine)
-
 		self.dbSession = dbSession()
 
 		self.gaSessionId = time.strftime("%Y-%m-%d %H:%M:%S")
