@@ -46,13 +46,15 @@ class Individual(Base):
 
 	sessionId = Column(String, ForeignKey('sessions.sessionId'), primary_key=True)
 	gen = Column('gen', Integer, primary_key=True)
+	ind = Column('ind', Integer, primary_key=True)
 	fitness = Column('fitness', Numeric)
 	genomePickle = Column('genomePickle', PickleType)
 	phenomePickle = Column('phenomePickle', PickleType)
 
-	def __init__(self, sessionId, gen, fitness, genome, phenome):
+	def __init__(self, sessionId, gen, ind, fitness, genome, phenome):
 		self.sessionId = sessionId
 		self.gen = gen
+		self.ind = ind
 		self.fitness = fitness
 		self.genomePickle = genome
 		self.phenomePickle = phenome
@@ -78,29 +80,11 @@ class DatabaseConnection:
 	def saveGenealogy(self, tree, history):
 		self.dbSession.add(Genealogy(self.gaSessionId, tree, history))		
 
-	def saveIndividual(self, gen, fitness, genome, phenome):
-		self.dbSession.add(Individual(self.gaSessionId, gen, fitness, genome, phenome))
+	def saveIndividual(self, gen, ind, fitness, genome, phenome):
+		self.dbSession.add(Individual(self.gaSessionId, gen, ind, fitness, genome, phenome))
 
 	def commit(self):
 		self.dbSession.commit()
 
 	def close(self):
-
-		print(self.gaSession.sessionMetrics)
-		print(self.gaSession.sessionGenealogy)
-		print(self.gaSession.sessionIndividuals)
-
-		for i in self.dbSession.query(Metrics).all():
-			print(i.metricsPickle)
-
-		for i in self.dbSession.query(Genealogy).all():
-			print(i.treePickle)
-			print(i.historyPickle)
-
-		for i in self.dbSession.query(Individual).all():
-			print(i.gen)
-			print(i.fitness)
-			print(i.genomePickle)
-			print(i.phenomePickle)
-
 		self.dbSession.close()		

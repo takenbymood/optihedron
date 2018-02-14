@@ -325,10 +325,12 @@ def beforeMigration(ga):
     misctools.removeByPattern(wd,"subhedra")
 
     if SAVERESULTS:
+        ind = 0
         for isle in ga.islands:
             for individual in isle:
                 np = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-                dbconn.saveIndividual(ga.gen, individual.fitness.values[-1], individual, np)
+                dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
+                ind += 1
         dbconn.commit()
 
     return
