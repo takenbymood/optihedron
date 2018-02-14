@@ -420,7 +420,7 @@ def main():
    saveMetrics(results[-1])
    saveHOF(results[1])
 
-   #dbconn.saveMetrics(results[-1])
+   dbconn.saveMetrics(results[-1])
 
 
 if __name__ == "__main__":

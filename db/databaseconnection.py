@@ -10,7 +10,7 @@ class Sessions(Base):
 	__tablename__ ='sessions'
 
 	sessionId = Column('sessionId', String, primary_key=True)	
-	sessionMetrics = relationship('Metrics')
+	sessionMetrics = relationship('Metrics', backref='sessions')
 
 	def __init__(self, sessionId):
 		self.sessionId = sessionId
@@ -41,23 +41,16 @@ class DatabaseConnection:
 		dbSession = sessionmaker(bind=engine)
 
 		self.dbSession = dbSession()
-		self.gaSession = Sessions(time.strftime("%Y-%m-%d %H:%M:%S"))
+
+		self.gaSessionId = time.strftime("%Y-%m-%d %H:%M:%S")
+		self.gaSession = Sessions(self.gaSessionId)
 
 		self.dbSession.add(self.gaSession)
-		self.dbSession.commit()
+		self.dbSession.commit()		
 
-	# def saveMetrics(self, metrics):
-	# 	commitPackage = []
-	# 	for metric_i in metrics:
-	# 		commitPackage.append()
-
-	# 		metric = SessionMetrics()
-	# 		metric.session = self.sessionKey
-	# 		metric.gen = metric_i['gen']
-	# 		metric.fitnessStd = metric_i['std']
-	# 		metric.fitnessMax = metric_i['max']
-	# 		metric.fitnessAvg = metric_i['avg']
-	# 		metric.fitnessMin = metric_i['min']
-
-	# 		SessionMetrics
+	def saveMetrics(self, metrics):		
+		print metrics
+		for metric in metrics:
+			self.dbSession.add(Metrics(self.gaSessionId, metric['gen'],metric['std'],metric['max'],metric['avg'],metric['min']))			
+		self.dbSession.commit()				
 		
