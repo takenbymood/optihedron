@@ -421,6 +421,12 @@ def main():
    saveHOF(results[1])
 
    dbconn.saveMetrics(results[-2])
+   dbconn.saveGenealogy(results[-1].genealogy_tree, results[-1].genealogy_history)
+   # print(results[-1].genealogy_tree)
+   # print(results[-1].genealogy_history)
+   # print(results[-1].genealogy_history[1])
+   # print(type(results[-1].genealogy_history[1]))
+   # print(results[-1].genealogy_history[1].genome)
    
 
 
