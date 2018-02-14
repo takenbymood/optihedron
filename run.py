@@ -323,6 +323,14 @@ def algorithm(pop,toolbox,stats,hof):
 
 def beforeMigration(ga):
     misctools.removeByPattern(wd,"subhedra")
+
+    if SAVERESULTS:
+        for isle in ga.islands:
+            for individual in isle:
+                np = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+                dbconn.saveIndividual(ga.gen, individual.fitness.values[-1], individual, np)
+        dbconn.commit()
+
     return
 
 def afterMigration(ga):
@@ -420,14 +428,11 @@ def main():
    saveMetrics(results[-2])
    saveHOF(results[1])
 
-   dbconn.saveMetrics(results[-2])
-   dbconn.saveGenealogy(results[-1].genealogy_tree, results[-1].genealogy_history)
-   # print(results[-1].genealogy_tree)
-   # print(results[-1].genealogy_history)
-   # print(results[-1].genealogy_history[1])
-   # print(type(results[-1].genealogy_history[1]))
-   # print(results[-1].genealogy_history[1].genome)
-   
+   if SAVERESULTS:
+       dbconn.saveMetrics(results[-2])
+       dbconn.saveGenealogy(results[-1].genealogy_tree, results[-1].genealogy_history)
+       dbconn.commit()
+       dbconn.close()         
 
 
 if __name__ == "__main__":

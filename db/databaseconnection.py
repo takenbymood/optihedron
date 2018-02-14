@@ -14,13 +14,13 @@ class Sessions(Base):
 	sessionId = Column('sessionId', String, primary_key=True)	
 	sessionMetrics = relationship('Metrics', backref=backref('sessions', uselist=False))
 	sessionGenealogy = relationship('Genealogy', backref=backref('sessions', uselist=False))
-	sessionFamily = relationship('Family', backref='sessions')
+	sessionIndividuals = relationship('Individual', backref='sessions')
 
 	def __init__(self, sessionId):
 		self.sessionId = sessionId
 
 class Metrics(Base):
-	__tablename__ = 'metricsaa'
+	__tablename__ = 'metrics'
 	
 	sessionId = Column(String, ForeignKey('sessions.sessionId'), primary_key=True)
 	metricsPickle = Column('metricsPickle', PickleType)
@@ -41,17 +41,18 @@ class Genealogy(Base):
 		self.treePickle = tree
 		self.historyPickle = history
 
-class Family(Base):
-	__tablename__ = 'family'
+class Individual(Base):
+	__tablename__ = 'individuals'
 
 	sessionId = Column(String, ForeignKey('sessions.sessionId'), primary_key=True)
-	gen = Column('gen', Integer)
+	gen = Column('gen', Integer, primary_key=True)
 	fitness = Column('fitness', Numeric)
 	genomePickle = Column('genomePickle', PickleType)
 	phenomePickle = Column('phenomePickle', PickleType)
 
 	def __init__(self, sessionId, gen, fitness, genome, phenome):
 		self.sessionId = sessionId
+		self.gen = gen
 		self.fitness = fitness
 		self.genomePickle = genome
 		self.phenomePickle = phenome
@@ -59,7 +60,7 @@ class Family(Base):
 class DatabaseConnection:
 
 	def __init__(self, dbfile):		
-		engine = create_engine('sqlite:///{}'.format(dbfile), echo=True)						
+		engine = create_engine('sqlite:///{}'.format(dbfile))						
 		Base.metadata.create_all(bind=engine)
 		dbSession = sessionmaker(bind=engine)
 
@@ -72,17 +73,34 @@ class DatabaseConnection:
 		self.dbSession.commit()		
 
 	def saveMetrics(self, metrics):				
-		self.dbSession.add(Metrics(self.gaSessionId, metrics))			
-		self.dbSession.commit()				
+		self.dbSession.add(Metrics(self.gaSessionId, metrics))					
 		
 	def saveGenealogy(self, tree, history):
-		self.dbSession.add(Genealogy(self.gaSessionId, tree, history))
+		self.dbSession.add(Genealogy(self.gaSessionId, tree, history))		
+
+	def saveIndividual(self, gen, fitness, genome, phenome):
+		self.dbSession.add(Individual(self.gaSessionId, gen, fitness, genome, phenome))
+
+	def commit(self):
 		self.dbSession.commit()
 
-	def saveToFamily(self, gen, fitness, genome, phenome):
-		self.dbSession.add(Family(self.gaSessionId, gen, fitness, genome, phenome))
-		self.dbSession.commit()
+	def close(self):
 
-	def closeConn(self):
-		#self.dbSession.close
-		#save the ga session name to a file
+		print(self.gaSession.sessionMetrics)
+		print(self.gaSession.sessionGenealogy)
+		print(self.gaSession.sessionIndividuals)
+
+		for i in self.dbSession.query(Metrics).all():
+			print(i.metricsPickle)
+
+		for i in self.dbSession.query(Genealogy).all():
+			print(i.treePickle)
+			print(i.historyPickle)
+
+		for i in self.dbSession.query(Individual).all():
+			print(i.gen)
+			print(i.fitness)
+			print(i.genomePickle)
+			print(i.phenomePickle)
+
+		self.dbSession.close()		
