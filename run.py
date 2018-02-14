@@ -34,6 +34,8 @@ from tools import misctools
 from tools import listtools
 from tools import qtools
 
+from db import databaseconnection
+
 from lammps import lammps
 
 from nanoparticle import NanoParticlePhenome
@@ -97,6 +99,9 @@ parser.add_argument('-np','--nodes', default=4, type=int,
 parser.add_argument('-tm','--timeout', default=1800, type=int,
                     help='mpirun timeout')
 
+#DB Options
+parser.add_argument('-sr','--saveresults', action='store_true',
+                    help='option to save results to db')
 
 args = parser.parse_args()
 wd = os.path.dirname(os.path.realpath(__file__))
@@ -130,6 +135,7 @@ MPI = args.mpi
 NP = args.nodes
 TIMEOUT = args.timeout
 
+SAVERESULTS = args.saveresults
 
 def kill(p):
     try:
@@ -141,7 +147,7 @@ def kill(p):
 def exit(signal, frame):
         os._exit(1)
 
-def saveMetrics(lis,filename='out.csv'):
+def saveMetrics(lis,filename='metrics.csv'):
     with open(filename,'wb') as out:
         csv_out=csv.DictWriter(out,lis[-1].keys())
         csv_out.writeheader()
@@ -314,6 +320,16 @@ def algorithm(pop,toolbox,stats,hof):
 
 def beforeMigration(ga):
     misctools.removeByPattern(wd,"subhedra")
+
+    if SAVERESULTS:
+        ind = 0
+        for isle in ga.islands:
+            for individual in isle:
+                np = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+                ga.dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
+                ind += 1
+        ga.dbconn.commit()
+
     return
 
 def afterMigration(ga):
@@ -387,6 +403,11 @@ def main():
 
    random.seed(args.seed)
 
+   if SAVERESULTS:
+       dbconn = databaseconnection.DatabaseConnection(os.path.join(wd,'db/datastore.db'))
+   else:
+       dbconn = None
+
    ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
@@ -400,7 +421,8 @@ def main():
        beforeMigration = beforeMigration,
        afterMigration = afterMigration,
        verbose = VERBOSE,
-       mate = geneWiseTwoPoint)
+       mate = geneWiseTwoPoint,
+       dbconn = dbconn)
 
    results = ga.run(NGEN,FREQ,MIGR)
 
@@ -408,8 +430,14 @@ def main():
 
    #print(results[0][0][0])
     
-   saveMetrics(results[-1])
+   saveMetrics(results[-2])
    saveHOF(results[1])
+
+   if SAVERESULTS:
+       dbconn.saveMetrics(results[-2])
+       dbconn.saveGenealogy(results[-1].genealogy_tree, results[-1].genealogy_history)
+       dbconn.commit()
+       dbconn.close()         
 
 
 if __name__ == "__main__":
