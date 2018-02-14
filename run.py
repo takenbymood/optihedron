@@ -405,6 +405,8 @@ def main():
 
    if SAVERESULTS:
        dbconn = databaseconnection.DatabaseConnection(os.path.join(wd,'db/datastore.db'))
+   else:
+       dbconn = None
 
    ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
