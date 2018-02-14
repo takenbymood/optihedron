@@ -141,7 +141,7 @@ def kill(p):
 def exit(signal, frame):
         os._exit(1)
 
-def saveMetrics(lis,filename='out.csv'):
+def saveMetrics(lis,filename='metrics.csv'):
     with open(filename,'wb') as out:
         csv_out=csv.DictWriter(out,lis[-1].keys())
         csv_out.writeheader()
