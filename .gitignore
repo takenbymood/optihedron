@@ -119,3 +119,6 @@ ENV/
 
 /venv/*
 /run/*.pbs
+
+# Database file
+*.db

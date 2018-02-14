@@ -182,7 +182,7 @@ class NetworkedGeneticAlgorithm:
         self.metrics = sorted(sorted(self.metrics, key=lambda k: k['island']), key=lambda k: k['gen']) 
         self.accMetrics = (self.accumulateStats(self.metrics))
         #self.metrics = list(self.accumulate(self.metrics))
-        return self.islands, self.hof, self.metrics, self.accMetrics
+        return self.islands, self.hof, self.metrics, self.accMetrics, self.history
 
 
 

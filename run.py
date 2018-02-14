@@ -417,10 +417,11 @@ def main():
 
    #print(results[0][0][0])
     
-   saveMetrics(results[-1])
+   saveMetrics(results[-2])
    saveHOF(results[1])
 
-   dbconn.saveMetrics(results[-1])
+   dbconn.saveMetrics(results[-2])
+   
 
 
 if __name__ == "__main__":

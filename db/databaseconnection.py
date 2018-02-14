@@ -1,8 +1,10 @@
-from sqlalchemy import create_engine, Column, String, Numeric, ForeignKey
+from sqlalchemy import create_engine, Column, String, PickleType, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy.types import TypeDecorator
 
 import time
+import json
 
 Base = declarative_base()
 
@@ -10,28 +12,28 @@ class Sessions(Base):
 	__tablename__ ='sessions'
 
 	sessionId = Column('sessionId', String, primary_key=True)	
-	sessionMetrics = relationship('Metrics', backref='sessions')
+	sessionMetrics = relationship('Metrics', backref=backref('sessions', uselist=False))
 
 	def __init__(self, sessionId):
 		self.sessionId = sessionId
 
 class Metrics(Base):
-	__tablename__ = 'metrics'
+	__tablename__ = 'metricsaa'
 	
 	sessionId = Column(String, ForeignKey('sessions.sessionId'), primary_key=True)
-	gen = Column('gen', Numeric, primary_key = True)
-	fitnessStd = Column('std', Numeric) 
-	fitnessMax = Column('max', Numeric)
-	fitnessAvg = Column('avg', Numeric)
-	fitnessMin = Column('min', Numeric)
+	metricsPickle = Column('metricsPickle', PickleType)
 
-	def __init__(self, sessionId, gen, fitnessStd, fitnessMax, fitnessAvg, fitnessMin):
+	def __init__(self, sessionId, metrics):
 		self.sessionId = sessionId
-		self.gen = gen
-		self.fitnessStd = fitnessStd
-		self.fitnessMax = fitnessMax
-		self.fitnessAvg = fitnessAvg
-		self.fitnessMin = fitnessMin
+		self.metricsPickle = metrics		
+
+class Genealogy(Base):
+	__tablename__ = 'genealogy'
+
+	sessionId = Column(String, ForeignKey('sessions.sessionId'), primary_key=True)
+
+	def __init__(self, sessionId):
+		self.sessionId = sessionId	
 
 class DatabaseConnection:
 
@@ -48,9 +50,7 @@ class DatabaseConnection:
 		self.dbSession.add(self.gaSession)
 		self.dbSession.commit()		
 
-	def saveMetrics(self, metrics):		
-		print metrics
-		for metric in metrics:
-			self.dbSession.add(Metrics(self.gaSessionId, metric['gen'],metric['std'],metric['max'],metric['avg'],metric['min']))			
+	def saveMetrics(self, metrics):				
+		self.dbSession.add(Metrics(self.gaSessionId, metrics))			
 		self.dbSession.commit()				
 		
