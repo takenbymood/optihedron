@@ -74,6 +74,7 @@ class NetworkedGeneticAlgorithm:
 
         
         self.toolbox = base.Toolbox()
+        self.history = tools.History()
 
         # Attribute generator
         self.toolbox.register("attr_bool", random.randint, 0, 1)
@@ -87,6 +88,10 @@ class NetworkedGeneticAlgorithm:
         self.toolbox.register("mutate", mut)
         self.toolbox.register("select", sel)
         self.toolbox.register("map", mapping)
+
+        self.toolbox.decorate("mate", self.history.decorator)
+        self.toolbox.decorate("mutate", self.history.decorator)
+
         self.net = net
         self.subroutine = subroutine
         self.islePop = islePop
@@ -159,6 +164,8 @@ class NetworkedGeneticAlgorithm:
     def run(self,ngen,freq,migr):
         self.metrics = []
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
+        for isle in self.islands:
+            self.history.update(isle)
         pool = pools.ProcessPool(10)
         for i in range(0, ngen, freq):
             self.gen = i
