@@ -64,12 +64,11 @@ class DatabaseConnection:
 		Base.metadata.create_all(bind=engine)
 		dbSession = sessionmaker(bind=engine)
 		self.dbSession = dbSession()
-
+		
+	def saveSession(self):
 		self.gaSessionId = time.strftime("%Y-%m-%d %H:%M:%S")
 		self.gaSession = Sessions(self.gaSessionId)
-
-		self.dbSession.add(self.gaSession)
-		self.dbSession.commit()		
+		self.dbSession.add(self.gaSession)		
 
 	def saveMetrics(self, metrics):				
 		self.dbSession.add(Metrics(self.gaSessionId, metrics))					
@@ -78,7 +77,7 @@ class DatabaseConnection:
 		self.dbSession.add(Genealogy(self.gaSessionId, tree, history))		
 
 	def saveIndividual(self, gen, ind, fitness, genome, phenome):
-		self.dbSession.add(Individual(self.gaSessionId, gen, ind, fitness, genome, phenome))
+		self.dbSession.add(Individual(self.gaSessionId, gen, ind, fitness, genome, phenome))	
 
 	def commit(self):
 		self.dbSession.commit()
