@@ -174,8 +174,6 @@ def evaluateNPWrapping(outFilename,runtime):
             if line != "":
                 outData.append(line.replace("\n","").replace(" ",","))
 
-    os.remove(outFilename)
-
     if len(outData)<50:        
         return minFit,    
 
@@ -252,13 +250,6 @@ def makeXYZTriplet(individual,xMax,xMin,yMax,yMin,zMax,zMin):
     z=float((c/float(maxC))*zRange + zMin)
     return x,y,z    
 
-##def performanceTest(individual):
-##    x,y = makeXYPair(individual,2,-2,2,-2)
-##    f1 = (x + y + 1)
-##    f2 = (2*x - 3*y)
-##    f = -(1 + (f1*f1)*(19 - 14*x + 3*x*x - 14*y + 6*x*y + 3*y*y))*(30 + (f2*f2)*(18 - 32*x + 12*x*x + 48*y - 36*x*y + 27*y*y))
-##    return f,
-
 def evaluatePyLammps(individual):
 
     return 1,
@@ -266,10 +257,8 @@ def evaluatePyLammps(individual):
 def runSim(path):    
     return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
 
-def evaluate(individual):
-    phenome = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-    np = phenome.particle
-    simName = misctools.randomStr(10)
+def evaluateParticleInstance(np,simName):
+    
     sim = MembraneSimulation(
         'sim_'+simName,
         np,
@@ -307,6 +296,24 @@ def evaluate(individual):
     print('{} fitness: {}'.format(simName, f))
     sim.deleteFiles()
     return f
+
+
+def evaluate(individual):
+    phenome = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    np = phenome.particle
+    simName = misctools.randomStr(10)
+    fitnesses = []
+    rots = 5
+
+    for i in range(rots):
+        fitnesses.append(evaluateParticleInstance(np,simName+"_"+str(i)))
+
+    fsum = 0
+    for fit in fitnesses:
+        fsum+=fit[0]
+
+    f = float(fsum)/float(rots)
+    return f,
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)

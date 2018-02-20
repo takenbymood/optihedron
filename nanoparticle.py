@@ -1,6 +1,8 @@
 from ga import phenome
 from ga import grayencoder as ge
 from tools import listtools as lt
+import numpy as np
+import math
 
 class Ligand:
 	def __init__(self,eps,sig,rad,polAng,aziAng,mass=1,cutoff=2.0):
@@ -11,6 +13,7 @@ class Ligand:
 		self.sig = sig
 		self.mass = mass
 		self.cutoff = cutoff
+		self.size = 1.0
 
 	def __str__(self):
 		ligstr= "rad:"+str(self.rad)+", polAng:"+str(self.polAng)+", aziAng:"+str(self.aziAng)+", eps:"+str(self.eps)
@@ -21,13 +24,13 @@ class NanoParticle:
 	ligands = []
 	def __init__(
 		self,
-		x=0,
-		y=0,
-		z=0,
-		mass=1,
-		eps=1,
-		sig=4,
-		cutoff=2**(1/6)
+		x=0.0,
+		y=0.0,
+		z=0.0,
+		mass=1.0,
+		eps=1.0,
+		sig=4.0,
+		cutoff=2.0**(1.0/6.0)
 		):
 		self.x = x
 		self.y = y
@@ -43,18 +46,22 @@ class NanoParticle:
 			self.ligands.append(ligand)
 
 	def spaceIsOccupied(self,polarTargetAngle,azimuthalTargetAngle):
-		for l in self.ligands:
-			if polarTargetAngle < l.polAng + 0.5 and polarTargetAngle > l.polAng - 0.5:
-				if azimuthalTargetAngle < l.aziAng + 0.5 and azimuthalTargetAngle > l.aziAng - 0.5:
-					return True
-		return False
+		target_v = [
+		self.sig*math.sin(polarTargetAngle)*math.cos(azimuthalTargetAngle),
+		self.sig*math.sin(polarTargetAngle)*math.sin(azimuthalTargetAngle),
+		self.sig*math.cos(polarTargetAngle)
+		]
+		for ligand in self.ligands:
+			ligand_v = [
+			ligand.rad*math.sin(ligand.polAng)*math.cos(ligand.aziAng),
+			ligand.rad*math.sin(ligand.polAng)*math.sin(ligand.aziAng),
+			ligand.rad*math.cos(ligand.polAng)
+			]
 
-	#def findNearestSpace(self,targetAngle,spacing):
-	#	freeSpace = targetAngle
-	#	if self.spaceIsOccupied(targetAngle):
-	#		return(self.findNearestSpace(targetAngle+float(random.randint(0,2)-1)*spacing,spacing))
-	#	else:
-	#		return freeSpace
+			d = np.linalg.norm(np.subtract(ligand_v,target_v))
+			if d<ligand.size:
+				return True
+		return False
 
 	def __str__(self):
 		protstr = "x:"+str(self.x)+", y:"+str(self.y)+", m:"+str(self.mass)
@@ -99,7 +106,7 @@ class NanoParticlePhenome(phenome.Phenome):
 			polarAngGene = g[self.epsPlaces:self.epsPlaces+self.polarAngPlaces]
 			azimuthalAngGene = g[self.epsPlaces+self.polarAngPlaces:self.epsPlaces+self.polarAngPlaces+self.azimuthalAngPlaces]			
 			gene['eps'] = (ge.read(epsGene)*(self.maxEps-self.minEps))/ge.max(epsGene)
-			gene['polAng'] = (ge.read(polarAngGene)*(6.2831)/ge.max(polarAngGene))
+			gene['polAng'] = (ge.read(polarAngGene)*(3.141)/ge.max(polarAngGene))
 			gene['aziAng'] = (ge.read(azimuthalAngGene)*(6.2831)/ge.max(azimuthalAngGene))
 			genes.append(gene)
 		return genes
