@@ -49,7 +49,7 @@ parser.add_argument('-d','--demes', type=int,
 parser.add_argument('-p','--pop', type=int,
                     help='population of each deme', required=True)
 parser.add_argument('-gs','--genomesize', type=int,
-                    help='number of bits in the genome', default=240)
+                    help='number of bits in the genome', default=600)
 parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
@@ -79,7 +79,7 @@ parser.add_argument('-aziang', '--aziangplaces', default=8, type=int,
                     help='number of bits for azimuthal angle')
 parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
-parser.add_argument('-epmx','--epsmax', default=20, type=float,
+parser.add_argument('-epmx','--epsmax', default=10, type=float,
                     help='maximum value for epsilon')
 parser.add_argument('-r','--runtime', default=50000, type=int,
                     help='lammps timesteps')
@@ -202,7 +202,7 @@ def evaluateNPWrapping(outFilename,runtime):
                     yd = v['y']-v2['y']
                     zd = v['z']-v2['z']
                     m = math.sqrt(xd*xd+yd*yd+zd*zd)                                          
-                    if(m<7.0):
+                    if(m<5.0):
                         inrange+=1
                 if(inrange>3):
                     magnitudes.append(inrange)
@@ -405,6 +405,8 @@ def main():
 
    if SAVERESULTS:
        dbconn = databaseconnection.DatabaseConnection(os.path.join(wd,'db/datastore.db'))
+       dbconn.saveSession()
+       dbconn.commit()
    else:
        dbconn = None
 

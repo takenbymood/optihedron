@@ -4,7 +4,7 @@ import math
 from tools import templatetools as tt
 
 class MembraneSimulation():
-	def __init__(self, name, protein, run, timestep, outdir, filedir, datatemplate, scripttemplate, corepos_x=0, corepos_y=0, corepos_z=8, dumpres="100"):
+	def __init__(self, name, protein, run, timestep, outdir, filedir, datatemplate, scripttemplate, corepos_x=0, corepos_y=0, corepos_z=7, dumpres="100"):
 		self.name = name
 		self.scriptName = name+'_script.in'
 		self.dataName = name+"_data.data"

@@ -10,8 +10,8 @@ class Sessions(Base):
 	__tablename__ ='sessions'
 
 	sessionId = Column('sessionId', String, primary_key=True)	
-	sessionMetrics = relationship('Metrics', backref=backref('sessions', uselist=False))
-	sessionGenealogy = relationship('Genealogy', backref=backref('sessions', uselist=False))
+	sessionMetrics = relationship('Metrics', uselist=False, backref=backref('sessions'))
+	sessionGenealogy = relationship('Genealogy', uselist=False, backref=backref('sessions'))
 	sessionIndividuals = relationship('Individual', backref='sessions')
 
 	def __init__(self, sessionId):
@@ -64,12 +64,11 @@ class DatabaseConnection:
 		Base.metadata.create_all(bind=engine)
 		dbSession = sessionmaker(bind=engine)
 		self.dbSession = dbSession()
-
+		
+	def saveSession(self):
 		self.gaSessionId = time.strftime("%Y-%m-%d %H:%M:%S")
 		self.gaSession = Sessions(self.gaSessionId)
-
-		self.dbSession.add(self.gaSession)
-		self.dbSession.commit()		
+		self.dbSession.add(self.gaSession)		
 
 	def saveMetrics(self, metrics):				
 		self.dbSession.add(Metrics(self.gaSessionId, metrics))					
@@ -79,6 +78,32 @@ class DatabaseConnection:
 
 	def saveIndividual(self, gen, ind, fitness, genome, phenome):
 		self.dbSession.add(Individual(self.gaSessionId, gen, ind, fitness, genome, phenome))
+
+	def whatSessions(self):
+		gaSessions = self.dbSession.query(Sessions).all()	
+		return [gaSession.sessionId for gaSession in gaSessions]	
+
+	def loadSession(self, sessionId):
+		gaSession = self.dbSession.query(Sessions).filter(Sessions.sessionId == sessionId).first()
+		data = {}
+
+		data['metrics'] = gaSession.sessionMetrics.metricsPickle
+
+		data['genealogy'] = {}
+		data['genealogy']['tree'] = gaSession.sessionGenealogy.treePickle
+		data['genealogy']['history'] = gaSession.sessionGenealogy.historyPickle
+
+		data['individuals'] = []
+		for sessionIndividual in gaSession.sessionIndividuals:
+			individual = {}
+			individual['gen'] = sessionIndividual.gen
+			individual['fitness'] = sessionIndividual.fitness
+			individual['genome'] = sessionIndividual.genomePickle
+			individual['phenome'] = sessionIndividual.phenomePickle
+
+			data['individuals'].append(individual)
+
+		return data
 
 	def commit(self):
 		self.dbSession.commit()

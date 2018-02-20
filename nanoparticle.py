@@ -3,7 +3,7 @@ from ga import grayencoder as ge
 from tools import listtools as lt
 
 class Ligand:
-	def __init__(self,eps,sig,rad,polAng,aziAng,mass=1,cutoff=2.5):
+	def __init__(self,eps,sig,rad,polAng,aziAng,mass=1,cutoff=2.0):
 		self.rad = rad
 		self.polAng = polAng
 		self.aziAng = aziAng
