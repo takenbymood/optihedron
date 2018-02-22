@@ -7,7 +7,24 @@ from tools import vectools
 import random
 
 class MembraneSimulation():
-	def __init__(self, name, protein, run, timestep, outdir, filedir, datatemplate, scripttemplate, corepos_x=0, corepos_y=0, corepos_z=7, dumpres="100"):
+	def __init__(
+		self,
+		name, 
+		protein, 
+		run, 
+		timestep, 
+		outdir, 
+		filedir, 
+		datatemplate, 
+		scripttemplate, 
+		corepos_x=0, 
+		corepos_y=0, 
+		corepos_z=7, 
+		dumpres="100",
+		rAxis=vectools.randomUnitVector(),
+		rAmount = random.uniform(0.3141,3.141)
+		):
+
 		self.name = name
 		self.scriptName = name+'_script.in'
 		self.dataName = name+"_data.data"
@@ -24,6 +41,9 @@ class MembraneSimulation():
 		self.corepos_z = corepos_z
 		self.dumpres = dumpres
 		self.nonLigandAtomCount = 2900 + 1
+		self.rAxis = rAxis
+		self.rAmount = rAmount
+		self.rmat = vectools.buildERMatrix(rAxis,rAmount)
 
 	def saveFiles(self):
 		scratch = os.path.join(self.filedir, self.name)		
@@ -37,7 +57,7 @@ class MembraneSimulation():
 		npPositions = '{0} 2 {1} {2} {3}   1 1 0   0 0 0\n'.format(self.nonLigandAtomCount, self.corepos_x, self.corepos_y, self.corepos_z)
 		npVelocities = '{0} 0 0 0 0 0 0\n'.format(self.nonLigandAtomCount)
 		ligandMembraneInteractions = ''
-		rmat = vectools.buildERMatrix(vectools.randomUnitVector(),random.uniform(0.3141,3.141))
+		
 
 		for i, ligand in enumerate(self.protein.ligands, 1):
 			#physics convention, theta = polar, phi = azimuthal
@@ -47,7 +67,7 @@ class MembraneSimulation():
 			ligand.rad*math.cos(ligand.polAng)
 			]			
 
-			r_ligand_v = np.dot(rmat,ligand_v)
+			r_ligand_v = np.dot(self.rmat,ligand_v)
 
 
 			ligand_x = self.corepos_x+r_ligand_v[0]

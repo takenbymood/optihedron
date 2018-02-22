@@ -83,8 +83,10 @@ parser.add_argument('-epmx','--epsmax', default=10, type=float,
                     help='maximum value for epsilon')
 parser.add_argument('-r','--runtime', default=50000, type=int,
                     help='lammps timesteps')
-parser.add_argument('-ts','--timestep', default=0.01, type=int,
+parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
+parser.add_argument('-r','--repeats', default=4, type=int,
+                    help='number of repeat tests for each individual')
 
 #MPI Options
 
@@ -130,6 +132,7 @@ GENESIZE = (EPSPLACES+POLANGPLACES+AZIANGPLACES)
 GENES = math.floor(GENOMESIZE/GENESIZE)
 QSUB = args.qsub
 WORKERS = args.workers
+REPEATS = args.repeats
 
 MPI = args.mpi
 NP = args.nodes
@@ -303,9 +306,8 @@ def evaluate(individual):
     np = phenome.particle
     simName = misctools.randomStr(10)
     fitnesses = []
-    rots = 5
 
-    for i in range(rots):
+    for i in range(REPEATS):
         fitnesses.append(evaluateParticleInstance(np,simName+"_"+str(i)))
 
     fsum = 0
