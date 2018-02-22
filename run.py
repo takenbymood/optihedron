@@ -85,7 +85,7 @@ parser.add_argument('-r','--runtime', default=50000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
-parser.add_argument('-r','--repeats', default=4, type=int,
+parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
 
 #MPI Options
