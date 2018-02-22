@@ -83,8 +83,10 @@ parser.add_argument('-epmx','--epsmax', default=10, type=float,
                     help='maximum value for epsilon')
 parser.add_argument('-r','--runtime', default=50000, type=int,
                     help='lammps timesteps')
-parser.add_argument('-ts','--timestep', default=0.01, type=int,
+parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
+parser.add_argument('-r','--repeats', default=4, type=int,
+                    help='number of repeat tests for each individual')
 
 #MPI Options
 
@@ -130,6 +132,7 @@ GENESIZE = (EPSPLACES+POLANGPLACES+AZIANGPLACES)
 GENES = math.floor(GENOMESIZE/GENESIZE)
 QSUB = args.qsub
 WORKERS = args.workers
+REPEATS = args.repeats
 
 MPI = args.mpi
 NP = args.nodes
@@ -173,8 +176,6 @@ def evaluateNPWrapping(outFilename,runtime):
         for line in lines:
             if line != "":
                 outData.append(line.replace("\n","").replace(" ",","))
-
-    os.remove(outFilename)
 
     if len(outData)<50:        
         return minFit,    
@@ -252,13 +253,6 @@ def makeXYZTriplet(individual,xMax,xMin,yMax,yMin,zMax,zMin):
     z=float((c/float(maxC))*zRange + zMin)
     return x,y,z    
 
-##def performanceTest(individual):
-##    x,y = makeXYPair(individual,2,-2,2,-2)
-##    f1 = (x + y + 1)
-##    f2 = (2*x - 3*y)
-##    f = -(1 + (f1*f1)*(19 - 14*x + 3*x*x - 14*y + 6*x*y + 3*y*y))*(30 + (f2*f2)*(18 - 32*x + 12*x*x + 48*y - 36*x*y + 27*y*y))
-##    return f,
-
 def evaluatePyLammps(individual):
 
     return 1,
@@ -266,10 +260,8 @@ def evaluatePyLammps(individual):
 def runSim(path):    
     return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
 
-def evaluate(individual):
-    phenome = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-    np = phenome.particle
-    simName = misctools.randomStr(10)
+def evaluateParticleInstance(np,simName):
+    
     sim = MembraneSimulation(
         'sim_'+simName,
         np,
@@ -307,6 +299,23 @@ def evaluate(individual):
     print('{} fitness: {}'.format(simName, f))
     sim.deleteFiles()
     return f
+
+
+def evaluate(individual):
+    phenome = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    np = phenome.particle
+    simName = misctools.randomStr(10)
+    fitnesses = []
+
+    for i in range(REPEATS):
+        fitnesses.append(evaluateParticleInstance(np,simName+"_"+str(i)))
+
+    fsum = 0
+    for fit in fitnesses:
+        fsum+=fit[0]
+
+    f = float(fsum)/float(rots)
+    return f,
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)

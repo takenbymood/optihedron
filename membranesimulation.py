@@ -1,10 +1,30 @@
 import os
 import shutil
 import math
+import numpy as np
 from tools import templatetools as tt
+from tools import vectools
+import random
 
 class MembraneSimulation():
-	def __init__(self, name, protein, run, timestep, outdir, filedir, datatemplate, scripttemplate, corepos_x=0, corepos_y=0, corepos_z=7, dumpres="100"):
+	def __init__(
+		self,
+		name, 
+		protein, 
+		run, 
+		timestep, 
+		outdir, 
+		filedir, 
+		datatemplate, 
+		scripttemplate, 
+		corepos_x=0, 
+		corepos_y=0, 
+		corepos_z=7, 
+		dumpres="100",
+		rAxis=vectools.randomUnitVector(),
+		rAmount = random.uniform(0.3141,3.141)
+		):
+
 		self.name = name
 		self.scriptName = name+'_script.in'
 		self.dataName = name+"_data.data"
@@ -21,6 +41,9 @@ class MembraneSimulation():
 		self.corepos_z = corepos_z
 		self.dumpres = dumpres
 		self.nonLigandAtomCount = 2900 + 1
+		self.rAxis = rAxis
+		self.rAmount = rAmount
+		self.rmat = vectools.buildERMatrix(rAxis,rAmount)
 
 	def saveFiles(self):
 		scratch = os.path.join(self.filedir, self.name)		
@@ -34,12 +57,22 @@ class MembraneSimulation():
 		npPositions = '{0} 2 {1} {2} {3}   1 1 0   0 0 0\n'.format(self.nonLigandAtomCount, self.corepos_x, self.corepos_y, self.corepos_z)
 		npVelocities = '{0} 0 0 0 0 0 0\n'.format(self.nonLigandAtomCount)
 		ligandMembraneInteractions = ''
+		
 
 		for i, ligand in enumerate(self.protein.ligands, 1):
 			#physics convention, theta = polar, phi = azimuthal
-			ligand_x = self.corepos_x+ligand.rad*math.sin(ligand.polAng)*math.cos(ligand.aziAng)
-			ligand_y = self.corepos_y+ligand.rad*math.sin(ligand.polAng)*math.sin(ligand.aziAng)
-			ligand_z = self.corepos_z+ligand.rad*math.cos(ligand.polAng)			
+			ligand_v = [
+			ligand.rad*math.sin(ligand.polAng)*math.cos(ligand.aziAng),
+			ligand.rad*math.sin(ligand.polAng)*math.sin(ligand.aziAng),
+			ligand.rad*math.cos(ligand.polAng)
+			]			
+
+			r_ligand_v = np.dot(self.rmat,ligand_v)
+
+
+			ligand_x = self.corepos_x+r_ligand_v[0]
+			ligand_y = self.corepos_y+r_ligand_v[1]
+			ligand_z = self.corepos_z+r_ligand_v[2]
 
 			ligandMasses += '{0} {1}\n'.format(2+i, ligand.mass)		
 			npPositions += '{0} {1} {2} {3} {4}  1 1 0   0 0 0\n'.format(self.nonLigandAtomCount+i,2+i,ligand_x,ligand_y,ligand_z)
@@ -63,3 +96,4 @@ class MembraneSimulation():
 	def deleteFiles(self):
 		os.remove(os.path.join(self.filedir, self.scriptName))
 		os.remove(os.path.join(self.filedir, self.dataName))
+		os.remove(os.path.join(self.outdir, self.outName))
