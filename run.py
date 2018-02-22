@@ -314,7 +314,7 @@ def evaluate(individual):
     for fit in fitnesses:
         fsum+=fit[0]
 
-    f = float(fsum)/float(rots)
+    f = float(fsum)/float(REPEATS)
     return f,
 
 def sel(pop,k):
