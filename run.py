@@ -315,7 +315,13 @@ def evaluate(individual):
     for fit in fitnesses:
         fsum+=fit[0]
 
-    f = float(fsum)/float(REPEATS)
+    fmem = float(fsum)/float(REPEATS)
+
+    flig = len(np.ligands) 
+    feps = sum([ligand.eps for ligand in np.ligands])
+
+    f = fmem
+
     return f,
 
 def sel(pop,k):
