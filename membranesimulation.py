@@ -20,7 +20,9 @@ class MembraneSimulation():
 		corepos_x=0, 
 		corepos_y=0, 
 		corepos_z=7, 
-		dumpres="100"
+		dumpres="100",
+		rAxis = [0,0,1],
+		rAmount = 0.0
 		):
 
 		self.name = name
@@ -39,8 +41,8 @@ class MembraneSimulation():
 		self.corepos_z = corepos_z
 		self.dumpres = dumpres
 		self.nonLigandAtomCount = 2900 + 1
-		self.rAxis = vectools.randomUnitVector()
-		self.rAmount = random.uniform(0.3141,3.141)
+		self.rAxis = rAxis
+		self.rAmount = rAmount
 		self.rmat = vectools.buildERMatrix(self.rAxis, self.rAmount)
 
 	def saveFiles(self):
