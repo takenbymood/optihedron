@@ -33,6 +33,7 @@ from ga import grayencoder as ge
 from tools import misctools
 from tools import listtools
 from tools import qtools
+from tools import vectools
 
 from db import databaseconnection
 
@@ -270,7 +271,9 @@ def evaluateParticleInstance(np,simName):
         os.path.join(wd,'out'),
         os.path.join(wd,'run'),
         os.path.join(wd,'mem/template/data.template'),
-        os.path.join(wd,'mem/template/in.template')        
+        os.path.join(wd,'mem/template/in.template'),
+        rAxis=vectools.randomUnitVector(),
+        rAmount=random.uniform(0.3141,3.141)        
         )
     sim.saveFiles()
     scriptPath=os.path.join(sim.filedir,sim.scriptName)

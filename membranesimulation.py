@@ -21,8 +21,8 @@ class MembraneSimulation():
 		corepos_y=0, 
 		corepos_z=7, 
 		dumpres="100",
-		rAxis=vectools.randomUnitVector(),
-		rAmount = random.uniform(0.3141,3.141)
+		rAxis = [0,0,1],
+		rAmount = 0.0
 		):
 
 		self.name = name
@@ -43,7 +43,7 @@ class MembraneSimulation():
 		self.nonLigandAtomCount = 2900 + 1
 		self.rAxis = rAxis
 		self.rAmount = rAmount
-		self.rmat = vectools.buildERMatrix(rAxis,rAmount)
+		self.rmat = vectools.buildERMatrix(self.rAxis, self.rAmount)
 
 	def saveFiles(self):
 		scratch = os.path.join(self.filedir, self.name)		
