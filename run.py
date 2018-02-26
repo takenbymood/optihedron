@@ -285,7 +285,7 @@ def evaluateParticleInstance(np,simName):
 
     if(QSUB):
         try:
-            pbs = parlammps.createPbs(scriptPath,wd,8,simName,sim.filedir)
+            pbs = parlammps.createPbs(scriptPath,wd,NP,simName,sim.filedir,MPI)
             job = subprocess.Popen(["qsub", pbs],stdout=subprocess.PIPE)
             job.wait()
             out = job.communicate()[0]
