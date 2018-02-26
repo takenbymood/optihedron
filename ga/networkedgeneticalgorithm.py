@@ -139,10 +139,10 @@ class NetworkedGeneticAlgorithm:
             for ind in isle:
                 f = ind.fitness.values[-1]*rFitness
                 if f + t >= s:
-                    edges = network.edges(network.nodes()[i])
+                    edges = network.edges(list(network.nodes())[i])
                     if len(edges)>0:
-                        edge = random.choice(edges)[-1]
-                        dest = network.nodes().index(edge)
+                        edge = random.choice(list(edges))[-1]
+                        dest = list(network.nodes()).index(edge)
                         #print("migrating " + str(ind) + " from " + str(i)  + " to " + str(dest))
                         islands[dest][random.randint(0,len(islands[dest])-1)] = ind
                     return islands
