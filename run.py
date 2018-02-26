@@ -218,6 +218,8 @@ def evaluateNPWrapping(outFilename,runtime):
     if(msum == 0):        
         return minFit,
 
+    os.remove(outFilename)
+
     return msum,
 
 def runCmd(cmd,timeout):
