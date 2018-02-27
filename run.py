@@ -71,6 +71,8 @@ parser.add_argument('-s','--seed', default=int(time.time()), type=int,
                     help='seed for the RNG')
 parser.add_argument('-hof','--hofsize', default=5, type=int,
                     help='hall of fame size')
+parser.add_argument('-expr','--exprplaces', default=1, type=int,
+                    help='number of bits for ligand expression')
 parser.add_argument('-eps','--epsplaces', default=8, type=int,
                     help='number of bits for epsilon')
 parser.add_argument('-polang','--polangplaces', default=8, type=int,
@@ -121,7 +123,7 @@ MINPDB = args.mindpb
 GENOMESIZE = args.genomesize
 MIGR = args.migrations
 HOFSIZE = args.hofsize
-EXPRPLACES = 1
+EXPRPLACES = args.exprplaces
 EPSPLACES = args.epsplaces
 POLANGPLACES = args.polangplaces
 AZIANGPLACES = args.aziangplaces
