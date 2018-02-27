@@ -107,12 +107,13 @@ def runSim(script,np,timeout):
         traceback.print_exc()
     return False
 
-def createPbs(script,wd,np,name,rundir):
+def createPbs(script,wd,np,name,rundir,mpirun):
     try:
         pbs = os.path.join(wd,"qsubtask.pbs")
         with open(pbs) as templateFile:
             content = templateFile.read()
             content = content.replace('_DIR_',str(wd))
+            content = content.replace('_PRE_','mpirun -np _CORES_') if mpirun else content.replace('_PRE_ ','')
             content = content.replace('_CORES_',str(np))
             content = content.replace('_SCRIPT_',str(script))
             pbsPath = os.path.join(rundir,name+".pbs")
