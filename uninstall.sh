@@ -1,6 +1,9 @@
 #!/bin/bash
 
-WDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+STARTDIR=$(pwd)
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+WDIR=$(pwd)
+LAMMPSDIR="./lammps"
 
 while test $# -gt 0; do
         case "$1" in
@@ -15,7 +18,7 @@ while test $# -gt 0; do
                         exit 0
                         ;;
                 -r|--remove)
-						rm -rf ${WDIR}/lammps
+						rm -rf $LAMMPSDIR
                         break
                         ;;
                 *)
@@ -24,20 +27,21 @@ while test $# -gt 0; do
         esac
 done
 
-if [ -d ${WDIR}/lammps ]; then
-	cd ${WDIR}/lammps
-	LAMMPSDIR=$(pwd)
-	if [ -f ${LAMMPSDIR}/src/liblammps.so ]; then
-		rm ${LAMMPSDIR}/src/liblammps.so
-		rm ${LAMMPSDIR}/src/lmp_mpi
-		rm ${LAMMPSDIR}/src/lmp_serial
-		rm ${LAMMPSDIR}/src/lammps
-		cd src
+if [ -d $LAMMPSDIR ]; then
+	if [ -f $LAMMPSDIR/src/liblammps.so ]; then
+		cd $LAMMPSDIR/src
+		rm liblammps.so
+		rm lmp_mpi
+		rm lmp_serial
+		rm lammps
 		make clean-all
-		make no-all
+		cd "$WDIR"
 	fi
 fi
-cd ${WDIR}
-if [ -d ${WDIR}/venv ]; then
-	rm -rf ${WDIR}/venv
+VENVDIR="./venv"
+if [ -d $VENVDIR ]; then
+	rm -rf $VENVDIR
 fi
+
+cd "${STARTDIR}"
+echo "done!"
