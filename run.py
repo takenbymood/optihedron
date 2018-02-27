@@ -317,8 +317,8 @@ def evaluate(individual):
 
     fmem = float(fsum)/float(REPEATS)
 
-    flig = len(np.ligands) 
-    feps = sum([ligand.eps for ligand in np.ligands])
+    #flig = len(np.ligands) 
+    #feps = sum([ligand.eps for ligand in np.ligands])
 
     f = fmem
 
