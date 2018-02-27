@@ -8,6 +8,7 @@
 
 
 #PBS -V
+_MODULES_
 cd _DIR_/..
 source _DIR_/activate.sh
 _PRE_ _DIR_/venv/bin/python _DIR_/plammps.py -s _SCRIPT_

@@ -112,6 +112,17 @@ def createPbs(script,wd,np,name,rundir,mpirun):
         pbs = os.path.join(wd,"qsubtask.pbs")
         with open(pbs) as templateFile:
             content = templateFile.read()
+            if os.path.isfile("modules"): 
+                with open("modules") as moduleList:
+                    modLine = ""
+                    modules=moduleList.read().splitlines()
+                    if len(modules) > 0:
+                        modLine+="module load "
+                    for m in modules:
+                        modLine += m + ' '
+                    content = content.replace('_MODULES_',modLine)
+            else:
+                content = content.replace('_MODULES_','')
             content = content.replace('_DIR_',str(wd))
             content = content.replace('_PRE_','mpirun -np _CORES_') if mpirun else content.replace('_PRE_ ','')
             content = content.replace('_CORES_',str(np))
