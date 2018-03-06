@@ -122,3 +122,7 @@ ENV/
 
 # Database file
 *.db
+
+# Eclipse stuff
+.project
+.pydevproject
