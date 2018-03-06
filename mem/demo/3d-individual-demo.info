@@ -4,12 +4,11 @@ LAMMPS DATA SUPPLEMENT
 
 22 atom types
 
-
 -25.0 25.0 xlo xhi
 -25.1147367097 25.1147367097 ylo yhi
 -100.0 100.0 zlo zhi
 
-Masses
+Masses # actually overridden by the "sphere" atom_style parameters {(pi/6)*rho*d^3} - LAMMPS "bug"
 
 1 1
 2 1
@@ -33,7 +32,6 @@ Masses
 20 1
 21 1
 22 1
-
 
 Atoms
 
