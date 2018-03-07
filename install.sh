@@ -57,7 +57,7 @@ fi
 source activate.sh
 if [ "`which python2.7`" != "${WDIR}/venv/bin/python2.7" ]; then
 echo "ERROR: Virtualenv is not there or couldn't activate. Aborting so LAMMPS doesn't install on system python. Re-run this script to finish installation after sorting out whatever is wrong with virtualenv."
-	exit
+exit
 fi
 source pipinstall.sh
 
