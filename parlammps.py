@@ -79,7 +79,7 @@ def execute(cmd, timeout=None):
         # Read the stout/stderr line by line until subprocess is done
         retcode = None
         while (retcode == None):
-            for stdout_line in iter(phandle.stdout.readline, ""):
+            for stdout_line in iter(phandle.stdout.readline, b''):
                 yield stdout_line
             retcode = phandle.poll()
         
