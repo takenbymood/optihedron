@@ -78,12 +78,14 @@ class NanoParticlePhenome(phenome.Phenome):
 	def __init__(
 		self,
 		ind,
+		exprPlaces,
 		epsPlaces,
 		polarAngPlaces,
 		azimuthalAngPlaces,
 		minEps,
 		maxEps
 		):
+		self.exprPlaces = exprPlaces
 		self.epsPlaces = epsPlaces
 		self.polarAngPlaces = polarAngPlaces
 		self.azimuthalAngPlaces = azimuthalAngPlaces
@@ -92,7 +94,7 @@ class NanoParticlePhenome(phenome.Phenome):
 		phenome.Phenome.__init__(self,ind)
 
 	def constructGenome(self,ind):
-		geneSize = self.epsPlaces+self.polarAngPlaces+self.azimuthalAngPlaces
+		geneSize = self.exprPlaces+self.epsPlaces+self.polarAngPlaces+self.azimuthalAngPlaces
 		if len(ind) < geneSize:
 			print("genome too short to construct phenome")
 			return None
@@ -102,9 +104,11 @@ class NanoParticlePhenome(phenome.Phenome):
 		genes = []
 		for g in genelist:
 			gene = {}
-			epsGene = g[0:self.epsPlaces]
-			polarAngGene = g[self.epsPlaces:self.epsPlaces+self.polarAngPlaces]
-			azimuthalAngGene = g[self.epsPlaces+self.polarAngPlaces:self.epsPlaces+self.polarAngPlaces+self.azimuthalAngPlaces]			
+			exprGene = g[0:self.exprPlaces]			
+			epsGene = g[self.exprPlaces:self.exprPlaces+self.epsPlaces]
+			polarAngGene = g[self.exprPlaces+self.epsPlaces:self.exprPlaces+self.epsPlaces+self.polarAngPlaces]
+			azimuthalAngGene = g[self.exprPlaces+self.epsPlaces+self.polarAngPlaces:self.exprPlaces+self.epsPlaces+self.polarAngPlaces+self.azimuthalAngPlaces]
+			gene['expr'] = True if ge.read(exprGene)/ge.max(exprGene) >= 0.5 else False 			
 			gene['eps'] = (ge.read(epsGene)*(self.maxEps-self.minEps))/ge.max(epsGene)
 			gene['polAng'] = (ge.read(polarAngGene)*(3.141)/ge.max(polarAngGene))
 			gene['aziAng'] = (ge.read(azimuthalAngGene)*(6.2831)/ge.max(azimuthalAngGene))
@@ -115,6 +119,7 @@ class NanoParticlePhenome(phenome.Phenome):
 	def constructPhenome(self,ind):
 		self.particle = NanoParticle()
 		for g in self.genome:
-			if not self.particle.spaceIsOccupied(g['polAng'],g['aziAng']):
-				self.particle.addLigand(Ligand(g['eps'],1,4,g['polAng'],g['aziAng']))
+			if g['expr']:				
+				if not self.particle.spaceIsOccupied(g['polAng'],g['aziAng']):
+					self.particle.addLigand(Ligand(g['eps'],1,4,g['polAng'],g['aziAng']))			
 		return self.particle

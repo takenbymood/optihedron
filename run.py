@@ -72,6 +72,8 @@ parser.add_argument('-s','--seed', default=int(time.time()), type=int,
                     help='seed for the RNG')
 parser.add_argument('-hof','--hofsize', default=5, type=int,
                     help='hall of fame size')
+parser.add_argument('-expr','--exprplaces', default=1, type=int,
+                    help='number of bits for ligand expression')
 parser.add_argument('-eps','--epsplaces', default=8, type=int,
                     help='number of bits for epsilon')
 parser.add_argument('-polang','--polangplaces', default=8, type=int,
@@ -122,6 +124,7 @@ MINPDB = args.mindpb
 GENOMESIZE = args.genomesize
 MIGR = args.migrations
 HOFSIZE = args.hofsize
+EXPRPLACES = args.exprplaces
 EPSPLACES = args.epsplaces
 POLANGPLACES = args.polangplaces
 AZIANGPLACES = args.aziangplaces
@@ -129,7 +132,7 @@ EPSMAX = args.epsmax
 EPSMIN = args.epsmin
 RUNTIME = args.runtime
 TIMESTEP = args.timestep
-GENESIZE = (EPSPLACES+POLANGPLACES+AZIANGPLACES)
+GENESIZE = (EXPRPLACES+EPSPLACES+POLANGPLACES+AZIANGPLACES)
 GENES = math.floor(GENOMESIZE/GENESIZE)
 QSUB = args.qsub
 WORKERS = args.workers
@@ -307,7 +310,7 @@ def evaluateParticleInstance(np,simName):
 
 
 def evaluate(individual):
-    phenome = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    phenome = NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle
     simName = misctools.randomStr(10)
     fitnesses = []
@@ -319,7 +322,13 @@ def evaluate(individual):
     for fit in fitnesses:
         fsum+=fit[0]
 
-    f = float(fsum)/float(REPEATS)
+    fmem = float(fsum)/float(REPEATS)
+
+    #flig = len(np.ligands) 
+    #feps = sum([ligand.eps for ligand in np.ligands])
+
+    f = fmem
+
     return f,
 
 def sel(pop,k):
@@ -339,7 +348,7 @@ def beforeMigration(ga):
         ind = 0
         for isle in ga.islands:
             for individual in isle:
-                np = NanoParticlePhenome(individual,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+                np = NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
                 ga.dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
                 ind += 1
         ga.dbconn.commit()
@@ -364,7 +373,7 @@ def afterMigration(ga):
 def saveHOF(hof):
     i = 1
     for ind in hof:
-        phenome = NanoParticlePhenome(ind,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+        phenome = NanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
         np = phenome.particle
         sim = MembraneSimulation(
             'hof_'+str(i),
