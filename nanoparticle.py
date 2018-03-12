@@ -24,17 +24,11 @@ class NanoParticle:
 	ligands = []
 	def __init__(
 		self,
-#		x=0.0,
-#		y=0.0,
-#		z=0.0,
 		mass=1.0,
 		eps=1.0,
 		sig=4.0,
 		cutoff=2.0**(1.0/6.0)
 		):
-#		self.x = x
-#		self.y = y
-#		self.z = z
 		self.mass = mass
 		self.eps = eps
 		self.sig = sig
@@ -55,14 +49,10 @@ class NanoParticle:
 		return False
 
 	def __str__(self):
-		protstr = "m:"+str(self.mass)
-#		protstr += ", x:"+str(self.x)+", y:"+str(self.y)+", z:"+str(self.z)
-		protstr += ", eps:"+str(self.eps)+", sig:"+str(self.sig)+", cut:"+str(self.cutoff)
+		protstr = "m:"+str(self.mass)+", eps:"+str(self.eps)+", sig:"+str(self.sig)+", cut:"+str(self.cutoff)
 		protstr += "\n"+str(len(self.ligands))+" ligands"
-		i=0
-		for l in self.ligands:
-			i+=1
-			protstr += "\nligand " + str(i) +" - "+ str(l)
+		for i,l in zip(range(len(self.ligands)),self.ligands):
+			protstr += "\nligand " + str(i+1) +" - "+ str(l)
 		return protstr
 
 class NanoParticlePhenome(phenome.Phenome):
