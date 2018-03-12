@@ -24,7 +24,7 @@ from joblib import Parallel, delayed, parallel_backend
 from distributed.joblib import DaskDistributedBackend
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", numpy.ndarray, fitness=creator.FitnessMax)  # @UndefinedVariable
+creator.create("Individual", numpy.ndarray, fitness=creator.FitnessMax) # @UndefinedVariable (for PyDev)
 
 def defaultAlgorithmEaSimple(pop,toolbox,stats,hof):
 		return algorithms.eaSimple(pop,toolbox=toolbox,
@@ -81,7 +81,7 @@ class NetworkedGeneticAlgorithm:
         self.toolbox.register("attr_bool", random.randint, 0, 1)
 
         # Structure initializers
-        self.toolbox.register("individual", tools.initRepeat, creator.Individual, self.toolbox.attr_bool, genomeSize)  # @UndefinedVariable
+        self.toolbox.register("individual", tools.initRepeat, creator.Individual, self.toolbox.attr_bool, genomeSize)  # @UndefinedVariable (for PyDev)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
         self.toolbox.register("evaluate", evaluate)
