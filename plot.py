@@ -90,7 +90,7 @@ ax1.set_xlabel('Generation Number')
 ax1.set_ylabel('Fitness')
 
 #plt.fill_between(x, y-yerr,y+yerr, color="#3F5D7D")  
-for n in range(0,100,2):
+for n in range(0,300,10):
     plt.plot([-1, np.max([np.max(i) for i in x])+1], [n,n], "--", lw=0.5, color="black", alpha=0.3)  
     
 plt.tick_params(axis="both", which="both", bottom="off", top="off",labelbottom="on", left="off", right="off", labelleft="on") 
