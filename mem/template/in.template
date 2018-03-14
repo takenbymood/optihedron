@@ -39,6 +39,8 @@ fix			fNPH		mem		nph/sphere	x 0.0 0.0 10.0	y 0.0 0.0 10.0	couple xy	update dipol
 fix_modify	fNPH	press thermo_press
 fix			fRIGID		np		rigid/nve	group 1 np
 
+compute 1 all pair lj/cut epair
+
 _MOLECULAR DYNAMICS DUMP PLACEHOLDER_
 
 thermo_style	custom	step pe ke etotal

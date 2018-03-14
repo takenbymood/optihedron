@@ -2,6 +2,7 @@ from ga import phenome
 from ga import grayencoder as ge
 from tools import listtools as lt
 from tools.vectools import polarToCartesianVector 
+from tools import icosatiler
 import numpy as np
 
 class Ligand:
@@ -73,6 +74,7 @@ class NanoParticlePhenome(phenome.Phenome):
 		self.azimuthalAngPlaces = azimuthalAngPlaces
 		self.minEps = minEps
 		self.maxEps = maxEps
+		self.radius = 4
 		phenome.Phenome.__init__(self,ind)
 
 	def constructGenome(self,ind):
@@ -103,5 +105,59 @@ class NanoParticlePhenome(phenome.Phenome):
 		for g in self.genome:
 			if g['expr']:				
 				if not self.particle.spaceIsOccupied(g['polAng'],g['aziAng']):
-					self.particle.addLigand(Ligand(g['eps'],1,4,g['polAng'],g['aziAng']))			
+					self.particle.addLigand(Ligand(g['eps'],1,self.radius,g['polAng'],g['aziAng']))			
 		return self.particle
+
+class CoveredNanoParticlePhenome(phenome.Phenome):
+	def __init__(
+		self,
+		ind,
+		exprPlaces,
+		epsPlaces,
+		minEps,
+		maxEps
+		):
+		self.exprPlaces = exprPlaces
+		self.epsPlaces = epsPlaces
+		self.minEps = minEps
+		self.maxEps = maxEps
+		self.radius = 4
+		phenome.Phenome.__init__(self,ind)
+
+	def constructGenome(self,ind):
+		geneSize = self.exprPlaces+self.epsPlaces
+		if len(ind) < geneSize:
+			print("genome too short to construct phenome")
+			return None
+		genelist = lt.subdivide(list(ind),geneSize)
+		if len(genelist[-1]) < geneSize:
+			genelist = genelist[:-1]
+		genes = []
+		for g in genelist:
+			gene = {}
+			exprGene = g[0:self.exprPlaces]			
+			epsGene = g[self.exprPlaces:self.exprPlaces+self.epsPlaces]
+			gene['expr'] = True if ge.read(exprGene)/ge.max(exprGene) >= 0.5 else False 			
+			gene['eps'] = (ge.read(epsGene)*(self.maxEps-self.minEps))/ge.max(epsGene)
+			genes.append(gene)
+		return genes
+
+	def constructPhenome(self,ind):
+		ligandPositions = icosatiler.cover72SpherePolar(self.radius)
+		self.particle = NanoParticle()
+		i = 0
+		genomeOverrun = False;
+		for g in self.genome:
+			if i<len(ligandPositions):	
+				v = ligandPositions[i]		
+				eps = g['eps'] if g['expr'] else 0
+				self.particle.addLigand(Ligand(eps,1,v[0],v[1],v[2]))
+			elif i>=len(ligandPositions):
+				genomeOverrun = True
+			i+=1	
+		if genomeOverrun:
+			print('genome was too long for the symmetry used')		
+		return self.particle
+
+	
+

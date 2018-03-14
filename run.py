@@ -40,6 +40,7 @@ from db import databaseconnection
 from lammps import lammps
 
 from nanoparticle import NanoParticlePhenome
+from nanoparticle import CoveredNanoParticlePhenome
 from membranesimulation import MembraneSimulation
 
 parser = argparse.ArgumentParser(description='')
@@ -50,7 +51,7 @@ parser.add_argument('-d','--demes', type=int,
 parser.add_argument('-p','--pop', type=int,
                     help='population of each deme', required=True)
 parser.add_argument('-gs','--genomesize', type=int,
-                    help='number of bits in the genome', default=600)
+                    help='number of bits in the genome', default=648)
 parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
@@ -90,6 +91,8 @@ parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
 parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
+parser.add_argument('-pp','--partialpacking', action='store_true',
+                    help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
 
 #MPI Options
 
@@ -132,7 +135,8 @@ EPSMAX = args.epsmax
 EPSMIN = args.epsmin
 RUNTIME = args.runtime
 TIMESTEP = args.timestep
-GENESIZE = (EXPRPLACES+EPSPLACES+POLANGPLACES+AZIANGPLACES)
+PARTIAL = args.partialpacking
+GENESIZE = (EXPRPLACES+EPSPLACES+POLANGPLACES+AZIANGPLACES) if PARTIAL else (EXPRPLACES+EPSPLACES)
 GENES = math.floor(GENOMESIZE/GENESIZE)
 QSUB = args.qsub
 WORKERS = args.workers
@@ -309,7 +313,9 @@ def evaluateParticleInstance(np,simName):
 
 
 def evaluate(individual):
-    phenome = NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    #phenome = NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    
     np = phenome.particle
     simName = misctools.randomStr(10)
     fitnesses = []
@@ -347,7 +353,8 @@ def beforeMigration(ga):
         ind = 0
         for isle in ga.islands:
             for individual in isle:
-                np = NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+                #np = NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+                np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
                 ga.dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
                 ind += 1
         ga.dbconn.commit()
@@ -372,7 +379,8 @@ def afterMigration(ga):
 def saveHOF(hof):
     i = 1
     for ind in hof:
-        phenome = NanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+        #phenome = NanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+        phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
         np = phenome.particle
         sim = MembraneSimulation(
             'hof_'+str(i),
