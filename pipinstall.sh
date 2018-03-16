@@ -1,3 +1,3 @@
 #!/bin/bash
 
-pip install numpy deap joblib networkx pydotplus matplotlib distributed pathos sqlalchemy
+pip install numpy deap joblib networkx pydotplus matplotlib distributed pathos sqlalchemy mpi4py
