@@ -15,6 +15,7 @@ DS_Store*
 *.data
 *.script
 *out.xyz
+*.xyz*
 
 # C extensions
 *.so
