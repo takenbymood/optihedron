@@ -20,3 +20,10 @@ def removeByPattern(dirName,pattern):
 		if pattern in item:
 			os.remove(os.path.join(dirName, item))
 			print("removed {}".format(item))
+
+def toInt(s):
+	try:
+		return int(s)
+	except ValueError:
+		print('error converting '+str(s)+' to integer value')
+		return s

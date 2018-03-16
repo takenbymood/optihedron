@@ -4,6 +4,7 @@ import math
 import numpy as np
 from tools import templatetools as tt
 from tools import vectools
+from tools import misctools
 import random
 
 class MembraneSimulation():
@@ -86,9 +87,50 @@ class MembraneSimulation():
 		tt.fillTemplate(simScript, scratch, '_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', 'dump			coords all custom {} {} id type x y z\ndump_modify	coords sort id'.format(
 																								self.dumpres, os.path.join(self.outdir, self.outName)))				
 		tt.fillTemplate(simScript, scratch, '_TIMESTEP PLACEHOLDER_', 'timestep       {}'.format(self.timestep))		
-		tt.fillTemplate(simScript, scratch, '_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))		
+		tt.fillTemplate(simScript, scratch, '_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))
+
+	def postProcessOutput(self,outPath):
+		#this function adds the ligand strengths as a column in the output file
+		headerLength = 8
+		lowestLigandNumber = 3
+		if not os.path.exists(outPath):
+			return
+		with open(outPath) as f:
+			lines = f.readlines()
+		lines = [x.strip() for x in lines]
+		skipLines = 0
+		for i in range(len(lines)):
+			if str('ITEM: TIMESTEP') in lines[i]:
+				skipLines=headerLength
+			if skipLines>0:
+				skipLines-=1
+				continue
+			if str('ITEM: ATOMS') in lines[i]:
+				lines[i] += ' affinity'
+			else:
+				cols = lines[i].split(' ')
+				if len(cols) < 2:
+					continue
+				atomType = misctools.toInt(cols[1])
+				if atomType<lowestLigandNumber:
+					#the atom is the vehicle or a part of the membrane
+					lines[i] += ' 0.0'
+					#god, this is a mess...
+				else:
+					ligandType = atomType - lowestLigandNumber
+					lines[i] += ' ' + str(self.protein.ligands[ligandType].eps)
+
+		#add the new lines back in
+		lines = [x+'\n' for x in lines]
+
+		#write file as an xyza file
+		with open(outPath+'a','w') as f:
+			for l in lines:
+				f.write(l)
+
+
+
 
 	def deleteFiles(self):
 		os.remove(os.path.join(self.filedir, self.scriptName))
 		os.remove(os.path.join(self.filedir, self.dataName))
-		#os.remove(os.path.join(self.outdir, self.outName))

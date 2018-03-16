@@ -93,6 +93,11 @@ parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
+parser.add_argument('-ko','--keepoutput', action='store_true',
+                    help='option to keep all output files the simulation generates')
+parser.add_argument('-ki','--keepinput', action='store_true',
+                    help='option to keep all input files the simulation generates')
+
 
 #MPI Options
 
@@ -141,6 +146,8 @@ GENES = math.floor(GENOMESIZE/GENESIZE)
 QSUB = args.qsub
 WORKERS = args.workers
 REPEATS = args.repeats
+KEEPINPUT = args.keepinput
+KEEPOUTPUT = args.keepoutput
 
 MPI = args.mpi
 NP = args.nodes
@@ -226,7 +233,6 @@ def evaluateNPWrapping(outFilename,runtime):
     if(msum == 0):        
         return minFit,
 
-    os.remove(outFilename)
 
     return msum,
 
@@ -307,13 +313,18 @@ def evaluateParticleInstance(np,simName):
     
     f = 1E-8,
     f = evaluateNPWrapping(outFilePath,RUNTIME)
+
     print('{} fitness: {}'.format(simName, f))
-    sim.deleteFiles()
+    if not KEEPINPUT:
+        sim.deleteFiles()
+    if KEEPOUTPUT:
+        sim.postProcessOutput(outFilePath)
+    else:
+        os.remove(outFilePath)
     return f
 
 
 def evaluate(individual):
-    #phenome = NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     
     np = phenome.particle
@@ -353,7 +364,6 @@ def beforeMigration(ga):
         ind = 0
         for isle in ga.islands:
             for individual in isle:
-                #np = NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
                 np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
                 ga.dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
                 ind += 1
@@ -379,7 +389,6 @@ def afterMigration(ga):
 def saveHOF(hof):
     i = 1
     for ind in hof:
-        #phenome = NanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
         phenome = CoveredNanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if PARTIAL else NanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
         np = phenome.particle
         sim = MembraneSimulation(
@@ -394,13 +403,10 @@ def saveHOF(hof):
             )
         hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
-        #parlammps.runSimSerial(hofScriptPath)
         runSim(hofScriptPath)
+        outFilePath = os.path.join(sim.outdir,sim.outName)
+        sim.postProcessOutput(outFilePath)
 
-        i+=1
-        #lmp = lammps()
-        #lmp.file(hofScriptPath)
-        #lmp.close()
 
 def geneWiseTwoPoint(ind1,ind2):
     size = len(ind1)
