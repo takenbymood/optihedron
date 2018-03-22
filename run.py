@@ -97,6 +97,8 @@ parser.add_argument('-ko','--keepoutput', action='store_true',
                     help='option to keep all output files the simulation generates')
 parser.add_argument('-ki','--keepinput', action='store_true',
                     help='option to keep all input files the simulation generates')
+parser.add_argument('-kb','--keepbest', action='store_true',
+                    help='option to store each generations best individual')
 
 
 #MPI Options
@@ -148,6 +150,7 @@ WORKERS = args.workers
 REPEATS = args.repeats
 KEEPINPUT = args.keepinput
 KEEPOUTPUT = args.keepoutput
+KEEPBEST = args.keepbest
 
 MPI = args.mpi
 NP = args.nodes
@@ -368,6 +371,8 @@ def beforeMigration(ga):
                 ga.dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
                 ind += 1
         ga.dbconn.commit()
+    if KEEPBEST:
+        saveBest(ga.hof,ga,gen)
 
     return
 
@@ -385,6 +390,29 @@ def afterMigration(ga):
     with open(os.path.join(wd,'coords.csv'), 'a') as file_:    
         file_.write(outFile)
     return
+
+def saveBest(hof,gen):
+
+    if len(hof) < 1:
+        return
+    ind = hof[0]
+    phenome = CoveredNanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    np = phenome.particle
+    sim = MembraneSimulation(
+        'gen_'+str(gen)+"_best",
+        np,
+        RUNTIME,
+        TIMESTEP,            
+        os.path.join(wd,'out'),
+        os.path.join(wd,'hof'),            
+        os.path.join(wd,'mem/template/data.template'),
+        os.path.join(wd,'mem/template/in.template') 
+        )
+    hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
+    sim.saveFiles()
+    runSim(hofScriptPath)
+    outFilePath = os.path.join(sim.outdir,sim.outName)
+    sim.postProcessOutput(outFilePath)
 
 def saveHOF(hof):
     i = 1
