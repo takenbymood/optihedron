@@ -44,6 +44,14 @@ from nanoparticle import CoveredNanoParticlePhenome
 from membranesimulation import MembraneSimulation
 
 parser = argparse.ArgumentParser(description='')
+
+#Runtime Options 
+
+parser.add_argument('-v','--verbose', default=False, action='store_true',
+                    help='option to run in verbose mode')
+
+#Genetic Algorithm Options
+
 parser.add_argument('-n','--ngen',type=int,
                     help='number of generations', required=True)
 parser.add_argument('-d','--demes', type=int,
@@ -64,11 +72,12 @@ parser.add_argument('-mpb','--mindpb', default=0.05, type=float,
                     help='independant probability of a bit flip')
 parser.add_argument('-t','--tournsize', default=3, type=int,
                     help='size of selection tournaments')
-parser.add_argument('-v','--verbose', default=False, action='store_true',
-                    help='option to run in verbose mode')
 parser.add_argument('-g','--graph', default='islands', 
                     choices=['singlet','islands','star','megastar'],
                     help='type of network to use')
+
+#Model Options
+
 parser.add_argument('-s','--seed', default=int(time.time()), type=int,
                     help='seed for the RNG')
 parser.add_argument('-hof','--hofsize', default=5, type=int,
@@ -93,15 +102,8 @@ parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
-parser.add_argument('-ko','--keepoutput', action='store_true',
-                    help='option to keep all output files the simulation generates')
-parser.add_argument('-ki','--keepinput', action='store_true',
-                    help='option to keep all input files the simulation generates')
-parser.add_argument('-kb','--keepbest', action='store_true',
-                    help='option to store each generations best individual')
 
-
-#MPI Options
+#Concurrency Options
 
 parser.add_argument('-mpi','--mpi', action='store_true',
                     help='option to run in parallel')
@@ -114,12 +116,19 @@ parser.add_argument('-np','--nodes', default=4, type=int,
 parser.add_argument('-tm','--timeout', default=1800, type=int,
                     help='mpirun timeout')
 
-#DB Options
+#Data Options
 parser.add_argument('-sr','--saveresults', action='store_true',
                     help='option to save results to db')
+parser.add_argument('-ko','--keepoutput', action='store_true',
+                    help='option to keep all output files the simulation generates')
+parser.add_argument('-ki','--keepinput', action='store_true',
+                    help='option to keep all input files the simulation generates')
+parser.add_argument('-kb','--keepbest', action='store_true',
+                    help='option to store each generations best individual')
+parser.add_argument('-wd','--wdir', default=os.path.dirname(os.path.realpath(__file__)),
+                    help='option to set the working directory of the program')
 
 args = parser.parse_args()
-wd = os.path.dirname(os.path.realpath(__file__))
 
 NSPOKES = 2
 NISLES = args.demes
@@ -151,6 +160,19 @@ REPEATS = args.repeats
 KEEPINPUT = args.keepinput
 KEEPOUTPUT = args.keepoutput
 KEEPBEST = args.keepbest
+
+WDIR = args.wdir
+PDIR = os.path.dirname(os.path.realpath(__file__))
+
+OUTDIR = os.path.join(WDIR,'out')
+RUNDIR = os.path.join(WDIR,'run')
+HOFDIR = os.path.join(WDIR,'hof')
+DBDIR = os.path.join(WDIR,'db')
+TEMPLATEDIR = os.path.join(PDIR,'mem/template')
+TEMPLATEDATAPATH = os.path.join(TEMPLATEDIR,'data.template')
+TEMPLATEINPUTPATH = os.path.join(TEMPLATEDIR,'in.template')
+DBPATH = os.path.join(DBDIR,'datastore.db')
+
 
 MPI = args.mpi
 NP = args.nodes
@@ -286,10 +308,10 @@ def evaluateParticleInstance(np,simName):
         np,
         RUNTIME,
         TIMESTEP,        
-        os.path.join(wd,'out'),
-        os.path.join(wd,'run'),
-        os.path.join(wd,'mem/template/data.template'),
-        os.path.join(wd,'mem/template/in.template'),
+        OUTDIR,
+        RUNDIR,
+        TEMPLATEDATAPATH,
+        TEMPLATEINPUTPATH,
         rAxis=vectools.randomUnitVector(),
         rAmount=random.uniform(0.3141,3.141)        
         )
@@ -300,7 +322,7 @@ def evaluateParticleInstance(np,simName):
 
     if(QSUB):
         try:
-            pbs = parlammps.createPbs(scriptPath,wd,NP,simName,sim.filedir,MPI)
+            pbs = parlammps.createPbs(scriptPath,WDIR,NP,simName,sim.filedir,MPI)
             job = subprocess.Popen(["qsub", pbs],stdout=subprocess.PIPE)
             job.wait()
             out = job.communicate()[0]
@@ -361,7 +383,7 @@ def algorithm(pop,toolbox,stats,hof):
         cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
 
 def beforeMigration(ga):
-    misctools.removeByPattern(wd,"subhedra")
+    misctools.removeByPattern(WDIR,"subhedra")
 
     if SAVERESULTS:
         ind = 0
@@ -387,7 +409,7 @@ def afterMigration(ga):
         for p in points:
             i+=1
             outFile += str(i)+","+str(p[0])+","+str(p[1])+","+str(p[2])+"\n"
-    with open(os.path.join(wd,'coords.csv'), 'a') as file_:    
+    with open(os.path.join(WDIR,'coords.csv'), 'a') as file_:    
         file_.write(outFile)
     return
 
@@ -403,10 +425,10 @@ def saveBest(hof,gen):
         np,
         RUNTIME,
         TIMESTEP,            
-        os.path.join(wd,'out'),
-        os.path.join(wd,'hof'),            
-        os.path.join(wd,'mem/template/data.template'),
-        os.path.join(wd,'mem/template/in.template') 
+        OUTDIR,
+        HOFDIR,            
+        TEMPLATEDATAPATH,
+        TEMPLATEINPUTPATH 
         )
     hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
     sim.saveFiles()
@@ -424,10 +446,10 @@ def saveHOF(hof):
             np,
             RUNTIME,
             TIMESTEP,            
-            os.path.join(wd,'out'),
-            os.path.join(wd,'hof'),            
-            os.path.join(wd,'mem/template/data.template'),
-            os.path.join(wd,'mem/template/in.template') 
+            OUTDIR,
+            HOFDIR,            
+            TEMPLATEDATAPATH,
+            TEMPLATEINPUTPATH 
             )
         hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
         sim.saveFiles()
@@ -450,31 +472,51 @@ def geneWiseTwoPoint(ind1,ind2):
         
     return ind1, ind2
 
-
+def mkdirs(directory):
+    try:
+        os.makedirs(directory)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
 def main():
 
-   if args.graph == 'singlet':
+    try:
+        if not os.path.isdir(WDIR):
+            mkdirs(WDIR)
+        if not os.path.isdir(OUTDIR):
+            mkdirs(OUTDIR)
+        if not os.path.isdir(HOFDIR):
+            mkdirs(HOFDIR)
+        if not os.path.isdir(DBDIR):
+            mkdirs(DBDIR)
+        if not os.path.isdir(RUNDIR):
+            mkdirs(RUNDIR)
+    except Exception as e:
+        print "error creating working environment"
+        raise e
+        
+    if args.graph == 'singlet':
        network = networks.createSinglets(NISLES)
-   elif args.graph == 'islands':
+    elif args.graph == 'islands':
        network = networks.createIslands(NISLES)
-   elif args.graph == 'star':
+    elif args.graph == 'star':
        network = networks.createStar(NISLES-1)
-   elif args.graph == 'megastar':
+    elif args.graph == 'megastar':
        network = networks.createMegaStar(NSPOKES,int(math.ceil((NISLES-3)*0.25)),int(math.floor((NISLES-3)*0.25)))
-   else:
+    else:
        raw_input('malformed network option, continue with islands? (Enter)')
 
-   random.seed(args.seed)
+    random.seed(args.seed)
 
-   if SAVERESULTS:
-       dbconn = databaseconnection.DatabaseConnection(os.path.join(wd,'db/datastore.db'))
+    if SAVERESULTS:
+       dbconn = databaseconnection.DatabaseConnection(DBPATH)
        dbconn.saveSession()
        dbconn.commit()
-   else:
+    else:
        dbconn = None
 
-   ga = nga.NetworkedGeneticAlgorithm(
+    ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
        hofSize = HOFSIZE,
@@ -490,16 +532,16 @@ def main():
        mate = geneWiseTwoPoint,
        dbconn = dbconn)
 
-   results = ga.run(NGEN,FREQ,MIGR)
+    results = ga.run(NGEN,FREQ,MIGR)
 
 
 
    #print(results[0][0][0])
     
-   saveMetrics(results[-2])
-   saveHOF(results[1])
+    saveMetrics(results[-2])
+    saveHOF(results[1])
 
-   if SAVERESULTS:
+    if SAVERESULTS:
        dbconn.saveMetrics(results[-2])
        dbconn.saveGenealogy(results[-1].genealogy_tree, results[-1].genealogy_history)
        dbconn.commit()
