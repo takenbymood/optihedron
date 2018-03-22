@@ -372,7 +372,7 @@ def beforeMigration(ga):
                 ind += 1
         ga.dbconn.commit()
     if KEEPBEST:
-        saveBest(ga.hof,ga,gen)
+        saveBest(ga.hof,ga.gen)
 
     return
 
