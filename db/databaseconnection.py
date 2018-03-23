@@ -97,6 +97,7 @@ class DatabaseConnection:
 		for sessionIndividual in gaSession.sessionIndividuals:
 			individual = {}
 			individual['gen'] = sessionIndividual.gen
+			individual['ind'] = sessionIndividual.ind
 			individual['fitness'] = sessionIndividual.fitness
 			individual['genome'] = sessionIndividual.genomePickle
 			individual['phenome'] = sessionIndividual.phenomePickle
