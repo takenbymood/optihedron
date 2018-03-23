@@ -24,7 +24,7 @@ def polarToCartesianVector(radius, polarAngle, azimuthAngle):
             radius*math.sin(polarAngle)*math.sin(azimuthAngle),
             radius*math.cos(polarAngle)]
 
-def cartesianToPolarVector(x,y,z):
+def cartesianToPolarVector(x,y,z,r):
     return [math.sqrt(x*x+y*y+z*z),
             math.acos(z/(r)),
             math.atan2(y,x)]
