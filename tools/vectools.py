@@ -25,9 +25,8 @@ def polarToCartesianVector(radius, polarAngle, azimuthAngle):
             radius*math.cos(polarAngle)]
 
 def cartesianToPolarVector(x,y,z):
-    return [math.sqrt(x*x+y*y+z*z),
-            math.acos(z/(r)),
-            math.atan2(y,x)]
+    r = math.sqrt(x*x+y*y+z*z)
+    return [r, math.acos(z/(r)), math.atan2(y,x)]
 
 def randomUnitVector():
     phi = np.random.uniform(0,np.pi*2)
