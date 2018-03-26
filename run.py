@@ -117,6 +117,7 @@ parser.add_argument('-tm','--timeout', default=1800, type=int,
                     help='mpirun timeout')
 
 #Data Options
+
 parser.add_argument('-sr','--saveresults', action='store_true',
                     help='option to save results to db')
 parser.add_argument('-ko','--keepoutput', action='store_true',
