@@ -84,7 +84,7 @@ class MembraneSimulation():
 		tt.fillTemplate(simScript, scratch, '_LIGAND GROUP PLACEHOLDER_', 'group				ligand 	type {}:{}\n'.format(3,2+len(self.protein.ligands)))
 		tt.fillTemplate(simScript, scratch, '_NANOPARTICLE GROUP PLACEHOLDER_', 'group				np      type 2:{}\n'.format(2+len(self.protein.ligands)))
 		tt.fillTemplate(simScript, scratch, '_LIGAND MEMBRANE INTERACTIONS PLACEHOLDER_', ligandMembraneInteractions)
-		tt.fillTemplate(simScript, scratch, '_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', 'dump			coords all custom {} {} id type x y z\ndump_modify	coords sort id'.format(
+		tt.fillTemplate(simScript, scratch, '_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', 'dump			coords all custom {} {} id type x y z c_cls\ndump_modify	coords sort id'.format(
 																								self.dumpres, os.path.join(self.outdir, self.outName)))				
 		tt.fillTemplate(simScript, scratch, '_TIMESTEP PLACEHOLDER_', 'timestep       {}'.format(self.timestep))		
 		tt.fillTemplate(simScript, scratch, '_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))

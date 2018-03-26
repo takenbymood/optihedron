@@ -201,60 +201,63 @@ def saveMetrics(lis,filename='metrics.csv'):
 def evaluateNPWrapping(outFilename,runtime):    
     minFit = 1E-8
     outHeaderSize = 9
-    outData = []
+    outData = {}
     if(not os.path.exists(outFilename)):                                
             return minFit,
 
     with open(outFilename, 'r+') as f:
-        lines = f.readlines()        
+        lines = f.readlines()
+        ts = 0
+        steps = []
+        hPos = 0        
         for i in range(len(lines)):
-            if str('ITEM: TIMESTEP') in lines[i] and str(runtime) in lines[i+1]:                
-                for j in range(outHeaderSize):                    
-                    lines[i + j] = ""
-                break                
-            lines[i] = ""
+            if str('ITEM: TIMESTEP') in lines[i]:
+                hPos = i
+                ts = int(lines[i+1])
+                steps.append(ts)
+                outData[ts]=[]                
+            if(i-hPos>outHeaderSize):
+                outData[ts].append(lines[i].replace("\n","").replace(" ",","))
 
-        for line in lines:
-            if line != "":
-                outData.append(line.replace("\n","").replace(" ",","))
+    if len(outData[ts])<50:        
+        return minFit, 
 
-    if len(outData)<50:        
-        return minFit,    
+    stepData = []
 
-    outVectors = {}
-    for line in outData:
-        slist = line.split(",")[1:]
-        if(len(slist)<3):            
-            return minFit,
-        if int(slist[0]) in outVectors:
-            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3])})
-        else:
-            outVectors[int(slist[0])] = []
-            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3])})
+    for s in steps:   
+        outVectors = {}
+        for line in outData[ts]:
+            slist = line.split(",")[1:]
+            sId = line.split(",")[0]
+            if(len(slist)<3):            
+                return minFit,
+            if not int(slist[0]) in outVectors:
+                outVectors[int(slist[0])] = []
+            outVectors[int(slist[0])].append({'id':sId,'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3]), 'c':int(slist[4])})
 
-    magnitudes = []
-    boxsize = 20
-    for key, value in outVectors.iteritems():
-        if key == 2:
+        cStep = []
+        mStep = []
+        boxsize = 20
+        for key, value in outVectors.iteritems():
             for v in value:
-                inrange = 0
-                fmag = 0
-                for v2 in outVectors[1]:
-                    xd = v['x']-v2['x']
-                    yd = v['y']-v2['y']
-                    zd = v['z']-v2['z']
-                    m = math.sqrt(xd*xd+yd*yd+zd*zd)                                          
-                    if(m<5.0):
-                        inrange+=1
-                if(inrange>3):
-                    magnitudes.append(inrange)
+                if not v['c'] in cStep:
+                    cStep.append(v['c'])
+            if key == 2:
+                for v in value:
+                    inrange = 0
+                    fmag = 0
+                    for v2 in outVectors[1]:
+                        xd = v['x']-v2['x']
+                        yd = v['y']-v2['y']
+                        zd = v['z']-v2['z']
+                        #squared magnitude of the difference
+                        m = xd*xd+yd*yd+zd*zd                                          
+                        if(m<25.0):
+                            mStep.append(v2['id'])
+                        
+            stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep)})
 
-    if len(magnitudes)<1:        
-        return minFit,
-
-    msum = 0
-    for m in magnitudes:
-        msum += m
+    msum = stepData[-1]['mNum']
 
     if(msum == 0):        
         return minFit,
