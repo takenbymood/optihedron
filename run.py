@@ -240,8 +240,18 @@ def evaluateNPWrapping(outFilename,runtime):
         boxsize = 20
         for key, value in outVectors.iteritems():
             for v in value:
-                if not v['c'] in cStep:
-                    cStep.append(v['c'])
+                cIds = [c['id'] for c in cStep]
+                if not v['c'] in cIds:
+                    cStep.append({'id':v['c'],'size':1})
+                else:
+                    cId = 0
+                    cCount = 0
+                    for cI in cIds:
+                        if cI == v['c']:
+                            cId = cCount
+                        cCount += 1
+                    cStep[cId]['size'] += 1
+
             if key == 2:
                 for v in value:
                     inrange = 0
@@ -254,7 +264,7 @@ def evaluateNPWrapping(outFilename,runtime):
                         m = xd*xd+yd*yd+zd*zd                                          
                         if(m<25.0):
                             mStep.append(v2['id'])
-                        
+                                       
             stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep)})
 
     msum = stepData[-1]['mNum']
