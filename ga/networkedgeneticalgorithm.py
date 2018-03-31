@@ -9,10 +9,11 @@ import numpy
 
 from . import networks
 
-from deap import algorithms
 from deap import base
 from deap import creator
 from deap import tools
+
+from ga import algorithms
 
 from pathos import pools
 

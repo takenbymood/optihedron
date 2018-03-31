@@ -21,12 +21,12 @@ import traceback
 # from distributed.joblib import DaskDistributedBackend
 from threading import Timer
 
-from deap import algorithms
 from deap import base
 from deap import creator
 from deap import tools
 
 from ga import networks
+from ga import algorithms
 from ga import phenome
 from ga import networkedgeneticalgorithm as nga
 from ga import grayencoder as ge
@@ -76,6 +76,8 @@ parser.add_argument('-t','--tournsize', default=3, type=int,
 parser.add_argument('-g','--graph', default='islands', 
                     choices=['singlet','islands','star','megastar'],
                     help='type of network to use')
+parser.add_argument('-a', '--algorithm', default='eaSimple',
+                    choices=['eaSimple'])
 
 #Model Options
 
@@ -380,7 +382,7 @@ def sel(pop,k):
 def mut(individual):
     return tools.mutFlipBit(individual,MINPDB)
 
-def algorithm(pop,toolbox,stats,hof):
+def algorithmEaSimple(pop,toolbox,stats,hof):
     return algorithms.eaSimple(pop,toolbox=toolbox,
         cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
 
@@ -508,6 +510,12 @@ def main():
        network = networks.createMegaStar(NSPOKES,int(math.ceil((NISLES-3)*0.25)),int(math.floor((NISLES-3)*0.25)))
     else:
        raw_input('malformed network option, continue with islands? (Enter)')
+
+    if args.algorithm == 'eaSimple':
+        algorithm = algorithmEaSimple
+    else:
+        raw_input('malformed algorithm option, continuing with eaSimple.. (Enter)')
+        algorithm = algorithmEaSimple
 
     random.seed(args.seed)
 
