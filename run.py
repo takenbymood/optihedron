@@ -192,7 +192,7 @@ def exit(signal, frame):
         os._exit(1)
 
 def saveMetrics(lis,filename='metrics.csv'):
-    with open(filename,'wb') as out:
+    with open(os.path.join(WDIR,filename),'wb') as out:
         csv_out=csv.DictWriter(out,lis[-1].keys())
         csv_out.writeheader()
         for row in lis:
@@ -478,7 +478,7 @@ def mkdirs(directory):
         os.makedirs(directory)
     except OSError as e:
         if e.errno != errno.EEXIST:
-            raise
+            raise        
 
 def main():
 
