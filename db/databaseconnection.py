@@ -87,22 +87,25 @@ class DatabaseConnection:
 		gaSession = self.dbSession.query(Sessions).filter(Sessions.sessionId == sessionId).first()
 		data = {}
 
-		data['metrics'] = gaSession.sessionMetrics.metricsPickle
+		if gaSession.sessionMetrics:
+			data['metrics'] = gaSession.sessionMetrics.metricsPickle
 
-		data['genealogy'] = {}
-		data['genealogy']['tree'] = gaSession.sessionGenealogy.treePickle
-		data['genealogy']['history'] = gaSession.sessionGenealogy.historyPickle
+		if gaSession.sessionGenealogy:
+			data['genealogy'] = {}
+			data['genealogy']['tree'] = gaSession.sessionGenealogy.treePickle
+			data['genealogy']['history'] = gaSession.sessionGenealogy.historyPickle
 
-		data['individuals'] = []
-		for sessionIndividual in gaSession.sessionIndividuals:
-			individual = {}
-			individual['gen'] = sessionIndividual.gen
-			individual['ind'] = sessionIndividual.ind
-			individual['fitness'] = sessionIndividual.fitness
-			individual['genome'] = sessionIndividual.genomePickle
-			individual['phenome'] = sessionIndividual.phenomePickle
+		if gaSession.sessionIndividuals:
+			data['individuals'] = []
+			for sessionIndividual in gaSession.sessionIndividuals:
+				individual = {}
+				individual['gen'] = sessionIndividual.gen
+				individual['ind'] = sessionIndividual.ind
+				individual['fitness'] = sessionIndividual.fitness
+				individual['genome'] = sessionIndividual.genomePickle
+				individual['phenome'] = sessionIndividual.phenomePickle
 
-			data['individuals'].append(individual)
+				data['individuals'].append(individual)
 
 		return data
 
