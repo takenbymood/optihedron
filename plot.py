@@ -95,9 +95,9 @@ for n in range(0,300,10):
     
 plt.tick_params(axis="both", which="both", bottom="off", top="off",labelbottom="on", left="off", right="off", labelleft="on") 
 
-for x_i, y_i, y2_i, yerr_i, fname_i, color_i in zip(x, y, y2, yerr, fname, tableau20[::2]):    
-    ax1.plot(x_i, y2_i, color=color_i, lw=1.5, label='Maximum {}'.format(fname_i))
-    ax1.errorbar(x_i, y_i, yerr=yerr_i, color=color_i, markersize='3.5', capsize=2.5, fmt='o-', label='Average {}'.format(fname_i))    
+for x_i, y_i, y2_i, yerr_i, fname_i, color_i,color_j in zip(x, y, y2, yerr, fname, tableau20[::3],tableau20[3::]):    
+    ax1.plot(x_i, y2_i, color=color_i, lw=1.5, label='Maximum {}'.format(fname_i.split('.')[0]))
+    ax1.errorbar(x_i, y_i, yerr=yerr_i, color=color_j, markersize='3.5', capsize=2.5, fmt='o-', label='Average {}'.format(fname_i.split('.')[0]))    
 
 #plt.legend(bbox_to_anchor=(0.675, 0.2), loc=2, borderaxespad=0.)
 plt.legend()

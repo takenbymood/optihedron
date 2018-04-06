@@ -17,6 +17,8 @@ import pathos
 from pathos import pools
 import traceback
 
+from operator import itemgetter
+
 # from joblib import Parallel, delayed, parallel_backend
 # from distributed.joblib import DaskDistributedBackend
 from threading import Timer
@@ -103,6 +105,8 @@ parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
 parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
+parser.add_argument('-pw','--penaltyweight', default=1.0, type=float,
+                    help='weighting of the ligand affinity penalty')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
 
@@ -164,6 +168,7 @@ REPEATS = args.repeats
 KEEPINPUT = args.keepinput
 KEEPOUTPUT = args.keepoutput
 KEEPBEST = args.keepbest
+PENALTYWEIGHT = args.penaltyweight
 
 WDIR = args.wdir
 PDIR = os.path.dirname(os.path.realpath(__file__))
@@ -201,69 +206,102 @@ def saveMetrics(lis,filename='metrics.csv'):
         for row in lis:
             csv_out.writerow(row)
 
-def evaluateNPWrapping(outFilename,runtime):    
+def evaluateNPWrapping(np,outFilename,runtime):    
     minFit = 1E-8
     outHeaderSize = 9
-    outData = []
+    outData = {}
+
+    nActiveLigands = 0
+    npTotalEps = 0.0
+
+    for l in np.ligands:
+        if l.eps > 0.0:
+            nActiveLigands += 1
+        npTotalEps += l.eps
+
     if(not os.path.exists(outFilename)):                                
             return minFit,
 
     with open(outFilename, 'r+') as f:
-        lines = f.readlines()        
+        lines = f.readlines()
+        ts = 0
+        steps = []
+        hPos = 0        
         for i in range(len(lines)):
-            if str('ITEM: TIMESTEP') in lines[i] and str(runtime) in lines[i+1]:                
-                for j in range(outHeaderSize):                    
-                    lines[i + j] = ""
-                break                
-            lines[i] = ""
+            if str('ITEM: TIMESTEP') in lines[i]:
+                hPos = i
+                ts = int(lines[i+1])
+                steps.append(ts)
+                outData[ts]=[]                
+            if(i-hPos>outHeaderSize):
+                outData[ts].append(lines[i].replace("\n","").replace(" ",","))
 
-        for line in lines:
-            if line != "":
-                outData.append(line.replace("\n","").replace(" ",","))
+    if len(outData[ts])<50:        
+        return minFit, 
 
-    if len(outData)<50:        
-        return minFit,    
+    stepData = []
 
-    outVectors = {}
-    for line in outData:
-        slist = line.split(",")[1:]
-        if(len(slist)<3):            
-            return minFit,
-        if int(slist[0]) in outVectors:
-            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3])})
-        else:
-            outVectors[int(slist[0])] = []
-            outVectors[int(slist[0])].append({'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3])})
+    for s in steps:   
+        outVectors = {}
+        for line in outData[ts]:
+            slist = line.split(",")[1:]
+            sId = line.split(",")[0]
+            if(len(slist)<3):            
+                return minFit,
+            if not int(slist[0]) in outVectors:
+                outVectors[int(slist[0])] = []
+            outVectors[int(slist[0])].append({'id':sId,'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3]), 'c':int(slist[4])})
 
-    magnitudes = []
-    boxsize = 20
-    for key, value in outVectors.iteritems():
-        if key == 2:
+        cStep = []
+        mStep = []
+        boxsize = 20
+        for key, value in outVectors.iteritems():
+            budded = False
             for v in value:
-                inrange = 0
-                fmag = 0
-                for v2 in outVectors[1]:
-                    xd = v['x']-v2['x']
-                    yd = v['y']-v2['y']
-                    zd = v['z']-v2['z']
-                    m = math.sqrt(xd*xd+yd*yd+zd*zd)                                          
-                    if(m<5.0):
-                        inrange+=1
-                if(inrange>3):
-                    magnitudes.append(inrange)
+                cIds = [c['id'] for c in cStep]
+                if not v['c'] in cIds:
+                    cStep.append({'id':v['c'],'size':1})
+                else:
+                    cId = 0
+                    cCount = 0
+                    for cI in cIds:
+                        if cI == v['c']:
+                            cId = cCount
+                        cCount += 1
+                    cStep[cId]['size'] += 1
 
-    if len(magnitudes)<1:        
-        return minFit,
+            if key == 2:
+                for v in value:
+                    inrange = 0
+                    fmag = 0
+                    for v2 in outVectors[1]:
+                        xd = v['x']-v2['x']
+                        yd = v['y']-v2['y']
+                        zd = v['z']-v2['z']
+                        #squared magnitude of the difference
+                        m = xd*xd+yd*yd+zd*zd                                          
+                        if(m<25.0):
+                            mStep.append(v2['id'])
 
-    msum = 0
-    for m in magnitudes:
-        msum += m
+            nLargeClusters = 0
+            for v in sorted(cStep, key=itemgetter('size')):
+                if v['size'] > 100:
+                    nLargeClusters += 1
+            budded = nLargeClusters > 1
+                                       
+            stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded})
+
+
+    msum = stepData[-1]['mNum']
 
     if(msum == 0):        
         return minFit,
 
+    reward = 400 if stepData[-1]['budded'] else 0
 
-    return msum,
+    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(nActiveLigands))))*100 if stepData[-1]['budded'] and float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+
+    return msum + reward + penalty,
 
 def runCmd(cmd,timeout):
     try:
@@ -341,7 +379,7 @@ def evaluateParticleInstance(np,simName):
         runSim(scriptPath)
     
     f = 1E-8,
-    f = evaluateNPWrapping(outFilePath,RUNTIME)
+    f = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
