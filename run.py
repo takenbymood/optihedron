@@ -215,8 +215,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
     npTotalEps = 0.0
 
     for l in np.ligands:
-        if l.eps > 0.0:
-            nActiveLigands += 1
+        nActiveLigands += 1
         npTotalEps += l.eps
 
     if(not os.path.exists(outFilename)):                                
@@ -297,11 +296,11 @@ def evaluateNPWrapping(np,outFilename,runtime):
     if(msum == 0):        
         return minFit,
 
-    reward = 400 if stepData[-1]['budded'] else 0
+    reward = 400 if stepData[-1]['budded'] else msum
 
     penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(nActiveLigands))))*100 if stepData[-1]['budded'] and float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
-    return msum + reward + penalty,
+    return float(reward) + float(penalty),
 
 def runCmd(cmd,timeout):
     try:
