@@ -62,7 +62,7 @@ parser.add_argument('-d','--demes', type=int,
 parser.add_argument('-p','--pop', type=int,
                     help='population of each deme', required=True)
 parser.add_argument('-gs','--genomesize', type=int,
-                    help='number of bits in the genome', default=648)
+                    help='number of genes in the genome (overwritten for fixed angle)', default=25)
 parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
@@ -148,7 +148,8 @@ VERBOSE=args.verbose
 SEED = args.seed
 TSIZE = args.tournsize
 MINPDB = args.mindpb
-GENOMESIZE = args.genomesize
+PARTIAL = args.partialpacking
+GENES = args.genomesize if PARTIAL else 72
 MIGR = args.migrations
 HOFSIZE = args.hofsize
 EXPRPLACES = args.exprplaces
@@ -159,9 +160,8 @@ EPSMAX = args.epsmax
 EPSMIN = args.epsmin
 RUNTIME = args.runtime
 TIMESTEP = args.timestep
-PARTIAL = args.partialpacking
 GENESIZE = (EXPRPLACES+EPSPLACES+POLANGPLACES+AZIANGPLACES) if PARTIAL else (EXPRPLACES+EPSPLACES)
-GENES = math.floor(GENOMESIZE/GENESIZE)
+GENOMESIZE = GENES*GENESIZE
 QSUB = args.qsub
 WORKERS = args.workers
 REPEATS = args.repeats
