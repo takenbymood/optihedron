@@ -16,6 +16,8 @@ import pathos
 from pathos import pools
 import traceback
 
+from operator import itemgetter
+
 # from joblib import Parallel, delayed, parallel_backend
 # from distributed.joblib import DaskDistributedBackend
 from threading import Timer
@@ -100,6 +102,8 @@ parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
 parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
+parser.add_argument('-pw','--penaltyweight', default=1.0, type=float,
+                    help='weighting of the ligand affinity penalty')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
 
@@ -161,6 +165,7 @@ REPEATS = args.repeats
 KEEPINPUT = args.keepinput
 KEEPOUTPUT = args.keepoutput
 KEEPBEST = args.keepbest
+PENALTYWEIGHT = args.penaltyweight
 
 WDIR = args.wdir
 PDIR = os.path.dirname(os.path.realpath(__file__))
@@ -198,10 +203,19 @@ def saveMetrics(lis,filename='metrics.csv'):
         for row in lis:
             csv_out.writerow(row)
 
-def evaluateNPWrapping(outFilename,runtime):    
+def evaluateNPWrapping(np,outFilename,runtime):    
     minFit = 1E-8
     outHeaderSize = 9
     outData = {}
+
+    nActiveLigands = 0
+    npTotalEps = 0.0
+
+    for l in np.ligands:
+        if l.eps > 0.0:
+            nActiveLigands += 1
+        npTotalEps += l.eps
+
     if(not os.path.exists(outFilename)):                                
             return minFit,
 
@@ -239,6 +253,7 @@ def evaluateNPWrapping(outFilename,runtime):
         mStep = []
         boxsize = 20
         for key, value in outVectors.iteritems():
+            budded = False
             for v in value:
                 cIds = [c['id'] for c in cStep]
                 if not v['c'] in cIds:
@@ -264,16 +279,26 @@ def evaluateNPWrapping(outFilename,runtime):
                         m = xd*xd+yd*yd+zd*zd                                          
                         if(m<25.0):
                             mStep.append(v2['id'])
+
+            nLargeClusters = 0
+            for v in sorted(cStep, key=itemgetter('size')):
+                if v['size'] > 100:
+                    nLargeClusters += 1
+            budded = nLargeClusters > 1
                                        
-            stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep)})
+            stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded})
+
 
     msum = stepData[-1]['mNum']
 
     if(msum == 0):        
         return minFit,
 
+    reward = 400 if stepData[-1]['budded'] else 0
 
-    return msum,
+    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(nActiveLigands))))*100 if stepData[-1]['budded'] and float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+
+    return msum + reward + penalty,
 
 def runCmd(cmd,timeout):
     try:
@@ -351,7 +376,7 @@ def evaluateParticleInstance(np,simName):
         runSim(scriptPath)
     
     f = 1E-8,
-    f = evaluateNPWrapping(outFilePath,RUNTIME)
+    f = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
