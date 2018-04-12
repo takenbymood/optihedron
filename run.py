@@ -296,7 +296,8 @@ def evaluateNPWrapping(np,outFilename,runtime):
     if(msum == 0):        
         return minFit,
 
-    reward = 400 if stepData[-1]['budded'] else msum
+    # reward = 400 if stepData[-1]['budded'] else msum
+    reward = msum
 
     penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if stepData[-1]['budded'] and float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
