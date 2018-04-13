@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, PickleType, Integer, Numeric, ForeignKey
+from sqlalchemy import Table, create_engine, Column, String, PickleType, Integer, Numeric, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 
@@ -13,18 +13,20 @@ class Sessions(Base):
 	sessionTimeStamp = Column('timestamp', String)	
 	sessionMetrics = relationship('Metrics',uselist=False, back_populates='session')
 	sessionGenealogy = relationship('Genealogy', uselist=False, back_populates='session')
-	sessionIndividuals = relationship('Individual', back_populates='session')
+	sessionGenerations = relationship('Generation',back_populates='session')
+	arguments = Column('arguments', String)
 
-	def __init__(self, sessionTimeStamp):
+	def __init__(self, sessionTimeStamp,arguments):
 		self.sessionTimeStamp = sessionTimeStamp
+		self.arguments = arguments
 
 class Metrics(Base):
 	__tablename__ = 'metrics'
 	
 	pID = Column('id', Integer, primary_key=True)
-	sessionId = Column(Integer, ForeignKey('sessions.id'))
+	session_id = Column(Integer, ForeignKey('sessions.id'))
 	session = relationship('Sessions',uselist=False, back_populates='sessionMetrics')
-	metricsPickle = Column('metricsPickle', PickleType)
+	metricsPickle = Column('metrics_pickle', PickleType)
 
 	def __init__(self, sessionId, metrics):
 		self.metricsPickle = metrics		
@@ -33,33 +35,68 @@ class Genealogy(Base):
 	__tablename__ = 'genealogy'
 
 	pID = Column('id', Integer, primary_key=True)
-	sessionId = Column(Integer, ForeignKey('sessions.id'))
+	session_id = Column(Integer, ForeignKey('sessions.id'))
 	session = relationship('Sessions',uselist=False, back_populates='sessionGenealogy')
-	treePickle = Column('treePickle', PickleType)
-	historyPickle = Column('historyPickle', PickleType)
+	treePickle = Column('tree_pickle', PickleType)
+	historyPickle = Column('history_pickle', PickleType)
 
 	def __init__(self, sessionId, tree, history):
 		self.treePickle = tree
 		self.historyPickle = history
 
+class Generation(Base):
+	__tablename__ = 'generations'
+
+	pID = Column('id', Integer, primary_key=True)
+	genNumber = Column('gen_number',Integer)
+	sessionId = Column(Integer, ForeignKey('sessions.id'))
+	session = relationship('Sessions',uselist=False,back_populates='sessionGenerations')
+	novelGenes = relationship('Gene',back_populates='generation')
+	individuals = relationship('Individual',back_populates='gen')
+
+	def __init__(self, genNum):
+		self.genNumber = genNum
+
+association_table = Table('association_ind_gene', Base.metadata,
+    Column('individual_id', Integer, ForeignKey('individuals.id')),
+    Column('gene_id', Integer, ForeignKey('genes.id'))
+)
+
+class Gene(Base):
+	__tablename__ = 'genes'
+
+	pID = Column('id', Integer, primary_key=True)
+	rawGene = Column('raw_gene',String)
+	gen_id = Column(Integer, ForeignKey('generations.id'))
+	generation = relationship('Generation',uselist=False)
+	individuals = relationship('Individual',secondary=association_table,back_populates='genes')
+
+	def __init__(self, rawGene):
+		self.rawGene = str(rawGene).replace('[','').replace(']','').replace(',','').replace(' ','')
+
+
 class Individual(Base):
 	__tablename__ = 'individuals'
 
 	pID = Column('id', Integer, primary_key=True)
-	sessionId = Column(Integer, ForeignKey('sessions.id'))
-	session = relationship('Sessions',uselist=False, back_populates='sessionIndividuals') 
-	gen = Column('gen', Integer)
-	ind = Column('ind', Integer)
+	gen_id = Column(Integer, ForeignKey('generations.id'))
+	gen = relationship('Generation',uselist=False)
 	fitness = Column('fitness', Numeric)
-	genomePickle = Column('genomePickle', PickleType)
-	phenomePickle = Column('phenomePickle', PickleType)
+	genome = Column('genome',String)
+	genomePickle = Column('genome_pickle', PickleType)
+	phenomePickle = Column('phenome_pickle', PickleType)
+	genes = relationship('Gene',secondary=association_table,back_populates='individuals')
 
-	def __init__(self, sessionId, gen, ind, fitness, genome, phenome):
-		self.gen = gen
-		self.ind = ind
+	def __init__(self, fitness, genome, phenome):
 		self.fitness = fitness
+		self.genome = str(genome).replace('[','').replace(']','').replace(',','').replace(' ','')
 		self.genomePickle = genome
 		self.phenomePickle = phenome
+		
+
+	def addGene(self,gene):
+		self.genes.append(gene)
+
 
 class DatabaseConnection:
 
@@ -69,9 +106,9 @@ class DatabaseConnection:
 		dbSession = sessionmaker(bind=engine)
 		self.dbSession = dbSession()
 		
-	def saveSession(self):
+	def saveSession(self,arguments):
 		self.gaSessionTimeStamp = time.strftime("%Y-%m-%d %H:%M:%S")
-		self.gaSession = Sessions(self.gaSessionTimeStamp)
+		self.gaSession = Sessions(self.gaSessionTimeStamp,arguments)
 		self.gaSessionId = self.gaSession.sessionId
 		self.dbSession.add(self.gaSession)		
 
@@ -81,8 +118,11 @@ class DatabaseConnection:
 	def saveGenealogy(self, tree, history):
 		self.gaSession.sessionGenealogy = Genealogy(self.gaSessionId, tree, history)
 
-	def saveIndividual(self, gen, ind, fitness, genome, phenome):
-		self.gaSession.sessionIndividuals.append(Individual(self.gaSessionId, gen, ind, fitness, genome, phenome))
+	def saveIndividual(self, ind):
+		self.gaSession.sessionIndividuals.append(ind)
+
+	def saveGeneration(self,gen):
+		self.gaSession.sessionGenerations.append(gen)
 
 	def whatSessions(self):
 		gaSessions = self.dbSession.query(Sessions).all()	

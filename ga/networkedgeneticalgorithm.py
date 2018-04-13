@@ -13,6 +13,8 @@ from deap import base
 from deap import creator
 from deap import tools
 
+
+
 from ga import algorithms
 
 from pathos import pools
@@ -103,6 +105,7 @@ class NetworkedGeneticAlgorithm:
         self.verbose = verbose
         self.dbconn = dbconn
         self.gen = 0
+        self.novelty=[]
 
     
 
