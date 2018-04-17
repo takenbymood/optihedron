@@ -430,14 +430,14 @@ def beforeMigration(ga):
     misctools.removeByPattern(WDIR,"subhedra")
 
     dbGen = dao.Generation(ga.gen)
-
     
     if SAVERESULTS:
+
 
         for isle in ga.islands:
             for individual in isle:
                 np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-                i = dao.Individual(individual.fitness.values[-1], individual, np)
+                i = dao.Individual(individual, np)
                 dbGen.individuals.append(i)
                 for g in np.genelist:
                     gene = dao.Gene(g)

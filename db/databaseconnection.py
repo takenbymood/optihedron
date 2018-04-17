@@ -44,6 +44,18 @@ class Genealogy(Base):
 		self.treePickle = tree
 		self.historyPickle = history
 
+# class History(Base):
+# 	__tablename__ = 'histories'
+# 	pID = Column('id', Integer, primary_key=True)
+# 	child_id = Column('child_id', Integer, ForeignKey('individuals.id'))
+# 	parent_id = Column('parent_id', Integer, ForeignKey('individuals.id'))
+# 	child = relationship('Individual',uselist=False,back_populates='history',foreign_keys=[child_id])
+# 	parent = relationship('Individual',uselist=False,foreign_keys=[parent_id])
+
+# 	def __init__(self, child):
+# 		self.child = child
+
+
 class Generation(Base):
 	__tablename__ = 'generations'
 
@@ -81,17 +93,24 @@ class Individual(Base):
 	pID = Column('id', Integer, primary_key=True)
 	gen_id = Column(Integer, ForeignKey('generations.id'))
 	gen = relationship('Generation',uselist=False)
+
+	#history_id = Column(Integer, ForeignKey('histories.id'))
+	# history = relationship('History',back_populates='child',foreign_keys='History.child_id')
+
+	gh_index = Column('gh_index', Integer)
+
 	fitness = Column('fitness', Numeric)
 	genome = Column('genome',String)
 	genomePickle = Column('genome_pickle', PickleType)
 	phenomePickle = Column('phenome_pickle', PickleType)
 	genes = relationship('Gene',secondary=association_table,back_populates='individuals')
 
-	def __init__(self, fitness, genome, phenome):
-		self.fitness = fitness
-		self.genome = str(genome).replace('[','').replace(']','').replace(',','').replace(' ','')
-		self.genomePickle = genome
+	def __init__(self, individual, phenome):
+		self.fitness = individual.fitness.values[-1]
+		self.genome = str(individual).replace('[','').replace(']','').replace(',','').replace(' ','')
+		self.genomePickle = individual
 		self.phenomePickle = phenome
+		self.gh_index = individual.history_index
 		
 
 	def addGene(self,gene):
