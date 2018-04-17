@@ -159,17 +159,30 @@ class DatabaseConnection:
 			data['genealogy']['tree'] = gaSession.sessionGenealogy.treePickle
 			data['genealogy']['history'] = gaSession.sessionGenealogy.historyPickle
 
-		if gaSession.sessionIndividuals:
+		if gaSession.sessionGenerations:
 			data['individuals'] = []
-			for sessionIndividual in gaSession.sessionIndividuals:
-				individual = {}
-				individual['gen'] = sessionIndividual.gen
-				individual['ind'] = sessionIndividual.ind
-				individual['fitness'] = sessionIndividual.fitness
-				individual['genome'] = sessionIndividual.genomePickle
-				individual['phenome'] = sessionIndividual.phenomePickle
+			for sessionGeneration in gaSession.sessionGenerations:
+				for sessionIndividual in sessionGeneration.individuals:
+					individual = {}
+			 		individual['gen'] = sessionGeneration.genNumber
+			 		individual['gh'] = sessionIndividual.gh_index
+			 		individual['fitness'] = sessionIndividual.fitness
+					individual['genome'] = sessionIndividual.genomePickle
+					individual['phenome'] = sessionIndividual.phenomePickle
+					data['individuals'].append(individual)
 
-				data['individuals'].append(individual)
+
+		# if gaSession.sessionIndividuals:
+		# 	data['individuals'] = []
+		# 	for sessionIndividual in gaSession.sessionIndividuals:
+		# 		individual = {}
+		# 		individual['gen'] = sessionIndividual.gen
+		# 		individual['ind'] = sessionIndividual.ind
+		# 		individual['fitness'] = sessionIndividual.fitness
+		# 		individual['genome'] = sessionIndividual.genomePickle
+		# 		individual['phenome'] = sessionIndividual.phenomePickle
+
+		# 		data['individuals'].append(individual)
 
 		return data
 
