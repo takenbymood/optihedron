@@ -20,6 +20,13 @@ class Session(Base):
 		self.timestamp = sessionTimeStamp
 		self.arguments = arguments
 
+	def getGenesList(self):
+		genes = []
+		for gen in self.generations:
+			for gene in gen.novelGenes:
+				genes.append(gene)
+		return genes
+
 	def getIndividualsList(self):
 		inds = []
 		for gen in self.generations:
