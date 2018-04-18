@@ -6,7 +6,7 @@ import time
 
 Base = declarative_base()
 
-class Sessions(Base):
+class Session(Base):
 	__tablename__ ='sessions'
 
 	pID = Column('id', Integer, primary_key=True)
@@ -20,12 +20,19 @@ class Sessions(Base):
 		self.timestamp = sessionTimeStamp
 		self.arguments = arguments
 
+	def getIndividualsList(self):
+		inds = []
+		for gen in self.generations:
+			for ind in gen.individuals:
+				inds.append(ind)
+		return inds
+
 class Metrics(Base):
 	__tablename__ = 'metrics'
 	
 	pID = Column('id', Integer, primary_key=True)
 	session_id = Column(Integer, ForeignKey('sessions.id'))
-	session = relationship('Sessions',uselist=False, back_populates='metrics')
+	session = relationship('Session',uselist=False, back_populates='metrics')
 	metricsPickle = Column('metrics_pickle', PickleType)
 
 	def __init__(self, sessionId, metrics):
@@ -36,7 +43,7 @@ class Genealogy(Base):
 
 	pID = Column('id', Integer, primary_key=True)
 	session_id = Column(Integer, ForeignKey('sessions.id'))
-	session = relationship('Sessions',uselist=False, back_populates='genealogy')
+	session = relationship('Session',uselist=False, back_populates='genealogy')
 	treePickle = Column('tree_pickle', PickleType)
 	historyPickle = Column('history_pickle', PickleType)
 
@@ -51,7 +58,7 @@ class Generation(Base):
 	pID = Column('id', Integer, primary_key=True)
 	genNumber = Column('gen_number',Integer)
 	sessionId = Column(Integer, ForeignKey('sessions.id'))
-	session = relationship('Sessions',uselist=False,back_populates='generations')
+	session = relationship('Session',uselist=False,back_populates='generations')
 	novelGenes = relationship('Gene',back_populates='generation')
 	individuals = relationship('Individual',back_populates='gen')
 
@@ -116,7 +123,7 @@ class DatabaseConnection:
 		
 	def saveSession(self,arguments):
 		self.gaSessionTimeStamp = time.strftime("%Y-%m-%d %H:%M:%S")
-		self.gaSession = Sessions(self.gaSessionTimeStamp,arguments)
+		self.gaSession = Session(self.gaSessionTimeStamp,arguments)
 		self.gaSessionId = self.gaSession.pID
 		self.dbSession.add(self.gaSession)		
 
@@ -133,7 +140,7 @@ class DatabaseConnection:
 		self.gaSession.generations.append(gen)
 
 	def whatSessions(self):
-		gaSessions = self.dbSession.query(Sessions).all()	
+		gaSessions = self.dbSession.query(Session).all()	
 		return [gaSession.pID for gaSession in gaSessions]
 
 	def getLastSession(self):
@@ -141,10 +148,11 @@ class DatabaseConnection:
 		return getSession(ids[-1]) if len(ids) > 0 else None
 
 	def getSession(self,sessionId):
-		return self.dbSession.query(Sessions).filter(Sessions.pID == sessionId).first()
+		return self.dbSession.query(Session).filter(Session.pID == sessionId).first()
 
+	#deprecated
 	def loadSession(self, sessionId):
-		gaSession = self.dbSession.query(Sessions).filter(Sessions.pID == sessionId).first()
+		gaSession = self.dbSession.query(Session).filter(Session.pID == sessionId).first()
 		data = {}
 
 		if gaSession.metrics:
