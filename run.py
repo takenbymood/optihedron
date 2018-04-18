@@ -461,18 +461,18 @@ def beforeMigration(ga):
     return
 
 def afterMigration(ga):
-    outFile = ""
-    isleNum = 0
-    i = 0
-    for isle in ga.islands:
-        isleNum += 1
-        points = [makeXYZTriplet(p,2,-2,2,-2,2,-2) for p in isle]
-        fit = [p.fitness.values[-1] for p in isle]
-        for p in points:
-            i+=1
-            outFile += str(i)+","+str(p[0])+","+str(p[1])+","+str(p[2])+"\n"
-    with open(os.path.join(WDIR,'coords.csv'), 'a') as file_:    
-        file_.write(outFile)
+    # outFile = ""
+    # isleNum = 0
+    # i = 0
+    # for isle in ga.islands:
+    #     isleNum += 1
+    #     points = [makeXYZTriplet(p,2,-2,2,-2,2,-2) for p in isle]
+    #     fit = [p.fitness.values[-1] for p in isle]
+    #     for p in points:
+    #         i+=1
+    #         outFile += str(i)+","+str(p[0])+","+str(p[1])+","+str(p[2])+"\n"
+    # with open(os.path.join(WDIR,'coords.csv'), 'a') as file_:    
+    #     file_.write(outFile)
     return
 
 def saveBest(hof,gen):

@@ -144,8 +144,8 @@ class DatabaseConnection:
 		return [gaSession.pID for gaSession in gaSessions]
 
 	def getLastSession(self):
-		ids = whatSessions()
-		return getSession(ids[-1]) if len(ids) > 0 else None
+		ids = self.whatSessions()
+		return self.getSession(ids[-1]) if len(ids) > 0 else None
 
 	def getSession(self,sessionId):
 		return self.dbSession.query(Session).filter(Session.pID == sessionId).first()
