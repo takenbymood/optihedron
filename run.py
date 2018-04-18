@@ -442,7 +442,7 @@ def beforeMigration(ga):
                 for g in np.genelist:
                     gene = dao.Gene(g)
                     novelGene = True
-                    for gen in ga.dbconn.gaSession.sessionGenerations:
+                    for gen in ga.dbconn.gaSession.generations:
                             for nGene in gen.novelGenes:
                                 if nGene.rawGene == gene.rawGene:
                                     novelGene = False

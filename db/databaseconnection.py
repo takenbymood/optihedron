@@ -9,15 +9,15 @@ Base = declarative_base()
 class Sessions(Base):
 	__tablename__ ='sessions'
 
-	sessionId = Column('id', Integer, primary_key=True)
-	sessionTimeStamp = Column('timestamp', String)	
-	sessionMetrics = relationship('Metrics',uselist=False, back_populates='session')
-	sessionGenealogy = relationship('Genealogy', uselist=False, back_populates='session')
-	sessionGenerations = relationship('Generation',back_populates='session')
+	pID = Column('id', Integer, primary_key=True)
+	timestamp = Column('timestamp', String)	
+	metrics = relationship('Metrics',uselist=False, back_populates='session')
+	genealogy = relationship('Genealogy', uselist=False, back_populates='session')
+	generations = relationship('Generation',back_populates='session')
 	arguments = Column('arguments', String)
 
 	def __init__(self, sessionTimeStamp,arguments):
-		self.sessionTimeStamp = sessionTimeStamp
+		self.timestamp = sessionTimeStamp
 		self.arguments = arguments
 
 class Metrics(Base):
@@ -25,7 +25,7 @@ class Metrics(Base):
 	
 	pID = Column('id', Integer, primary_key=True)
 	session_id = Column(Integer, ForeignKey('sessions.id'))
-	session = relationship('Sessions',uselist=False, back_populates='sessionMetrics')
+	session = relationship('Sessions',uselist=False, back_populates='metrics')
 	metricsPickle = Column('metrics_pickle', PickleType)
 
 	def __init__(self, sessionId, metrics):
@@ -36,24 +36,13 @@ class Genealogy(Base):
 
 	pID = Column('id', Integer, primary_key=True)
 	session_id = Column(Integer, ForeignKey('sessions.id'))
-	session = relationship('Sessions',uselist=False, back_populates='sessionGenealogy')
+	session = relationship('Sessions',uselist=False, back_populates='genealogy')
 	treePickle = Column('tree_pickle', PickleType)
 	historyPickle = Column('history_pickle', PickleType)
 
 	def __init__(self, sessionId, tree, history):
 		self.treePickle = tree
 		self.historyPickle = history
-
-# class History(Base):
-# 	__tablename__ = 'histories'
-# 	pID = Column('id', Integer, primary_key=True)
-# 	child_id = Column('child_id', Integer, ForeignKey('individuals.id'))
-# 	parent_id = Column('parent_id', Integer, ForeignKey('individuals.id'))
-# 	child = relationship('Individual',uselist=False,back_populates='history',foreign_keys=[child_id])
-# 	parent = relationship('Individual',uselist=False,foreign_keys=[parent_id])
-
-# 	def __init__(self, child):
-# 		self.child = child
 
 
 class Generation(Base):
@@ -62,7 +51,7 @@ class Generation(Base):
 	pID = Column('id', Integer, primary_key=True)
 	genNumber = Column('gen_number',Integer)
 	sessionId = Column(Integer, ForeignKey('sessions.id'))
-	session = relationship('Sessions',uselist=False,back_populates='sessionGenerations')
+	session = relationship('Sessions',uselist=False,back_populates='generations')
 	novelGenes = relationship('Gene',back_populates='generation')
 	individuals = relationship('Individual',back_populates='gen')
 
@@ -94,9 +83,6 @@ class Individual(Base):
 	gen_id = Column(Integer, ForeignKey('generations.id'))
 	gen = relationship('Generation',uselist=False)
 
-	#history_id = Column(Integer, ForeignKey('histories.id'))
-	# history = relationship('History',back_populates='child',foreign_keys='History.child_id')
-
 	gh_index = Column('gh_index', Integer)
 
 	fitness = Column('fitness', Numeric)
@@ -116,6 +102,9 @@ class Individual(Base):
 	def addGene(self,gene):
 		self.genes.append(gene)
 
+	def getGenNumber(self):
+		return self.gen.genNumber
+
 
 class DatabaseConnection:
 
@@ -128,40 +117,47 @@ class DatabaseConnection:
 	def saveSession(self,arguments):
 		self.gaSessionTimeStamp = time.strftime("%Y-%m-%d %H:%M:%S")
 		self.gaSession = Sessions(self.gaSessionTimeStamp,arguments)
-		self.gaSessionId = self.gaSession.sessionId
+		self.gaSessionId = self.gaSession.pID
 		self.dbSession.add(self.gaSession)		
 
 	def saveMetrics(self, metrics):				
-		self.gaSession.sessionMetrics = Metrics(self.gaSessionId, metrics)				
+		self.gaSession.metrics = Metrics(self.gaSessionId, metrics)				
 		
 	def saveGenealogy(self, tree, history):
-		self.gaSession.sessionGenealogy = Genealogy(self.gaSessionId, tree, history)
+		self.gaSession.genealogy = Genealogy(self.gaSessionId, tree, history)
 
 	def saveIndividual(self, ind):
 		self.gaSession.sessionIndividuals.append(ind)
 
 	def saveGeneration(self,gen):
-		self.gaSession.sessionGenerations.append(gen)
+		self.gaSession.generations.append(gen)
 
 	def whatSessions(self):
 		gaSessions = self.dbSession.query(Sessions).all()	
-		return [gaSession.sessionId for gaSession in gaSessions]	
+		return [gaSession.pID for gaSession in gaSessions]
+
+	def getLastSession(self):
+		ids = whatSessions()
+		return getSession(ids[-1]) if len(ids) > 0 else None
+
+	def getSession(self,sessionId):
+		return self.dbSession.query(Sessions).filter(Sessions.pID == sessionId).first()
 
 	def loadSession(self, sessionId):
-		gaSession = self.dbSession.query(Sessions).filter(Sessions.sessionId == sessionId).first()
+		gaSession = self.dbSession.query(Sessions).filter(Sessions.pID == sessionId).first()
 		data = {}
 
-		if gaSession.sessionMetrics:
-			data['metrics'] = gaSession.sessionMetrics.metricsPickle
+		if gaSession.metrics:
+			data['metrics'] = gaSession.metrics.metricsPickle
 
-		if gaSession.sessionGenealogy:
+		if gaSession.genealogy:
 			data['genealogy'] = {}
-			data['genealogy']['tree'] = gaSession.sessionGenealogy.treePickle
-			data['genealogy']['history'] = gaSession.sessionGenealogy.historyPickle
+			data['genealogy']['tree'] = gaSession.genealogy.treePickle
+			data['genealogy']['history'] = gaSession.genealogy.historyPickle
 
-		if gaSession.sessionGenerations:
+		if gaSession.generations:
 			data['individuals'] = []
-			for sessionGeneration in gaSession.sessionGenerations:
+			for sessionGeneration in gaSession.generations:
 				for sessionIndividual in sessionGeneration.individuals:
 					individual = {}
 			 		individual['gen'] = sessionGeneration.genNumber
@@ -170,19 +166,6 @@ class DatabaseConnection:
 					individual['genome'] = sessionIndividual.genomePickle
 					individual['phenome'] = sessionIndividual.phenomePickle
 					data['individuals'].append(individual)
-
-
-		# if gaSession.sessionIndividuals:
-		# 	data['individuals'] = []
-		# 	for sessionIndividual in gaSession.sessionIndividuals:
-		# 		individual = {}
-		# 		individual['gen'] = sessionIndividual.gen
-		# 		individual['ind'] = sessionIndividual.ind
-		# 		individual['fitness'] = sessionIndividual.fitness
-		# 		individual['genome'] = sessionIndividual.genomePickle
-		# 		individual['phenome'] = sessionIndividual.phenomePickle
-
-		# 		data['individuals'].append(individual)
 
 		return data
 
