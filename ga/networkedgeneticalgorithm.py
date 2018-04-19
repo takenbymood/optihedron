@@ -13,6 +13,8 @@ from deap import base
 from deap import creator
 from deap import tools
 
+
+
 from ga import algorithms
 
 from pathos import pools
@@ -103,6 +105,7 @@ class NetworkedGeneticAlgorithm:
         self.verbose = verbose
         self.dbconn = dbconn
         self.gen = 0
+        self.novelty=[]
 
     
 
@@ -167,8 +170,7 @@ class NetworkedGeneticAlgorithm:
     def run(self,ngen,freq,migr):
         self.metrics = []
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
-        for isle in self.islands:
-            self.history.update(isle)
+        
         pool = pools.ProcessPool(10)
         for i in range(0, ngen, freq):
             self.gen = i
@@ -177,9 +179,12 @@ class NetworkedGeneticAlgorithm:
             self.results = map(self.algorithm, self.islands)
             self.islands = [pop for pop, logbook in self.results]
             self.metrics += map(self.genMetrics,[i]*len(list(self.results)),[n for n in range(len(list(self.results)))], [logbook for pop, logbook in self.results])
+            for isle in self.islands:
+                self.history.update(isle)
             self.beforeMigration(self)
-            for i in range(0,migr):
-            	self.islands = self.migration(self.islands)
+            if self.gen < ngen - 1:
+                for i in range(0,migr):
+                	self.islands = self.migration(self.islands)
             self.afterMigration(self)
         self.metrics = [val for sublist in self.metrics for val in sublist]
         self.metrics = sorted(sorted(self.metrics, key=lambda k: k['island']), key=lambda k: k['gen']) 

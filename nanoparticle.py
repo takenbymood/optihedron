@@ -77,7 +77,7 @@ class NanoParticlePhenome(phenome.Phenome):
 		self.radius = 4
 		phenome.Phenome.__init__(self,ind)
 
-	def constructGenome(self,ind):
+	def constructGenelist(self,ind):
 		geneSize = self.exprPlaces+self.epsPlaces+self.polarAngPlaces+self.azimuthalAngPlaces
 		if len(ind) < geneSize:
 			print("genome too short to construct phenome")
@@ -85,8 +85,12 @@ class NanoParticlePhenome(phenome.Phenome):
 		genelist = lt.subdivide(list(ind),geneSize)
 		if len(genelist[-1]) < geneSize:
 			genelist = genelist[:-1]
+		return genelist
+
+
+	def constructGenome(self,ind):
 		genes = []
-		for g in genelist:
+		for g in self.genelist:
 			gene = {}
 			exprGene = g[0:self.exprPlaces]			
 			epsGene = g[self.exprPlaces:self.exprPlaces+self.epsPlaces]
@@ -124,7 +128,7 @@ class CoveredNanoParticlePhenome(phenome.Phenome):
 		self.radius = 4
 		phenome.Phenome.__init__(self,ind)
 
-	def constructGenome(self,ind):
+	def constructGenelist(self,ind):
 		geneSize = self.exprPlaces+self.epsPlaces
 		if len(ind) < geneSize:
 			print("genome too short to construct phenome")
@@ -132,8 +136,11 @@ class CoveredNanoParticlePhenome(phenome.Phenome):
 		genelist = lt.subdivide(list(ind),geneSize)
 		if len(genelist[-1]) < geneSize:
 			genelist = genelist[:-1]
+		return genelist
+
+	def constructGenome(self,ind):
 		genes = []
-		for g in genelist:
+		for g in self.genelist:
 			gene = {}
 			exprGene = g[0:self.exprPlaces]			
 			epsGene = g[self.exprPlaces:self.exprPlaces+self.epsPlaces]

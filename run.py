@@ -38,7 +38,7 @@ from tools import listtools
 from tools import qtools
 from tools import vectools
 
-from db import databaseconnection
+from db import databaseconnection as dao
 
 from lammps import lammps
 
@@ -135,6 +135,8 @@ parser.add_argument('-kb','--keepbest', action='store_true',
                     help='option to store each generations best individual')
 parser.add_argument('-wd','--wdir', default=os.path.dirname(os.path.realpath(__file__)),
                     help='option to set the working directory of the program')
+
+
 
 args = parser.parse_args()
 
@@ -427,13 +429,31 @@ def algorithmEaSimple(pop,toolbox,stats,hof):
 def beforeMigration(ga):
     misctools.removeByPattern(WDIR,"subhedra")
 
+    dbGen = dao.Generation(ga.gen)
+    
     if SAVERESULTS:
-        ind = 0
+
+
         for isle in ga.islands:
             for individual in isle:
                 np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-                ga.dbconn.saveIndividual(ga.gen, ind, individual.fitness.values[-1], individual, np)
-                ind += 1
+                i = dao.Individual(individual, np)
+                dbGen.individuals.append(i)
+                for g in np.genelist:
+                    gene = dao.Gene(g)
+                    novelGene = True
+                    for gen in ga.dbconn.gaSession.generations:
+                            for nGene in gen.novelGenes:
+                                if nGene.rawGene == gene.rawGene:
+                                    novelGene = False
+                                    i.addGene(nGene)
+                                    break
+                    if novelGene:
+                        dbGen.novelGenes.append(gene)
+                        i.addGene(gene)
+
+        ga.dbconn.saveGeneration(dbGen)
+        
         ga.dbconn.commit()
     if KEEPBEST:
         saveBest(ga.hof,ga.gen)
@@ -441,18 +461,18 @@ def beforeMigration(ga):
     return
 
 def afterMigration(ga):
-    outFile = ""
-    isleNum = 0
-    i = 0
-    for isle in ga.islands:
-        isleNum += 1
-        points = [makeXYZTriplet(p,2,-2,2,-2,2,-2) for p in isle]
-        fit = [p.fitness.values[-1] for p in isle]
-        for p in points:
-            i+=1
-            outFile += str(i)+","+str(p[0])+","+str(p[1])+","+str(p[2])+"\n"
-    with open(os.path.join(WDIR,'coords.csv'), 'a') as file_:    
-        file_.write(outFile)
+    # outFile = ""
+    # isleNum = 0
+    # i = 0
+    # for isle in ga.islands:
+    #     isleNum += 1
+    #     points = [makeXYZTriplet(p,2,-2,2,-2,2,-2) for p in isle]
+    #     fit = [p.fitness.values[-1] for p in isle]
+    #     for p in points:
+    #         i+=1
+    #         outFile += str(i)+","+str(p[0])+","+str(p[1])+","+str(p[2])+"\n"
+    # with open(os.path.join(WDIR,'coords.csv'), 'a') as file_:    
+    #     file_.write(outFile)
     return
 
 def saveBest(hof,gen):
@@ -558,8 +578,8 @@ def main():
     random.seed(args.seed)
 
     if SAVERESULTS:
-       dbconn = databaseconnection.DatabaseConnection(DBPATH)
-       dbconn.saveSession()
+       dbconn = dao.DatabaseConnection(DBPATH)
+       dbconn.saveSession(str(args).replace('Namespace(','').replace(')',''))
        dbconn.commit()
     else:
        dbconn = None
