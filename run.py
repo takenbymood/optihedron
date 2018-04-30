@@ -80,6 +80,8 @@ parser.add_argument('-g','--graph', default='islands',
                     help='type of network to use')
 parser.add_argument('-a', '--algorithm', default='eaSimple',
                     choices=['eaSimple'])
+parser.add_argument('-br', '--buddingreward',default=500.0, type=float,
+                    help='reward for successful budding in')
 
 #Model Options
 
@@ -171,6 +173,7 @@ KEEPINPUT = args.keepinput
 KEEPOUTPUT = args.keepoutput
 KEEPBEST = args.keepbest
 PENALTYWEIGHT = args.penaltyweight
+BUDDINGREWARD = args.buddingreward
 
 WDIR = args.wdir
 PDIR = os.path.dirname(os.path.realpath(__file__))
@@ -298,8 +301,8 @@ def evaluateNPWrapping(np,outFilename,runtime):
     if(msum == 0):        
         return minFit,
 
-    # reward = 400 if stepData[-1]['budded'] else msum
-    reward = msum
+    reward = BUDDINGREWARD if stepData[-1]['budded'] else msum
+    #reward = msum
 
     penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if stepData[-1]['budded'] and float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
