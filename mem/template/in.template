@@ -21,6 +21,13 @@ variable	eps			equal	4.34
 variable	sigma		equal	1.00
 variable	theta0_11	equal	0
 
+variable memsize equal "count(mem)"
+#compute 1 all pair lj/cut epair
+compute cls all cluster/atom 1.5
+compute ct all temp/sphere
+compute_modify ct extra ${memsize}
+
+
 pair_style	hybrid		membrane ${rc}	lj/cut 5.04
 
 #membrane-np interactions
@@ -34,13 +41,11 @@ pair_coeff		1	1	membrane ${eps} ${sigma} ${rmin} ${rc} ${zeta} ${mu} ${theta0_11
 
 neigh_modify	every 1	delay 1	exclude group np np
 
-fix			fLANG		all		langevin 1.0 1.0 1.0 1000 zero yes
-fix			fNPH		mem		nph/sphere	x 0.0 0.0 10.0	y 0.0 0.0 10.0	couple xy	update dipole
-fix_modify	fNPH	press thermo_press
+fix			fLANG		all		langevin 1.0 1.0 1.0 1000 zero yes omega yes
+fix			fNPH		mem		nph/sphere	x 0.0 0.0 10.0	y 0.0 0.0 10.0 couple xy update dipole dilate all
+fix_modify	fNPH		temp ct press thermo_press
 fix			fRIGID		np		rigid/nve	group 1 np
 
-compute 1 all pair lj/cut epair
-compute cls all cluster/atom 1.5
 
 _MOLECULAR DYNAMICS DUMP PLACEHOLDER_
 
