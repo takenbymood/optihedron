@@ -62,7 +62,7 @@ parser.add_argument('-d','--demes', type=int,
 parser.add_argument('-p','--pop', type=int,
                     help='population of each deme', required=True)
 parser.add_argument('-gs','--genomesize', type=int,
-                    help='number of genes in the genome (overwritten for fixed angle)', default=25)
+                    help='number of genes in the genome (overwritten for fixed angle)', default=40)
 parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
@@ -99,9 +99,9 @@ parser.add_argument('-aziang', '--aziangplaces', default=8, type=int,
                     help='number of bits for azimuthal angle')
 parser.add_argument('-epmn','--epsmin', default=0, type=float,
                     help='minimum value for epsilon')
-parser.add_argument('-epmx','--epsmax', default=10, type=float,
+parser.add_argument('-epmx','--epsmax', default=15, type=float,
                     help='maximum value for epsilon')
-parser.add_argument('-r','--runtime', default=50000, type=int,
+parser.add_argument('-r','--runtime', default=25000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
@@ -301,12 +301,14 @@ def evaluateNPWrapping(np,outFilename,runtime):
     if(msum == 0):        
         return minFit,
 
-    reward = BUDDINGREWARD if stepData[-1]['budded'] else msum
+    
     #reward = msum
 
-    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if stepData[-1]['budded'] and float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
-    return float(reward) + float(penalty),
+    reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
+
+    return reward,
 
 def runCmd(cmd,timeout):
     try:
@@ -400,7 +402,7 @@ def evaluate(individual):
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     
     np = phenome.particle
-    simName = misctools.randomStr(10)
+    simName = phenome.id + "_" + misctools.randomStr(3)
     fitnesses = []
 
     for i in range(REPEATS):
