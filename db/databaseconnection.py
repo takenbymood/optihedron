@@ -157,6 +157,9 @@ class DatabaseConnection:
 	def getSession(self,sessionId):
 		return self.dbSession.query(Session).filter(Session.pID == sessionId).first()
 
+	def getGeneByRawGene(self,rawGene):
+		return self.dbSession.query(Gene).filter(Gene.rawGene == rawGene).first()
+
 	#deprecated
 	def loadSession(self, sessionId):
 		gaSession = self.dbSession.query(Session).filter(Session.pID == sessionId).first()

@@ -67,7 +67,7 @@ parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
                     help='independant probability of crossover')
-parser.add_argument('-m','--mutpb', default=0.2, type=float,
+parser.add_argument('-m','--mutpb', default=0.3, type=float,
                     help='independant probability of mutation')
 parser.add_argument('-mg','--migrations', default=1, type=int,
                     help='number of migrations to do each time')
@@ -435,6 +435,8 @@ def beforeMigration(ga):
     misctools.removeByPattern(WDIR,"subhedra")
 
     dbGen = dao.Generation(ga.gen)
+
+    novelGenes = []
     
     if SAVERESULTS:
         for isle in ga.islands:
@@ -445,12 +447,22 @@ def beforeMigration(ga):
                 for g in np.genelist:
                     gene = dao.Gene(g)
                     novelGene = True
-                    for gen in ga.dbconn.gaSession.generations:
-                            for nGene in gen.novelGenes:
-                                if nGene.rawGene == gene.rawGene:
-                                    novelGene = False
-                                    i.addGene(nGene)
-                                    break
+                    for n in dbGen.novelGenes:
+                        if n.rawGene == gene.rawGene:
+                            novelGene = False
+                            i.addGene(n)
+                    if novelGene:
+                        for gen in ga.dbconn.gaSession.generations:
+                                for nGene in range(len(gen.novelGenes)):
+                                    if gen.novelGenes[nGene].rawGene == gene.rawGene:
+                                        novelGene = False
+                                        i.addGene(gen.novelGenes[nGene])
+                                        break
+                    if novelGene:
+                        dbGene = ga.dbconn.getGeneByRawGene(gene.rawGene)
+                        if dbGene != None:
+                            novelGene = False
+                            i.addGene(dbGene)
                     if novelGene:
                         dbGen.novelGenes.append(gene)
                         i.addGene(gene)
@@ -613,15 +625,10 @@ def main():
 
     results = ga.run(NGEN,FREQ,MIGR)
 
-
-
-   #print(results[0][0][0])
-    
     saveMetrics(results[-2])
     saveHOF(results[1])
 
     if SAVERESULTS:
-       dbconn.saveGenealogy(results[-1].genealogy_tree, results[-1].genealogy_history)
        dbconn.commit()
        dbconn.close()         
 
