@@ -42,7 +42,7 @@ class Metrics(Base):
 	session = relationship('Session',uselist=False, back_populates='metrics')
 	metricsPickle = Column('metrics_pickle', PickleType)
 
-	def __init__(self, sessionId, metrics):
+	def __init__(self, metrics):
 		self.metricsPickle = metrics		
 
 class Genealogy(Base):
@@ -54,7 +54,7 @@ class Genealogy(Base):
 	treePickle = Column('tree_pickle', PickleType)
 	historyPickle = Column('history_pickle', PickleType)
 
-	def __init__(self, sessionId, tree, history):
+	def __init__(self, tree, history):
 		self.treePickle = tree
 		self.historyPickle = history
 
@@ -135,10 +135,10 @@ class DatabaseConnection:
 		self.dbSession.add(self.gaSession)		
 
 	def saveMetrics(self, metrics):				
-		self.gaSession.metrics = Metrics(self.gaSessionId, metrics)				
+		self.gaSession.metrics = Metrics( metrics)				
 		
 	def saveGenealogy(self, tree, history):
-		self.gaSession.genealogy = Genealogy(self.gaSessionId, tree, history)
+		self.gaSession.genealogy = Genealogy(tree, history)
 
 	def saveIndividual(self, ind):
 		self.gaSession.sessionIndividuals.append(ind)

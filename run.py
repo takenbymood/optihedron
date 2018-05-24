@@ -437,8 +437,6 @@ def beforeMigration(ga):
     dbGen = dao.Generation(ga.gen)
     
     if SAVERESULTS:
-
-
         for isle in ga.islands:
             for individual in isle:
                 np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
@@ -458,7 +456,11 @@ def beforeMigration(ga):
                         i.addGene(gene)
 
         ga.dbconn.saveGeneration(dbGen)
-        
+
+        ga.dbconn.gaSession.metrics.metricsPickle = ga.metrics
+        ga.dbconn.gaSession.genealogy.treePickle = ga.history.genealogy_tree
+        ga.dbconn.gaSession.genealogy.historyPickle = ga.history.genealogy_history
+
         ga.dbconn.commit()
     if KEEPBEST:
         saveBest(ga.hof,ga.gen)
@@ -605,6 +607,10 @@ def main():
        mate = geneWiseTwoPoint,
        dbconn = dbconn)
 
+    if SAVERESULTS:
+        dbconn.gaSession.metrics = dao.Metrics(ga.metrics)
+        ga.dbconn.gaSession.genealogy = dao.Genealogy(ga.history.genealogy_tree,ga.history.genealogy_history)
+
     results = ga.run(NGEN,FREQ,MIGR)
 
 
@@ -615,7 +621,6 @@ def main():
     saveHOF(results[1])
 
     if SAVERESULTS:
-       dbconn.saveMetrics(results[-2])
        dbconn.saveGenealogy(results[-1].genealogy_tree, results[-1].genealogy_history)
        dbconn.commit()
        dbconn.close()         
