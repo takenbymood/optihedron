@@ -106,6 +106,7 @@ class NetworkedGeneticAlgorithm:
         self.dbconn = dbconn
         self.gen = 0
         self.novelty=[]
+        self.metrics = []
 
     
 
@@ -172,7 +173,7 @@ class NetworkedGeneticAlgorithm:
         self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
         
         pool = pools.ProcessPool(10)
-        for i in range(0, ngen, freq):
+        for i in range(0, ngen):
             self.gen = i
             if self.verbose:
                 print("GEN: " + str(i+1) + "/" + str(ngen))
@@ -182,7 +183,7 @@ class NetworkedGeneticAlgorithm:
             for isle in self.islands:
                 self.history.update(isle)
             self.beforeMigration(self)
-            if self.gen < ngen - 1:
+            if i%freq == 0 and self.gen < ngen - 1:
                 for i in range(0,migr):
                 	self.islands = self.migration(self.islands)
             self.afterMigration(self)
