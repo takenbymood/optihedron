@@ -20,7 +20,7 @@ class MembraneSimulation():
 		scripttemplate, 
 		corepos_x=0, 
 		corepos_y=0, 
-		corepos_z=7, 
+		corepos_z=6.5, 
 		dumpres="100",
 		rAxis = [0,0,1],
 		rAmount = 0.0
