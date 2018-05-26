@@ -290,7 +290,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
             nLargeClusters = 0
             for v in sorted(cStep, key=itemgetter('size')):
-                if v['size'] > 100:
+                if v['size'] > 250:
                     nLargeClusters += 1
             budded = nLargeClusters > 1
                                        
