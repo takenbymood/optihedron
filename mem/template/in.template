@@ -23,7 +23,7 @@ variable	theta0_11	equal	0
 
 variable memsize equal "count(mem)"
 #compute 1 all pair lj/cut epair
-compute cls all cluster/atom 1.5
+compute cls mem cluster/atom ${rmin}
 compute ct all temp/sphere
 compute_modify ct extra ${memsize}
 
