@@ -6,7 +6,7 @@ from tools import icosatiler
 import numpy as np
 
 class Ligand:
-	def __init__(self,eps,sig,rad,polAng,aziAng,mass=1,cutoff=2.0):
+	def __init__(self,eps,sig,rad,polAng,aziAng,mass=1,cutoff=1.8):
 		self.rad = rad
 		self.polAng = polAng
 		self.aziAng = aziAng
