@@ -128,3 +128,6 @@ ENV/
 .project
 .pydevproject
 .settings
+
+# PyCharm project settings
+.idea
