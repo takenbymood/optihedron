@@ -160,6 +160,10 @@ if FILE != None:
             if str(arg) in contents:
                 print('overwriting ' + str(arg) + ' with value from file: '+ str(contents[str(arg)]))
                 setattr(args,arg,contents[str(arg)])
+        if LOADFROMFILE:
+            print('overwriting deme and population size from init_pop')
+            setattr(args,"demes",len(contents['init_pop']))
+            setattr(args,"pop",len(contents['init_pop'][0]))
 
     except:
         print("error loading json")
