@@ -13,6 +13,9 @@ from deap import base
 from deap import creator
 from deap import tools
 
+from pprint import pprint
+
+import json
 
 
 from ga import algorithms
@@ -74,11 +77,17 @@ class NetworkedGeneticAlgorithm:
     	beforeMigration=lambda x: None,
     	afterMigration=lambda x: None,
         verbose = False,
-        dbconn = None):
+        dbconn = None,
+        jsonFile = "init.json",
+        loadFromFile = False
+        ):
 
         
         self.toolbox = base.Toolbox()
         self.history = tools.History()
+
+        self.jsonFile = jsonFile
+        self.loadFromFile = loadFromFile
 
         # Attribute generator
         self.toolbox.register("attr_bool", random.randint, 0, 1)
@@ -86,6 +95,9 @@ class NetworkedGeneticAlgorithm:
         # Structure initializers
         self.toolbox.register("individual", tools.initRepeat, creator.Individual, self.toolbox.attr_bool, genomeSize)  # @UndefinedVariable (for PyDev)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
+
+        self.toolbox.register("individual_guess", self.initIndividual, creator.Individual)
+        self.toolbox.register("population_guess", self.initPopulation, list, self.toolbox.individual_guess, self.jsonFile)
 
         self.toolbox.register("evaluate", evaluate)
         self.toolbox.register("mate", mate)
@@ -108,7 +120,22 @@ class NetworkedGeneticAlgorithm:
         self.novelty=[]
         self.metrics = []
 
-    
+
+    def initIndividual(self,icls,content):
+        return icls(content)
+
+    def initPopulation(self,plcs,ind_init,filename):
+        try:
+            with open(filename, "r") as pop_file:
+                contents = json.load(pop_file)
+            demes = contents['init_pop']
+            iPop = []
+            for d in demes:
+                iPop.append([ind_init(i) for i in d])
+            return iPop
+        except:
+            print("error loading " + filename)
+            return []
 
     def genMetrics(self,gen,island,logbook):
         log = []
@@ -170,8 +197,8 @@ class NetworkedGeneticAlgorithm:
         
     def run(self,ngen,freq,migr):
         self.metrics = []
-        self.islands = [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
-        
+        self.islands = self.toolbox.population_guess() if self.loadFromFile else [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
+
         pool = pools.ProcessPool(10)
         for i in range(0, ngen):
             self.gen = i
