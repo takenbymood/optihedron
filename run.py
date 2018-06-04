@@ -47,6 +47,8 @@ from nanoparticle import NanoParticlePhenome
 from nanoparticle import CoveredNanoParticlePhenome
 from membranesimulation import MembraneSimulation
 
+import json
+
 parser = argparse.ArgumentParser(description='')
 
 #Runtime Options 
@@ -138,10 +140,31 @@ parser.add_argument('-kb','--keepbest', action='store_true',
                     help='option to store each generations best individual')
 parser.add_argument('-wd','--wdir', default=os.path.dirname(os.path.realpath(__file__)),
                     help='option to set the working directory of the program')
+parser.add_argument('-i','--input', default=None, type=str, 
+                    help='set the input json file')
+parser.add_argument('-ff','--fromfile',action='store_true', 
+                    help='load initial population from the json file')
 
 
 
 args = parser.parse_args()
+
+FILE = args.input
+LOADFROMFILE = args.fromfile
+
+
+if FILE != None:
+    try:
+        with open(FILE, "r") as pop_file:
+            contents = json.load(pop_file)
+        for arg in vars(args):
+            if str(arg) in contents:
+                print('overwriting ' + str(arg) + ' with value from file: '+ str(contents[str(arg)]))
+                setattr(args,arg,contents[str(arg)])
+
+    except:
+        print("error loading json")
+
 
 NSPOKES = 2
 NISLES = args.demes
@@ -188,12 +211,13 @@ TEMPLATEDATAPATH = os.path.join(TEMPLATEDIR,'data.template')
 TEMPLATEINPUTPATH = os.path.join(TEMPLATEDIR,'in.template')
 DBPATH = os.path.join(DBDIR,'datastore.db')
 
-
 MPI = args.mpi
 NP = args.nodes
 TIMEOUT = args.timeout
 
 SAVERESULTS = args.saveresults
+
+
 
 def kill(p):
     try:
@@ -206,11 +230,12 @@ def exit(signal, frame):
         os._exit(1)
 
 def saveMetrics(lis,filename='metrics.csv'):
-    with open(os.path.join(WDIR,filename),'wb') as out:
-        csv_out=csv.DictWriter(out,lis[-1].keys())
-        csv_out.writeheader()
-        for row in lis:
-            csv_out.writerow(row)
+    if len(lis)>0:
+        with open(os.path.join(WDIR,filename),'wb') as out:
+            csv_out=csv.DictWriter(out,lis[-1].keys())
+            csv_out.writeheader()
+            for row in lis:
+                csv_out.writerow(row)
 
 def evaluateNPWrapping(np,outFilename,runtime):    
     minFit = 1E-8
@@ -413,7 +438,10 @@ def evaluate(individual):
     for fit in fitnesses:
         fsum+=fit[0]
 
-    fmem = float(fsum)/float(REPEATS)
+    if REPEATS > 0:
+        fmem = float(fsum)/float(REPEATS)
+    else:
+        fmem = float(fsum)
 
     #flig = len(np.ligands) 
     #feps = sum([ligand.eps for ligand in np.ligands])
@@ -609,6 +637,8 @@ def main():
     else:
        dbconn = None
 
+    initPopFile = "init.json" if FILE == None else FILE
+
     ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
@@ -623,7 +653,10 @@ def main():
        afterMigration = afterMigration,
        verbose = VERBOSE,
        mate = geneWiseTwoPoint,
-       dbconn = dbconn)
+       dbconn = dbconn,
+       jsonFile = initPopFile,
+       loadFromFile = LOADFROMFILE
+       )
 
     if SAVERESULTS:
         dbconn.gaSession.metrics = dao.Metrics(ga.metrics)
