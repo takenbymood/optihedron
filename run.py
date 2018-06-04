@@ -142,21 +142,20 @@ parser.add_argument('-wd','--wdir', default=os.path.dirname(os.path.realpath(__f
                     help='option to set the working directory of the program')
 parser.add_argument('-i','--input', default=None, type=str, 
                     help='set the input json file')
-parser.add_argument('-ff','--fromfile',action='store_true', 
-                    help='load initial population from the json file')
 
 
 
 args = parser.parse_args()
 
 FILE = args.input
-LOADFROMFILE = args.fromfile
+
 
 
 if FILE != None:
     try:
         with open(FILE, "r") as pop_file:
             contents = json.load(pop_file)
+        LOADFROMFILE = "init_pop" in contents
         for arg in vars(args):
             if str(arg) in contents:
                 print('overwriting ' + str(arg) + ' with value from file: '+ str(contents[str(arg)]))

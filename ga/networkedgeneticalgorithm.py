@@ -128,7 +128,7 @@ class NetworkedGeneticAlgorithm:
         try:
             with open(filename, "r") as pop_file:
                 contents = json.load(pop_file)
-            demes = contents['initial_pop']
+            demes = contents['init_pop']
             iPop = []
             for d in demes:
                 iPop.append([ind_init(i) for i in d])
