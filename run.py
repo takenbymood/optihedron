@@ -148,6 +148,7 @@ parser.add_argument('-i','--input', default=None, type=str,
 args = parser.parse_args()
 
 FILE = args.input
+LOADFROMFILE = False
 
 
 
@@ -333,11 +334,12 @@ def evaluateNPWrapping(np,outFilename,runtime):
     
     #reward = msum
 
-    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+    # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
-    reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
+    # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
+    reward = (float(BUDDINGREWARD)) if stepData[-1]['budded'] else float(msum)
 
-    return reward,
+    return reward, stepData[-1]['budded']
 
 def runCmd(cmd,timeout):
     try:
@@ -415,7 +417,8 @@ def evaluateParticleInstance(np,simName):
         runSim(scriptPath)
     
     f = 1E-8,
-    f = evaluateNPWrapping(np,outFilePath,RUNTIME)
+    b = False
+    f,b = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
@@ -424,7 +427,7 @@ def evaluateParticleInstance(np,simName):
         sim.postProcessOutput(outFilePath)
     else:
         os.remove(outFilePath)
-    return f
+    return f,b
 
 
 def evaluate(individual):
@@ -433,13 +436,22 @@ def evaluate(individual):
     np = phenome.particle
     simName = phenome.id + "_" + misctools.randomStr(3)
     fitnesses = []
+    budding = []
 
     for i in range(REPEATS):
-        fitnesses.append(evaluateParticleInstance(np,simName+"_"+str(i)))
+        pf,pb = evaluateParticleInstance(np,simName+"_"+str(i))
+        fitnesses.append(pf)
+        budding.append(pb)
 
     fsum = 0
     for fit in fitnesses:
-        fsum+=fit[0]
+        fsum+=fit
+
+    budded = True
+
+    for bud in budding:
+        if not bud:
+            budded = False
 
     if REPEATS > 0:
         fmem = float(fsum)/float(REPEATS)
@@ -448,6 +460,19 @@ def evaluate(individual):
 
     #flig = len(np.ligands) 
     #feps = sum([ligand.eps for ligand in np.ligands])
+
+    nActiveLigands = 0
+    npTotalEps = 0.0
+
+    for l in np.ligands:
+        nActiveLigands += 1
+        npTotalEps += l.eps
+
+    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+
+    if budded:
+        fmem += penalty
+    else:
 
     f = fmem
 
