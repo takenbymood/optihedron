@@ -1,4 +1,4 @@
-from mpi4py import MPI
+#from mpi4py import MPI
 from lammps import lammps
 import argparse
 
@@ -7,6 +7,7 @@ import os.path
 def runLammps(script):
     lmp = lammps()
     try:
+	#print('im running yo')
         lmp.file(script)
     except:
         print("error")

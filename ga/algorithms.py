@@ -25,8 +25,16 @@
 # """
 
 import random
+import os
+import pickle
 
 from deap import tools
+
+### :TODO: PROP BACK ###
+def readMachines():
+	if os.path.exists('tmpmachines/machine.nodes'):
+		machineNodes = pickle.load(open("tmpmachines/machine.nodes","rb"))
+	return machineNodes
 
 def varAnd(population, toolbox, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
@@ -79,6 +87,13 @@ def varAnd(population, toolbox, cxpb, mutpb):
 
     return offspring
 
+def dummy(a,b):
+    print('@@@@@@@')
+    print(a)
+    print(b)
+    print('@@@@@@@')
+
+### :TODO: PROP BACK ###
 def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
              halloffame=None, verbose=__debug__):
     """This algorithm reproduce the simplest evolutionary algorithm as
@@ -141,10 +156,14 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
     """
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
-
+	
+    machineNodes = readMachines()
+	
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
-    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind, machineNodes)
+    #raise TypeError
+    #asdf = toolbox.map(dummy, invalid_ind, machineNodes)
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit
 
@@ -166,7 +185,7 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind, machineNodes)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
 

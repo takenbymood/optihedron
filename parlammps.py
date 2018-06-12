@@ -117,6 +117,23 @@ def runSim(script,np,timeout,silent=True):
         print(e)
         traceback.print_exc()
     return False
+	
+###:TODO: PROP BACK ###
+def runSimGrace(script,np,timeout,machinefile,silent=False):
+    #print('@@@@@@@@@@@@@@@@@@using {} @@@@@@@@@@@@@@@@@@@@@@@'.format(machinefile))
+    try:
+        for stdout_line in execute(['mpirun','-np',str(np),'-machinefile',machinefile,'./venv/bin/python','./plammps.py','-s',str(script)],timeout):
+            if (silent):
+                pass
+            else:
+                print stdout_line,
+        return True
+    except TimeoutError:
+        print('Process timed out')
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+    return False
 
 def createPbs(script,wd,np,name,rundir,mpirun):
     try:

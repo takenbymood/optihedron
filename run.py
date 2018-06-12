@@ -14,6 +14,7 @@ import sys
 import subprocess
 import parlammps
 import pathos
+import pickle
 import sys
 from pathos import pools
 import traceback
@@ -210,7 +211,9 @@ def saveMetrics(lis,filename='metrics.csv'):
         csv_out=csv.DictWriter(out,lis[-1].keys())
         csv_out.writeheader()
         for row in lis:
-            csv_out.writerow(row)
+            csv_out.writerow(row)		
+			
+			
 
 def evaluateNPWrapping(np,outFilename,runtime):    
     minFit = 1E-8
@@ -348,10 +351,13 @@ def evaluatePyLammps(individual):
 
     return 1,
 
-def runSim(path):    
-    return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
-
-def evaluateParticleInstance(np,simName):
+### :TODO: PROP BACK ###
+def runSim(path,machineNode):    
+    #return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
+	return parlammps.runSimGrace(path,NP,TIMEOUT,machineNode) if MPI else parlammps.runSimSerial(path)
+	
+### :TODO: PROP BACK ###
+def evaluateParticleInstance(np,simName,machineNode):
     
     sim = MembraneSimulation(
         'sim_'+simName,
@@ -384,12 +390,13 @@ def evaluateParticleInstance(np,simName):
             traceback.print_exc()
             print('error in qsub of {}, file: '.format(simName,pbs))
     else:
-        runSim(scriptPath)
+        runSim(scriptPath,machineNode)
     
     f = 1E-8,
     f = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
     print('{} fitness: {}'.format(simName, f))
+    #iprint('using graceNode {} from assignedNode {}'.format(open(machineNode,'r').read(),machineNode)) 
     if not KEEPINPUT:
         sim.deleteFiles()
     if KEEPOUTPUT:
@@ -398,8 +405,11 @@ def evaluateParticleInstance(np,simName):
         os.remove(outFilePath)
     return f
 
-
-def evaluate(individual):
+### :TODO: PROP BACK ###
+def evaluate(individual,machineNode):
+    #print('@@@@@@@@@@@@@@@@@@@@@@@@@@')
+    #print(machineNode)
+    #print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     
     np = phenome.particle
@@ -407,7 +417,7 @@ def evaluate(individual):
     fitnesses = []
 
     for i in range(REPEATS):
-        fitnesses.append(evaluateParticleInstance(np,simName+"_"+str(i)))
+        fitnesses.append(evaluateParticleInstance(np,simName+"_"+str(i),machineNode))
 
     fsum = 0
     for fit in fitnesses:
@@ -566,6 +576,37 @@ def mkdirs(directory):
         if e.errno != errno.EEXIST:
             raise        
 
+### :TODO: PROP BACK ###			
+def chunkIt(seq, num):
+	#https://stackoverflow.com/questions/2130016/splitting-a-list-into-n-parts-of-approximately-equal-length
+    avg = len(seq) / float(num)
+    out = []
+    last = 0.0
+
+    while last < len(seq):
+        out.append(seq[int(last):int(last + avg)])
+        last += avg
+
+    return out	
+	
+### :TODO: PROP BACK ###
+def parseMachines():
+	if not os.path.exists('tmpmachines/machine.nodes'):
+		machines = []
+		with open('machines') as f:
+			for line in f:
+				machines.append(line.rstrip())
+		machines.pop(0) #main thread
+		machineNodeChunks = chunkIt(machines,WORKERS)
+		machineNodes= []
+		for counter, machineNodeChunk in enumerate(machineNodeChunks):
+			machineFile = 'tmpmachines/machineNode{}'.format(counter)
+			with open(machineFile, 'w') as f:
+				for proc in machineNodeChunk:
+					f.write('{}\n'.format(proc))
+				machineNodes.append(machineFile)
+		pickle.dump(machineNodes,open("tmpmachines/machine.nodes","wb"))
+			
 def main():
 
     try:
@@ -609,6 +650,9 @@ def main():
     else:
        dbconn = None
 
+    parseMachines()
+    #raise TypeError
+	   
     ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
@@ -632,7 +676,7 @@ def main():
     results = ga.run(NGEN,FREQ,MIGR)
 
     saveMetrics(results[-2])
-    saveHOF(results[1])
+    #saveHOF(results[1])
 
     if SAVERESULTS:
         try:
