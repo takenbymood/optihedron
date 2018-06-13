@@ -164,8 +164,8 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
 
-    machineNodes = readMachines()
-    machineNodes = expandMachines(machineNodes,len(invalid_ind))
+    machineNodesU = readMachines()
+    machineNodes = expandMachines(machineNodesU,len(invalid_ind))
 
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind, machineNodes)
     #raise TypeError
@@ -192,6 +192,7 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+	machineNodes = expandMachines(machineNodesU,len(invalid_ind))
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind, machineNodes)
 	#asdf = toolbox.map(dummpy, invalid_ind, machineNodes)
         for ind, fit in zip(invalid_ind, fitnesses):

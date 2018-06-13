@@ -11,6 +11,6 @@
 module load python2/recommended
 source venv/bin/activate
 cp $TMPDIR/machines /home/zcapmrv/Scratch/optihedron
-python /home/zcapmrv/Scratch/optihedron/run.py -p 31 -n 1 -d 1 -r 1000 -rs 1 -mpi -np 1 -w 31 -ko -ki -wd '/home/zcapmrv/Scratch/GENETEST0'
+python /home/zcapmrv/Scratch/optihedron/run.py -p 31 -n 2 -d 2 -r 1000 -rs 2 -mpi -np 1 -w 31 -ko -ki -wd '/home/zcapmrv/Scratch/GENETEST0'
 rm /home/zcapmrv/Scratch/optihedron/machines
 rm /home/zcapmrv/Scratch/optihedron/tmpmachines/*
