@@ -47,6 +47,8 @@ if [ ! -f $LAMMPSDIR/src/liblammps.so ]; then
 	make no-all
 	make yes-dipole yes-rigid yes-molecule yes-python yes-opt #yes-gpu
 	#cd ${LAMMPSDIR}/lib/gpu && make -f Makefile.mpi CUDA_LIB="-L${CUDA_HOME}/lib"
+        make -j4 serial
+        #make -j4 serial mode=shlib
 	make -j4 mpi #LMP_INC="-DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_EXCEPTIONS" JPG_LIB="-lpng -ljpeg" gpu_SYSPATH="-L${CUDA_HOME}/lib"
 	make -j4 mpi mode=shlib #LMP_INC="-DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_EXCEPTIONS" JPG_LIB="-lpng -ljpeg" gpu_SYSPATH="-L${CUDA_HOME}/lib"
 	cd "$WDIR"

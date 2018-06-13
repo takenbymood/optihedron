@@ -472,8 +472,7 @@ def evaluate(individual):
 
     if budded:
         fmem += penalty
-    else:
-
+        
     f = fmem
 
     return f,
