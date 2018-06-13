@@ -369,7 +369,8 @@ def evaluateParticleInstance(np,simName,machineNode):
         TEMPLATEDATAPATH,
         TEMPLATEINPUTPATH,
         rAxis=vectools.randomUnitVector(),
-        rAmount=random.uniform(0.3141,3.141)        
+        rAmount=random.uniform(0.3141,3.141),
+	dumpres=str(RUNTIME)        
         )
     sim.saveFiles()
     scriptPath=os.path.join(sim.filedir,sim.scriptName)

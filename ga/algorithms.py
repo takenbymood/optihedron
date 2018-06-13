@@ -36,6 +36,10 @@ def readMachines():
 		machineNodes = pickle.load(open("tmpmachines/machine.nodes","rb"))
 	return machineNodes
 
+### :TODO: PROP BACK ###
+def expandMachines(machineNodes, numNodes):
+	return (machineNodes * (int(numNodes/len(machineNodes))+1))[:numNodes]
+
 def varAnd(population, toolbox, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
     (crossover **and** mutation). The modified individuals have their
@@ -89,7 +93,7 @@ def varAnd(population, toolbox, cxpb, mutpb):
 
 def dummy(a,b):
     print('@@@@@@@')
-    print(a)
+    #print(a)
     print(b)
     print('@@@@@@@')
 
@@ -157,13 +161,16 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 	
-    machineNodes = readMachines()
-	
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
+
+    machineNodes = readMachines()
+    machineNodes = expandMachines(machineNodes,len(invalid_ind))
+
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind, machineNodes)
     #raise TypeError
     #asdf = toolbox.map(dummy, invalid_ind, machineNodes)
+    #raise TypeError
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit
 
@@ -186,6 +193,7 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind, machineNodes)
+	#asdf = toolbox.map(dummpy, invalid_ind, machineNodes)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
 

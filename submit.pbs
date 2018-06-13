@@ -1,17 +1,16 @@
-#!/bin/bash
+#!/bin/bash -l
 
-#PBS -N optihedron
-#PBS -q batch
-#PBS -l nodes=1:ppn=8
-#PBS -l nodes=lemon1.biop.phys.ucl.ac.uk
-#PBS -l pmem=800M
-#PBS -l walltime=240:00:00
-#PBS -M joel.forster.16@ucl.ac.uk
-#PBS -m e
+#$ -S /bin/bash
+#$ -l h_rt=00:10:00
+#$ -l mem=100M
+#$ -l tmpfs=10G
+#$ -N GENETEST0
+#$ -pe mpi 32
+#$ -wd /home/zcapmrv/Scratch/optihedron
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-cd DIR
-#PBS -V
-source activate.sh
-python run.py -p 10 -n 30 -d 4
+module load python2/recommended
+source venv/bin/activate
+cp $TMPDIR/machines /home/zcapmrv/Scratch/optihedron
+python /home/zcapmrv/Scratch/optihedron/run.py -p 31 -n 1 -d 1 -r 1000 -rs 1 -mpi -np 1 -w 31 -ko -ki -wd '/home/zcapmrv/Scratch/GENETEST0'
+rm /home/zcapmrv/Scratch/optihedron/machines
+rm /home/zcapmrv/Scratch/optihedron/tmpmachines/*

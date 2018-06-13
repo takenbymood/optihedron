@@ -119,8 +119,8 @@ def runSim(script,np,timeout,silent=True):
     return False
 	
 ###:TODO: PROP BACK ###
-def runSimGrace(script,np,timeout,machinefile,silent=False):
-    #print('@@@@@@@@@@@@@@@@@@using {} @@@@@@@@@@@@@@@@@@@@@@@'.format(machinefile))
+def runSimGrace(script,np,timeout,machinefile,silent=True):
+    print('@@@@@@@@@@@@@@@@@@using {} @@@@@@@@@@@@@@@@@@@@@@@'.format(machinefile))
     try:
         for stdout_line in execute(['mpirun','-np',str(np),'-machinefile',machinefile,'./venv/bin/python','./plammps.py','-s',str(script)],timeout):
             if (silent):
