@@ -235,22 +235,12 @@ def exit(signal, frame):
         os._exit(1)
 
 def saveMetrics(lis,filename='metrics.csv'):
-<<<<<<< HEAD
-    with open(os.path.join(WDIR,filename),'wb') as out:
-        csv_out=csv.DictWriter(out,lis[-1].keys())
-        csv_out.writeheader()
-        for row in lis:
-            csv_out.writerow(row)		
-			
-			
-=======
     if len(lis)>0:
         with open(os.path.join(WDIR,filename),'wb') as out:
             csv_out=csv.DictWriter(out,lis[-1].keys())
             csv_out.writeheader()
             for row in lis:
                 csv_out.writerow(row)
->>>>>>> develop
 
 def evaluateNPWrapping(np,outFilename,runtime):    
     minFit = 1E-8
@@ -458,13 +448,9 @@ def evaluate(individual,machineNode):
     budding = []
 
     for i in range(REPEATS):
-<<<<<<< HEAD
-        fitnesses.append(evaluateParticleInstance(np,simName+"_"+str(i),machineNode))
-=======
         pf,pb = evaluateParticleInstance(np,simName+"_"+str(i))
         fitnesses.append(pf)
         budding.append(pb)
->>>>>>> develop
 
     fsum = 0
     for fit in fitnesses:
@@ -718,14 +704,11 @@ def main():
     else:
        dbconn = None
 
-<<<<<<< HEAD
     parseMachines()
     #raise TypeError
 	   
-=======
     initPopFile = "init.json" if FILE == None else FILE
 
->>>>>>> develop
     ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
