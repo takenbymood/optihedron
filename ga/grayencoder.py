@@ -24,7 +24,7 @@ def grayToBin(bits):
 	return b
 
 def max(bits):
-	return float(2**len(bits))
+	return float(2**len(bits))-1
 
 def generate(n):
 	return binToGray(genBin(n))

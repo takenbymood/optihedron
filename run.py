@@ -48,6 +48,8 @@ from nanoparticle import NanoParticlePhenome
 from nanoparticle import CoveredNanoParticlePhenome
 from membranesimulation import MembraneSimulation
 
+import json
+
 parser = argparse.ArgumentParser(description='')
 
 #Runtime Options 
@@ -139,10 +141,35 @@ parser.add_argument('-kb','--keepbest', action='store_true',
                     help='option to store each generations best individual')
 parser.add_argument('-wd','--wdir', default=os.path.dirname(os.path.realpath(__file__)),
                     help='option to set the working directory of the program')
+parser.add_argument('-i','--input', default=None, type=str, 
+                    help='set the input json file')
 
 
 
 args = parser.parse_args()
+
+FILE = args.input
+LOADFROMFILE = False
+
+
+
+if FILE != None:
+    try:
+        with open(FILE, "r") as pop_file:
+            contents = json.load(pop_file)
+        LOADFROMFILE = "init_pop" in contents
+        for arg in vars(args):
+            if str(arg) in contents:
+                print('overwriting ' + str(arg) + ' with value from file: '+ str(contents[str(arg)]))
+                setattr(args,arg,contents[str(arg)])
+        if LOADFROMFILE:
+            print('overwriting deme and population size from init_pop')
+            setattr(args,"demes",len(contents['init_pop']))
+            setattr(args,"pop",len(contents['init_pop'][0]))
+
+    except:
+        print("error loading json")
+
 
 NSPOKES = 2
 NISLES = args.demes
@@ -189,12 +216,13 @@ TEMPLATEDATAPATH = os.path.join(TEMPLATEDIR,'data.template')
 TEMPLATEINPUTPATH = os.path.join(TEMPLATEDIR,'in.template')
 DBPATH = os.path.join(DBDIR,'datastore.db')
 
-
 MPI = args.mpi
 NP = args.nodes
 TIMEOUT = args.timeout
 
 SAVERESULTS = args.saveresults
+
+
 
 def kill(p):
     try:
@@ -207,6 +235,7 @@ def exit(signal, frame):
         os._exit(1)
 
 def saveMetrics(lis,filename='metrics.csv'):
+<<<<<<< HEAD
     with open(os.path.join(WDIR,filename),'wb') as out:
         csv_out=csv.DictWriter(out,lis[-1].keys())
         csv_out.writeheader()
@@ -214,6 +243,14 @@ def saveMetrics(lis,filename='metrics.csv'):
             csv_out.writerow(row)		
 			
 			
+=======
+    if len(lis)>0:
+        with open(os.path.join(WDIR,filename),'wb') as out:
+            csv_out=csv.DictWriter(out,lis[-1].keys())
+            csv_out.writeheader()
+            for row in lis:
+                csv_out.writerow(row)
+>>>>>>> develop
 
 def evaluateNPWrapping(np,outFilename,runtime):    
     minFit = 1E-8
@@ -308,11 +345,12 @@ def evaluateNPWrapping(np,outFilename,runtime):
     
     #reward = msum
 
-    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+    # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
-    reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
+    # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
+    reward = (float(BUDDINGREWARD)) if stepData[-1]['budded'] else float(msum)
 
-    return reward,
+    return reward, stepData[-1]['budded']
 
 def runCmd(cmd,timeout):
     try:
@@ -394,7 +432,8 @@ def evaluateParticleInstance(np,simName,machineNode):
         runSim(scriptPath,machineNode)
     
     f = 1E-8,
-    f = evaluateNPWrapping(np,outFilePath,RUNTIME)
+    b = False
+    f,b = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
     print('{} fitness: {}'.format(simName, f))
     #iprint('using graceNode {} from assignedNode {}'.format(open(machineNode,'r').read(),machineNode)) 
@@ -404,7 +443,7 @@ def evaluateParticleInstance(np,simName,machineNode):
         sim.postProcessOutput(outFilePath)
     else:
         os.remove(outFilePath)
-    return f
+    return f,b
 
 ### :TODO: PROP BACK ###
 def evaluate(individual,machineNode):
@@ -416,19 +455,47 @@ def evaluate(individual,machineNode):
     np = phenome.particle
     simName = phenome.id + "_" + misctools.randomStr(3)
     fitnesses = []
+    budding = []
 
     for i in range(REPEATS):
+<<<<<<< HEAD
         fitnesses.append(evaluateParticleInstance(np,simName+"_"+str(i),machineNode))
+=======
+        pf,pb = evaluateParticleInstance(np,simName+"_"+str(i))
+        fitnesses.append(pf)
+        budding.append(pb)
+>>>>>>> develop
 
     fsum = 0
     for fit in fitnesses:
-        fsum+=fit[0]
+        fsum+=fit
 
-    fmem = float(fsum)/float(REPEATS)
+    budded = True
+
+    for bud in budding:
+        if not bud:
+            budded = False
+
+    if REPEATS > 0:
+        fmem = float(fsum)/float(REPEATS)
+    else:
+        fmem = float(fsum)
 
     #flig = len(np.ligands) 
     #feps = sum([ligand.eps for ligand in np.ligands])
 
+    nActiveLigands = 0
+    npTotalEps = 0.0
+
+    for l in np.ligands:
+        nActiveLigands += 1
+        npTotalEps += l.eps
+
+    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+
+    if budded:
+        fmem += penalty
+        
     f = fmem
 
     return f,
@@ -651,9 +718,14 @@ def main():
     else:
        dbconn = None
 
+<<<<<<< HEAD
     parseMachines()
     #raise TypeError
 	   
+=======
+    initPopFile = "init.json" if FILE == None else FILE
+
+>>>>>>> develop
     ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
        islePop = ISLESIZE,
@@ -668,7 +740,10 @@ def main():
        afterMigration = afterMigration,
        verbose = VERBOSE,
        mate = geneWiseTwoPoint,
-       dbconn = dbconn)
+       dbconn = dbconn,
+       jsonFile = initPopFile,
+       loadFromFile = LOADFROMFILE
+       )
 
     if SAVERESULTS:
         dbconn.gaSession.metrics = dao.Metrics(ga.metrics)
