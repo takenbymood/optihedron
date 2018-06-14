@@ -2,7 +2,7 @@
 
 #$ -S /bin/bash
 #$ -l h_rt=00:10:00
-#$ -l mem=100M
+#$ -l mem=500M
 #$ -l tmpfs=10G
 #$ -N GENETEST0
 #$ -pe mpi 32
@@ -11,6 +11,6 @@
 module load python2/recommended
 source venv/bin/activate
 cp $TMPDIR/machines /home/zcapmrv/Scratch/optihedron
-python /home/zcapmrv/Scratch/optihedron/run.py -p 31 -n 2 -d 2 -r 1000 -rs 2 -mpi -np 1 -w 31 -ko -ki -wd '/home/zcapmrv/Scratch/GENETEST0'
+/usr/bin/time --verbose python /home/zcapmrv/Scratch/optihedron/run.py -p 31 -n 2 -d 2 -r 1000 -rs 2 -mpi -np 1 -w 31 -sr -wd '/home/zcapmrv/Scratch/GENETEST0'
 rm /home/zcapmrv/Scratch/optihedron/machines
 rm /home/zcapmrv/Scratch/optihedron/tmpmachines/*

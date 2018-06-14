@@ -448,7 +448,7 @@ def evaluate(individual,machineNode):
     budding = []
 
     for i in range(REPEATS):
-        pf,pb = evaluateParticleInstance(np,simName+"_"+str(i))
+        pf,pb = evaluateParticleInstance(np,simName+"_"+str(i),machineNode)
         fitnesses.append(pf)
         budding.append(pb)
 
