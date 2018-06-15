@@ -195,12 +195,12 @@ class NetworkedGeneticAlgorithm:
     def buildHOF(self,size=1):
     	return tools.HallOfFame(size, similar=numpy.array_equal)
         
-    def run(self,ngen,freq,migr):
+    def run(self,ngen,freq,migr,startingGen=0):
         self.metrics = []
         self.islands = self.toolbox.population_guess() if self.loadFromFile else [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
 
         pool = pools.ProcessPool(10)
-        for i in range(0, ngen):
+        for i in range(startingGen, ngen):
             self.gen = i
             if self.verbose:
                 print("GEN: " + str(i+1) + "/" + str(ngen))

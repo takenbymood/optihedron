@@ -15,10 +15,12 @@ class Session(Base):
 	genealogy = relationship('Genealogy', uselist=False, back_populates='session')
 	generations = relationship('Generation',back_populates='session')
 	arguments = Column('arguments', String)
+	argPickle = Column('argPickle',PickleType)
 
 	def __init__(self, sessionTimeStamp,arguments):
 		self.timestamp = sessionTimeStamp
-		self.arguments = arguments
+		self.argPickle = arguments
+		self.arguments = str(arguments).replace('Namespace(','').replace(')','')
 
 	def getGenesList(self):
 		genes = []
@@ -33,6 +35,9 @@ class Session(Base):
 			for ind in gen.individuals:
 				inds.append(ind)
 		return inds
+
+	def getLastGeneration(self):
+		return self.generations[-1] if len(self.generations) > 0 else None
 
 class Metrics(Base):
 	__tablename__ = 'metrics'

@@ -59,11 +59,11 @@ parser.add_argument('-v','--verbose', default=False, action='store_true',
 #Genetic Algorithm Options
 
 parser.add_argument('-n','--ngen',type=int,
-                    help='number of generations', required=True)
+                    help='number of generations', default=1)
 parser.add_argument('-d','--demes', type=int,
-                    help='number of demes to run over', required=True)
+                    help='number of demes to run over', default=1)
 parser.add_argument('-p','--pop', type=int,
-                    help='population of each deme', required=True)
+                    help='population of each deme', default=1)
 parser.add_argument('-gs','--genomesize', type=int,
                     help='number of genes in the genome (overwritten for fixed angle)', default=40)
 parser.add_argument('-f','--migfreq', type=int, default=1,
@@ -85,6 +85,8 @@ parser.add_argument('-a', '--algorithm', default='eaSimple',
                     choices=['eaSimple'])
 parser.add_argument('-br', '--buddingreward',default=500.0, type=float,
                     help='reward for successful budding in')
+parser.add_argument('-sg','--startinggen',default=0, type=int,
+                    help='starting generation')
 
 #Model Options
 
@@ -142,17 +144,49 @@ parser.add_argument('-wd','--wdir', default=os.path.dirname(os.path.realpath(__f
                     help='option to set the working directory of the program')
 parser.add_argument('-i','--input', default=None, type=str, 
                     help='set the input json file')
+parser.add_argument('-db','--database', default=None, type=str, 
+                    help='set the input db')
+parser.add_argument('-dbs','--dbsession', default=-1, type=int, 
+                    help='set the session to load from the db')
 
 
 
 args = parser.parse_args()
 
 FILE = args.input
+DB = args.database
+DBSESSION = args.dbsession
 LOADFROMFILE = False
+LOADFROMDB = False
 
+WDIR = args.wdir
+PDIR = os.path.dirname(os.path.realpath(__file__))
 
+OUTDIR = os.path.join(WDIR,'out')
+RUNDIR = os.path.join(WDIR,'run')
+HOFDIR = os.path.join(WDIR,'hof')
+DBDIR = os.path.join(WDIR,'db')
+TEMPLATEDIR = os.path.join(PDIR,'mem/template')
+TEMPLATEDATAPATH = os.path.join(TEMPLATEDIR,'data.template')
+TEMPLATEINPUTPATH = os.path.join(TEMPLATEDIR,'in.template')
+DBPATH = os.path.join(DBDIR,'datastore.db')
 
-if FILE != None:
+QSUB = args.qsub
+WORKERS = args.workers
+
+MPI = args.mpi
+NP = args.nodes
+TIMEOUT = args.timeout
+
+SAVERESULTS = args.saveresults
+
+KEEPINPUT = args.keepinput
+KEEPOUTPUT = args.keepoutput
+KEEPBEST = args.keepbest
+
+runArgs = args
+
+if FILE != None and DB == None:
     try:
         with open(FILE, "r") as pop_file:
             contents = json.load(pop_file)
@@ -168,58 +202,87 @@ if FILE != None:
 
     except:
         print("error loading json")
+elif DB != None:
+    try:
+        conn = dao.DatabaseConnection(DB)
+        print('loading database file ' + str(DB))
+        if DBSESSION == -1:
+            print('loading most recent db session')
+        initSession = conn.getSession(DBSESSION) if DBSESSION != -1 else conn.getLastSession()
+        if initSession != None:
+            lastGen = initSession.getLastGeneration()
+            runArgs = initSession.argPickle
+            setattr(runArgs,"startinggen",lastGen.genNumber+1)
+            if args.ngen > runArgs.ngen:
+                setattr(runArgs,"ngen",args.ngen)   
+        else:
+            print("database contained no valid sessions")
+        conn.close()
+    except Exception as e: 
+        print(e)
+
 
 
 NSPOKES = 2
-NISLES = args.demes
-ISLESIZE = args.pop
-CXPB=args.cxpb
-MUTPB=args.mutpb
-NGEN, FREQ = args.ngen, args.migfreq
-VERBOSE=args.verbose
-SEED = args.seed
-TSIZE = args.tournsize
-MINPDB = args.mindpb
-PARTIAL = args.partialpacking
-GENES = args.genomesize if PARTIAL else 72
-MIGR = args.migrations
-HOFSIZE = args.hofsize
-EXPRPLACES = args.exprplaces
-EPSPLACES = args.epsplaces
-POLANGPLACES = args.polangplaces
-AZIANGPLACES = args.aziangplaces
-EPSMAX = args.epsmax
-EPSMIN = args.epsmin
-RUNTIME = args.runtime
-TIMESTEP = args.timestep
+NISLES = runArgs.demes
+ISLESIZE = runArgs.pop
+CXPB = runArgs.cxpb
+MUTPB = runArgs.mutpb
+NGEN = runArgs.ngen
+FREQ = runArgs.migfreq
+VERBOSE=runArgs.verbose
+SEED = runArgs.seed
+TSIZE = runArgs.tournsize
+MINPDB = runArgs.mindpb
+PARTIAL = runArgs.partialpacking
+GENES = runArgs.genomesize if PARTIAL else 72
+MIGR = runArgs.migrations
+HOFSIZE = runArgs.hofsize
+EXPRPLACES = runArgs.exprplaces
+EPSPLACES = runArgs.epsplaces
+POLANGPLACES = runArgs.polangplaces
+AZIANGPLACES = runArgs.aziangplaces
+EPSMAX = runArgs.epsmax
+EPSMIN = runArgs.epsmin
+RUNTIME = runArgs.runtime
+TIMESTEP = runArgs.timestep
 GENESIZE = (EXPRPLACES+EPSPLACES+POLANGPLACES+AZIANGPLACES) if PARTIAL else (EXPRPLACES+EPSPLACES)
 GENOMESIZE = GENES*GENESIZE
-QSUB = args.qsub
-WORKERS = args.workers
-REPEATS = args.repeats
-KEEPINPUT = args.keepinput
-KEEPOUTPUT = args.keepoutput
-KEEPBEST = args.keepbest
-PENALTYWEIGHT = args.penaltyweight
-BUDDINGREWARD = args.buddingreward
+REPEATS = runArgs.repeats
 
-WDIR = args.wdir
-PDIR = os.path.dirname(os.path.realpath(__file__))
+PENALTYWEIGHT = runArgs.penaltyweight
+BUDDINGREWARD = runArgs.buddingreward
+STARTINGGEN = runArgs.startinggen
 
-OUTDIR = os.path.join(WDIR,'out')
-RUNDIR = os.path.join(WDIR,'run')
-HOFDIR = os.path.join(WDIR,'hof')
-DBDIR = os.path.join(WDIR,'db')
-TEMPLATEDIR = os.path.join(PDIR,'mem/template')
-TEMPLATEDATAPATH = os.path.join(TEMPLATEDIR,'data.template')
-TEMPLATEINPUTPATH = os.path.join(TEMPLATEDIR,'in.template')
-DBPATH = os.path.join(DBDIR,'datastore.db')
+#god what a mess
 
-MPI = args.mpi
-NP = args.nodes
-TIMEOUT = args.timeout
-
-SAVERESULTS = args.saveresults
+if runArgs != args:
+    setattr(args,"demes",NISLES)
+    setattr(args,"pop",ISLESIZE)
+    setattr(args,"cxpb",CXPB)
+    setattr(args,"mutpb",MUTPB)
+    setattr(args,"ngen",NGEN)
+    setattr(args,"migfreq",MIGR)
+    setattr(args,"verbose",VERBOSE)
+    setattr(args,"seed",SEED)
+    setattr(args,"tournsize",TSIZE)
+    setattr(args,"mindpb",MINPDB)
+    setattr(args,"partialpacking",PARTIAL)
+    setattr(args,"genes",GENES)
+    setattr(args,"migrations",MIGR)
+    setattr(args,"hofsize",HOFSIZE)
+    setattr(args,"exprplaces",EXPRPLACES)
+    setattr(args,"epsplaces",EPSPLACES)
+    setattr(args,"polangplaces",POLANGPLACES)
+    setattr(args,"aziangplaces",AZIANGPLACES)
+    setattr(args,"epsmin",EPSMIN)
+    setattr(args,"epsmax",EPSMAX)
+    setattr(args,"runtime",RUNTIME)
+    setattr(args,"timestep",TIMESTEP)
+    setattr(args,"repeats",REPEATS)
+    setattr(args,"penaltyweight",PENALTYWEIGHT)
+    setattr(args,"buddingreward",BUDDINGREWARD)
+    setattr(args,"startinggen",STARTINGGEN)
 
 
 
@@ -638,28 +701,28 @@ def main():
         print "error creating working environment"
         raise e
         
-    if args.graph == 'singlet':
+    if runArgs.graph == 'singlet':
        network = networks.createSinglets(NISLES)
-    elif args.graph == 'islands':
+    elif runArgs.graph == 'islands':
        network = networks.createIslands(NISLES)
-    elif args.graph == 'star':
+    elif runArgs.graph == 'star':
        network = networks.createStar(NISLES-1)
-    elif args.graph == 'megastar':
+    elif runArgs.graph == 'megastar':
        network = networks.createMegaStar(NSPOKES,int(math.ceil((NISLES-3)*0.25)),int(math.floor((NISLES-3)*0.25)))
     else:
        raw_input('malformed network option, continue with islands? (Enter)')
 
-    if args.algorithm == 'eaSimple':
+    if runArgs.algorithm == 'eaSimple':
         algorithm = algorithmEaSimple
     else:
         raw_input('malformed algorithm option, continuing with eaSimple.. (Enter)')
         algorithm = algorithmEaSimple
 
-    random.seed(args.seed)
+    random.seed(runArgs.seed)
 
     if SAVERESULTS:
        dbconn = dao.DatabaseConnection(DBPATH)
-       dbconn.saveSession(str(args).replace('Namespace(','').replace(')',''))
+       dbconn.saveSession(args)
        dbconn.commit()
     else:
        dbconn = None
@@ -689,7 +752,7 @@ def main():
         dbconn.gaSession.metrics = dao.Metrics(ga.metrics)
         ga.dbconn.gaSession.genealogy = dao.Genealogy(ga.history.genealogy_tree,ga.history.genealogy_history)
 
-    results = ga.run(NGEN,FREQ,MIGR)
+    results = ga.run(NGEN,FREQ,MIGR,STARTINGGEN)
 
     saveMetrics(results[-2])
     saveHOF(results[1])
