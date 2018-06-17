@@ -97,7 +97,10 @@ class NanoParticlePhenome(phenome.Phenome):
 			polarAngGene = g[self.exprPlaces+self.epsPlaces:self.exprPlaces+self.epsPlaces+self.polarAngPlaces]
 			azimuthalAngGene = g[self.exprPlaces+self.epsPlaces+self.polarAngPlaces:self.exprPlaces+self.epsPlaces+self.polarAngPlaces+self.azimuthalAngPlaces]
 			gene['expr'] = True if ge.read(exprGene)/ge.max(exprGene) >= 0.5 else False 			
-			gene['eps'] = ((ge.read(epsGene)*(self.maxEps-self.minEps))/ge.max(epsGene))+self.minEps
+			if gene['eps']:	
+				gene['eps'] = ((ge.read(epsGene)*(self.maxEps-self.minEps))/ge.max(epsGene))+self.minEps
+			else:
+				gene['eps'] = self.minEps
 			gene['polAng'] = (ge.read(polarAngGene)*(3.141)/ge.max(polarAngGene))
 			gene['aziAng'] = (ge.read(azimuthalAngGene)*(6.2831)/ge.max(azimuthalAngGene))
 			genes.append(gene)
@@ -145,7 +148,10 @@ class CoveredNanoParticlePhenome(phenome.Phenome):
 			exprGene = g[0:self.exprPlaces]			
 			epsGene = g[self.exprPlaces:self.exprPlaces+self.epsPlaces]
 			gene['expr'] = True if ge.read(exprGene)/ge.max(exprGene) >= 0.5 else False 			
-			gene['eps'] = ((ge.read(epsGene)*(self.maxEps-self.minEps))/ge.max(epsGene))+self.minEps
+			if gene['eps']:
+				gene['eps'] = ((ge.read(epsGene)*(self.maxEps-self.minEps))/ge.max(epsGene))+self.minEps
+			else:
+				gene['eps'] = self.minEps
 			genes.append(gene)
 		return genes
 
