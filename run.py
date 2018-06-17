@@ -151,7 +151,7 @@ FILE = args.input
 LOADFROMFILE = False
 
 
-
+#sanitize input
 if FILE != None:
     try:
         with open(FILE, "r") as pop_file:
@@ -168,6 +168,12 @@ if FILE != None:
 
     except:
         print("error loading json")
+
+if args.epsplaces == 0:
+    if args.epsmax != args.epsmin:
+        print('ligand eps not encoded in genome but requested max and min ligand eps differ')
+        print('overwriting max ligand eps ({}) with min ligand eps ({})'.format(args.epsmax, args.epsmin))
+        args.epsmax = args.epsmin
 
 
 NSPOKES = 2
