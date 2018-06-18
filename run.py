@@ -219,7 +219,8 @@ if DB != None:
         conn.close()
     except Exception as e: 
         print(e)
-
+        
+#sanitize input
 if FILE != None:
     try:
         with open(FILE, "r") as pop_file:
@@ -236,6 +237,12 @@ if FILE != None:
 
     except:
         print("error loading json")
+
+if args.epsplaces == 0:
+    if args.epsmax != args.epsmin:
+        print('ligand eps not encoded in genome but requested max and min ligand eps differ')
+        print('overwriting max ligand eps ({}) with min ligand eps ({})'.format(args.epsmax, args.epsmin))
+        args.epsmax = args.epsmin
 
 
 
@@ -322,6 +329,7 @@ def saveMetrics(lis,filename='metrics.csv'):
 
 def evaluateNPWrapping(np,outFilename,runtime):    
     minFit = 1E-8
+    noBud = False
     outHeaderSize = 9
     outData = {}
 
@@ -333,7 +341,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
         npTotalEps += l.eps
 
     if(not os.path.exists(outFilename)):                                
-            return minFit,
+            return minFit, noBud
 
     with open(outFilename, 'r+') as f:
         lines = f.readlines()
@@ -350,7 +358,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
                 outData[ts].append(lines[i].replace("\n","").replace(" ",","))
 
     if len(outData[ts])<50:        
-        return minFit, 
+        return minFit, noBud 
 
     stepData = []
 
@@ -360,7 +368,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
             slist = line.split(",")[1:]
             sId = line.split(",")[0]
             if(len(slist)<3):            
-                return minFit,
+                return minFit, noBud
             if not int(slist[0]) in outVectors:
                 outVectors[int(slist[0])] = []
             outVectors[int(slist[0])].append({'id':sId,'x':float(slist[1]),'y':float(slist[2]), 'z':float(slist[3]), 'c':int(slist[4])})
@@ -408,7 +416,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
     msum = stepData[-1]['mNum']
 
     if(msum == 0):        
-        return minFit,
+        return minFit, noBud
 
     
     #reward = msum
@@ -495,7 +503,7 @@ def evaluateParticleInstance(np,simName):
     else:
         runSim(scriptPath)
     
-    f = 1E-8,
+    f = 1E-8
     b = False
     f,b = evaluateNPWrapping(np,outFilePath,RUNTIME)
 

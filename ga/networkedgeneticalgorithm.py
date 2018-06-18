@@ -59,6 +59,18 @@ def defaultSelTournament(pop,k):
 def defaultMutFlipBit(individual):
     return tools.mutFlipBit(individual,0.05)
 
+def accumulateStats(l):
+    acc = []
+    for key, group in itertools.groupby(l, lambda item: item["gen"]):
+        glist = list(group)
+        acc.append({'gen': key,
+            'max':  numpy.max([item["max"] for item in glist])
+            ,'min':  numpy.min([item["min"] for item in glist])
+            ,'avg':    numpy.mean([item["avg"] for item in glist])
+            ,'std':    math.sqrt(numpy.sum(map(lambda x: x*x,[item["std"] for item in glist])))
+            })
+    return acc
+
 
 class NetworkedGeneticAlgorithm:
 
@@ -149,18 +161,6 @@ class NetworkedGeneticAlgorithm:
     def getTotalFitness(self,pop):
         return numpy.sum([p.fitness.values[-1] for p in pop])
 
-    def accumulateStats(self,l):
-        acc = []
-        for key, group in itertools.groupby(l, lambda item: item["gen"]):
-            glist = list(group)
-            acc.append({'gen': key,
-                'max':  numpy.max([item["max"] for item in glist])
-                ,'min':  numpy.min([item["min"] for item in glist])
-                ,'avg':    numpy.mean([item["avg"] for item in glist])
-                ,'std':    math.sqrt(numpy.sum(map(lambda x: x*x,[item["std"] for item in glist])))
-                })
-        return acc
-
 
     def migration(self,islands):
         network = self.net
@@ -217,7 +217,7 @@ class NetworkedGeneticAlgorithm:
             self.afterMigration(self)
         self.metrics = [val for sublist in self.metrics for val in sublist]
         self.metrics = sorted(sorted(self.metrics, key=lambda k: k['island']), key=lambda k: k['gen']) 
-        self.accMetrics = (self.accumulateStats(self.metrics))
+        self.accMetrics = (accumulateStats(self.metrics))
         #self.metrics = list(self.accumulate(self.metrics))
         return self.islands, self.hof, self.metrics, self.accMetrics, self.history
 
