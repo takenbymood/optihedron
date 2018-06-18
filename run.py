@@ -206,13 +206,9 @@ if DB != None:
             initpop = []
             for d in initSession.demes:
                 initpop.append([])
-                print len(d.individuals)
                 for ind in d.individuals:
                     if ind.gen_id == lastGen.pID:
                         initpop[-1].append(np.array(ind.genomePickle).tolist())
-
-            print(len(initpop))
-            print(len(initpop[0]))
             initParams = {'init_pop':initpop}
             initFileName = 'db/init.json'
             with open(initFileName, 'w') as initFile:
