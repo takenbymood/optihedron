@@ -14,6 +14,7 @@ class Session(Base):
 	metrics = relationship('Metrics',uselist=False, back_populates='session')
 	genealogy = relationship('Genealogy', uselist=False, back_populates='session')
 	generations = relationship('Generation',back_populates='session')
+	demes = relationship('Deme', back_populates='session')
 	arguments = Column('arguments', String)
 	argPickle = Column('argPickle',PickleType)
 
@@ -48,7 +49,19 @@ class Metrics(Base):
 	metricsPickle = Column('metrics_pickle', PickleType)
 
 	def __init__(self, metrics):
-		self.metricsPickle = metrics		
+		self.metricsPickle = metrics
+
+ind_deme = Table('association_ind_deme', Base.metadata,
+    Column('individual_id', Integer, ForeignKey('individuals.id')),
+    Column('deme_id', Integer, ForeignKey('demes.id'))
+)
+
+class Deme(Base):
+	__tablename__ = 'demes'
+	pID = Column('id', Integer, primary_key=True)
+	session_id = Column(Integer, ForeignKey('sessions.id'))
+	session = relationship('Session',uselist=False, back_populates='demes')
+	individuals = relationship('Individual',secondary=ind_deme,back_populates='deme')
 
 class Genealogy(Base):
 	__tablename__ = 'genealogy'
@@ -109,6 +122,7 @@ class Individual(Base):
 	genomePickle = Column('genome_pickle', PickleType)
 	phenomePickle = Column('phenome_pickle', PickleType)
 	genes = relationship('Gene',secondary=association_table,back_populates='individuals')
+	deme = relationship('Deme',secondary=ind_deme,uselist=False,back_populates='individuals')
 
 	def __init__(self, individual, phenome):
 		self.fitness = individual.fitness.values[-1]

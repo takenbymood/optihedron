@@ -8,7 +8,7 @@ import argparse
 import time
 import itertools
 import operator
-import numpy
+import numpy as np
 import joblib
 import sys
 import subprocess
@@ -186,7 +186,45 @@ KEEPBEST = args.keepbest
 
 runArgs = args
 
-if FILE != None and DB == None:
+if DB != None:
+    try:
+        conn = dao.DatabaseConnection(DB)
+        print('loading database file ' + str(DB))
+        if DBSESSION == -1:
+            print('loading most recent db session')
+        else:
+            print('loading session ' + str(DBSESSION))
+        initSession = conn.getSession(DBSESSION) if DBSESSION != -1 else conn.getLastSession()
+
+        if initSession != None:
+            lastGen = initSession.getLastGeneration()
+            runArgs = initSession.argPickle
+            sGen = lastGen.genNumber+1
+            setattr(runArgs,"startinggen",sGen)
+            if args.ngen > runArgs.ngen:
+                setattr(runArgs,"ngen",args.ngen)
+            initpop = []
+            for d in initSession.demes:
+                initpop.append([])
+                print len(d.individuals)
+                for ind in d.individuals:
+                    if ind.gen_id == lastGen.pID:
+                        initpop[-1].append(np.array(ind.genomePickle).tolist())
+
+            print(len(initpop))
+            print(len(initpop[0]))
+            initParams = {'init_pop':initpop}
+            initFileName = 'db/init.json'
+            with open(initFileName, 'w') as initFile:
+                json.dump(initParams, initFile)
+            FILE = initFileName
+        else:
+            print("database contained no valid sessions")
+        conn.close()
+    except Exception as e: 
+        print(e)
+
+if FILE != None:
     try:
         with open(FILE, "r") as pop_file:
             contents = json.load(pop_file)
@@ -197,29 +235,11 @@ if FILE != None and DB == None:
                 setattr(args,arg,contents[str(arg)])
         if LOADFROMFILE:
             print('overwriting deme and population size from init_pop')
-            setattr(args,"demes",len(contents['init_pop']))
-            setattr(args,"pop",len(contents['init_pop'][0]))
+            setattr(runArgs,"demes",len(contents['init_pop']))
+            setattr(runArgs,"pop",len(contents['init_pop'][0]))
 
     except:
         print("error loading json")
-elif DB != None:
-    try:
-        conn = dao.DatabaseConnection(DB)
-        print('loading database file ' + str(DB))
-        if DBSESSION == -1:
-            print('loading most recent db session')
-        initSession = conn.getSession(DBSESSION) if DBSESSION != -1 else conn.getLastSession()
-        if initSession != None:
-            lastGen = initSession.getLastGeneration()
-            runArgs = initSession.argPickle
-            setattr(runArgs,"startinggen",lastGen.genNumber+1)
-            if args.ngen > runArgs.ngen:
-                setattr(runArgs,"ngen",args.ngen)   
-        else:
-            print("database contained no valid sessions")
-        conn.close()
-    except Exception as e: 
-        print(e)
 
 
 
@@ -559,10 +579,13 @@ def beforeMigration(ga):
     
     if SAVERESULTS:
         try:
+            iNum = 0
             for isle in ga.islands:
+                dbdeme = ga.dbconn.gaSession.demes[iNum]
                 for individual in isle:
                     np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
                     i = dao.Individual(individual, np)
+                    i.deme = dbdeme
                     dbGen.individuals.append(i)
                     for g in np.genelist:
                         gene = dao.Gene(g)
@@ -586,6 +609,7 @@ def beforeMigration(ga):
                         if novelGene:
                             dbGen.novelGenes.append(gene)
                             i.addGene(gene)
+                iNum += 1
 
             ga.dbconn.saveGeneration(dbGen)
 
@@ -751,6 +775,9 @@ def main():
     if SAVERESULTS:
         dbconn.gaSession.metrics = dao.Metrics(ga.metrics)
         ga.dbconn.gaSession.genealogy = dao.Genealogy(ga.history.genealogy_tree,ga.history.genealogy_history)
+        for isle in ga.islands:
+            ga.dbconn.gaSession.demes.append(dao.Deme())
+        dbconn.commit()
 
     results = ga.run(NGEN,FREQ,MIGR,STARTINGGEN)
 

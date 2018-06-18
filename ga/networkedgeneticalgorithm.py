@@ -119,6 +119,7 @@ class NetworkedGeneticAlgorithm:
         self.gen = 0
         self.novelty=[]
         self.metrics = []
+        self.islands = self.toolbox.population_guess() if self.loadFromFile else [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
 
 
     def initIndividual(self,icls,content):
@@ -197,7 +198,7 @@ class NetworkedGeneticAlgorithm:
         
     def run(self,ngen,freq,migr,startingGen=0):
         self.metrics = []
-        self.islands = self.toolbox.population_guess() if self.loadFromFile else [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
+        
 
         pool = pools.ProcessPool(10)
         for i in range(startingGen, ngen):
