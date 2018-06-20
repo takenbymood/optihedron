@@ -59,6 +59,18 @@ def defaultSelTournament(pop,k):
 def defaultMutFlipBit(individual):
     return tools.mutFlipBit(individual,0.05)
 
+def accumulateStats(l):
+    acc = []
+    for key, group in itertools.groupby(l, lambda item: item["gen"]):
+        glist = list(group)
+        acc.append({'gen': key,
+            'max':  numpy.max([item["max"] for item in glist])
+            ,'min':  numpy.min([item["min"] for item in glist])
+            ,'avg':    numpy.mean([item["avg"] for item in glist])
+            ,'std':    math.sqrt(numpy.sum(map(lambda x: x*x,[item["std"] for item in glist])))
+            })
+    return acc
+
 
 class NetworkedGeneticAlgorithm:
 
@@ -119,6 +131,7 @@ class NetworkedGeneticAlgorithm:
         self.gen = 0
         self.novelty=[]
         self.metrics = []
+        self.islands = self.toolbox.population_guess() if self.loadFromFile else [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
 
 
     def initIndividual(self,icls,content):
@@ -147,18 +160,6 @@ class NetworkedGeneticAlgorithm:
 
     def getTotalFitness(self,pop):
         return numpy.sum([p.fitness.values[-1] for p in pop])
-
-    def accumulateStats(self,l):
-        acc = []
-        for key, group in itertools.groupby(l, lambda item: item["gen"]):
-            glist = list(group)
-            acc.append({'gen': key,
-                'max':  numpy.max([item["max"] for item in glist])
-                ,'min':  numpy.min([item["min"] for item in glist])
-                ,'avg':    numpy.mean([item["avg"] for item in glist])
-                ,'std':    math.sqrt(numpy.sum(map(lambda x: x*x,[item["std"] for item in glist])))
-                })
-        return acc
 
 
     def migration(self,islands):
@@ -195,12 +196,12 @@ class NetworkedGeneticAlgorithm:
     def buildHOF(self,size=1):
     	return tools.HallOfFame(size, similar=numpy.array_equal)
         
-    def run(self,ngen,freq,migr):
+    def run(self,ngen,freq,migr,startingGen=0):
         self.metrics = []
-        self.islands = self.toolbox.population_guess() if self.loadFromFile else [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
+        
 
         pool = pools.ProcessPool(10)
-        for i in range(0, ngen):
+        for i in range(startingGen, ngen):
             self.gen = i
             if self.verbose:
                 print("GEN: " + str(i+1) + "/" + str(ngen))
@@ -216,7 +217,7 @@ class NetworkedGeneticAlgorithm:
             self.afterMigration(self)
         self.metrics = [val for sublist in self.metrics for val in sublist]
         self.metrics = sorted(sorted(self.metrics, key=lambda k: k['island']), key=lambda k: k['gen']) 
-        self.accMetrics = (self.accumulateStats(self.metrics))
+        self.accMetrics = (accumulateStats(self.metrics))
         #self.metrics = list(self.accumulate(self.metrics))
         return self.islands, self.hof, self.metrics, self.accMetrics, self.history
 
