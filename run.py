@@ -425,7 +425,7 @@ def evaluateParticleInstance(np,simName,machineNode):
     b = False
     f,b = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
-    print('{} fitness: {}'.format(simName, f))
+    #print('{} fitness: {}'.format(simName, f))
     #iprint('using graceNode {} from assignedNode {}'.format(open(machineNode,'r').read(),machineNode)) 
     if not KEEPINPUT:
         sim.deleteFiles()
