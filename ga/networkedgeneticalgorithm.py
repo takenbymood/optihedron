@@ -202,7 +202,7 @@ class NetworkedGeneticAlgorithm:
 
         pool = pools.ProcessPool(10)
         for i in range(startingGen, ngen):
-            self.gen = i
+            self.gen = i+1
             if self.verbose:
                 print("GEN: " + str(i+1) + "/" + str(ngen))
             self.results = map(self.algorithm, self.islands)

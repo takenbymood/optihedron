@@ -583,58 +583,60 @@ def algorithmEaSimple(pop,toolbox,stats,hof):
     return algorithms.eaSimple(pop,toolbox=toolbox,
         cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=VERBOSE,stats=stats,halloffame=hof)
 
+def commitSession(ga):
+    novelGenes = []
+    dbGen = dao.Generation(ga.gen)
+    try:
+        iNum = 0
+        for isle in ga.islands:
+            dbdeme = ga.dbconn.gaSession.demes[iNum]
+            for individual in isle:
+                np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+                i = dao.Individual(individual, np)
+                i.deme = dbdeme
+                dbGen.individuals.append(i)
+                for g in np.genelist:
+                    gene = dao.Gene(g)
+                    novelGene = True
+                    for n in dbGen.novelGenes:
+                        if n.rawGene == gene.rawGene:
+                            novelGene = False
+                            i.addGene(n)
+                    if novelGene:
+                        for gen in ga.dbconn.gaSession.generations:
+                                for nGene in range(len(gen.novelGenes)):
+                                    if gen.novelGenes[nGene].rawGene == gene.rawGene:
+                                        novelGene = False
+                                        i.addGene(gen.novelGenes[nGene])
+                                        break
+                    if novelGene:
+                        dbGene = ga.dbconn.getGeneByRawGene(gene.rawGene)
+                        if dbGene != None:
+                            novelGene = False
+                            i.addGene(dbGene)
+                    if novelGene:
+                        dbGen.novelGenes.append(gene)
+                        i.addGene(gene)
+            iNum += 1
+
+        ga.dbconn.saveGeneration(dbGen)
+
+        ga.dbconn.gaSession.metrics.metricsPickle = ga.metrics
+        ga.dbconn.gaSession.genealogy.treePickle = ga.history.genealogy_tree
+        ga.dbconn.gaSession.genealogy.historyPickle = ga.history.genealogy_history
+
+        ga.dbconn.commit()
+    except IOError as e:
+        print "I/O error({0}): {1}".format(e.errno, e.strerror)
+    except:
+        print "Unexpected error:", sys.exc_info()[0]
+
 def beforeMigration(ga):
     misctools.removeByPattern(WDIR,"subhedra")
-
-    dbGen = dao.Generation(ga.gen)
-
-    novelGenes = []
     
     if SAVERESULTS:
-        try:
-            iNum = 0
-            for isle in ga.islands:
-                dbdeme = ga.dbconn.gaSession.demes[iNum]
-                for individual in isle:
-                    np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-                    i = dao.Individual(individual, np)
-                    i.deme = dbdeme
-                    dbGen.individuals.append(i)
-                    for g in np.genelist:
-                        gene = dao.Gene(g)
-                        novelGene = True
-                        for n in dbGen.novelGenes:
-                            if n.rawGene == gene.rawGene:
-                                novelGene = False
-                                i.addGene(n)
-                        if novelGene:
-                            for gen in ga.dbconn.gaSession.generations:
-                                    for nGene in range(len(gen.novelGenes)):
-                                        if gen.novelGenes[nGene].rawGene == gene.rawGene:
-                                            novelGene = False
-                                            i.addGene(gen.novelGenes[nGene])
-                                            break
-                        if novelGene:
-                            dbGene = ga.dbconn.getGeneByRawGene(gene.rawGene)
-                            if dbGene != None:
-                                novelGene = False
-                                i.addGene(dbGene)
-                        if novelGene:
-                            dbGen.novelGenes.append(gene)
-                            i.addGene(gene)
-                iNum += 1
+        commitSession(ga)
 
-            ga.dbconn.saveGeneration(dbGen)
-
-            ga.dbconn.gaSession.metrics.metricsPickle = ga.metrics
-            ga.dbconn.gaSession.genealogy.treePickle = ga.history.genealogy_tree
-            ga.dbconn.gaSession.genealogy.historyPickle = ga.history.genealogy_history
-
-            ga.dbconn.commit()
-        except IOError as e:
-            print "I/O error({0}): {1}".format(e.errno, e.strerror)
-        except:
-            print "Unexpected error:", sys.exc_info()[0]
     if KEEPBEST:
         saveBest(ga.hof,ga.gen)
 
@@ -791,6 +793,7 @@ def main():
         for isle in ga.islands:
             ga.dbconn.gaSession.demes.append(dao.Deme())
         dbconn.commit()
+        commitSession(ga)
 
     results = ga.run(NGEN,FREQ,MIGR,STARTINGGEN)
 
