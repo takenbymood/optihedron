@@ -204,11 +204,20 @@ if DB != None:
             if args.ngen > runArgs.ngen:
                 setattr(runArgs,"ngen",args.ngen)
             initpop = []
-            for d in initSession.demes:
-                initpop.append([])
-                for ind in d.individuals:
-                    if ind.gen_id == lastGen.pID:
-                        initpop[-1].append(np.array(ind.genomePickle).tolist())
+            if initSession.demes != None and len(initSession.demes) > 0:
+                print('loading deme lists')
+                for d in initSession.demes:
+                    initpop.append([])
+                    for ind in d.individuals:
+                        if ind.gen_id == lastGen.pID:
+                            initpop[-1].append(np.array(ind.genomePickle).tolist())
+            else:
+                nDemes = runArgs.demes
+                print('no deme lists, splitting population into ' + str(nDemes) + ' new demes')
+                for d in range(nDemes):
+                    initpop.append([])
+                    for ind in range(d*runArgs.pop,d*runArgs.pop+runArgs.pop):
+                        initpop[-1].append(np.array(lastGen.individuals[ind].genomePickle).tolist())
             initParams = {'init_pop':initpop}
             initFileName = 'db/init.json'
             with open(initFileName, 'w') as initFile:
