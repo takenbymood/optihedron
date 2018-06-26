@@ -182,8 +182,8 @@ class NetworkedGeneticAlgorithm:
                 else:
                     t+=f
 
-    def algorithm(self,pop):
-        return self.subroutine(pop,self.toolbox,self.buildStats(),self.hof)
+    def algorithm(self,pop,verbose=False):
+        return self.subroutine(pop,self.toolbox,self.buildStats(),self.hof,verbose=verbose)
 
     def buildStats(self):
         stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -195,14 +195,37 @@ class NetworkedGeneticAlgorithm:
 
     def buildHOF(self,size=1):
     	return tools.HallOfFame(size, similar=numpy.array_equal)
+
+    def evaluateIndividuals(self,population):
+
+        stats = self.buildStats()
+        logbook = tools.Logbook()
+        logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
+
+        invalid_ind = [ind for ind in population if not ind.fitness.valid]
+        fitnesses = self.toolbox.map(self.toolbox.evaluate,population)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+
+        if self.hof is not None:
+            self.hof.update(population)
+
+        record = stats.compile(population) if stats else {}
+        logbook.record(gen=0, nevals=len(invalid_ind), **record)
+
+        return population, logbook
+
+    def firstGeneration(self):
+        self.results = map(self.evaluateIndividuals,self.islands)
+        self.metrics += map(self.genMetrics,[0]*len(list(self.results)),[n for n in range(len(list(self.results)))], [logbook for pop, logbook in self.results])
+        for isle in self.islands:
+            self.history.update(isle)
         
     def run(self,ngen,freq,migr,startingGen=0):
         self.metrics = []
-        
-
         pool = pools.ProcessPool(10)
         for i in range(startingGen, ngen):
-            self.gen = i
+            self.gen = i+1
             if self.verbose:
                 print("GEN: " + str(i+1) + "/" + str(ngen))
             self.results = map(self.algorithm, self.islands)
