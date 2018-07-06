@@ -581,7 +581,7 @@ def mut(individual):
 
 def algorithmEaSimple(pop,toolbox,stats,hof,verbose=VERBOSE):
     return algorithms.eaSimple(pop,toolbox=toolbox,
-        cxpb=CXPB, mutpb=MUTPB, ngen=FREQ,verbose=verbose,stats=stats,halloffame=hof)
+        cxpb=CXPB, mutpb=MUTPB, ngen=1,verbose=verbose,stats=stats,halloffame=hof)
 
 def commitSession(ga):
     novelGenes = []
