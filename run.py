@@ -294,7 +294,7 @@ if runArgs != args:
     setattr(args,"cxpb",CXPB)
     setattr(args,"mutpb",MUTPB)
     setattr(args,"ngen",NGEN)
-    setattr(args,"migfreq",MIGR)
+    setattr(args,"migfreq",FREQ)
     setattr(args,"verbose",VERBOSE)
     setattr(args,"seed",SEED)
     setattr(args,"tournsize",TSIZE)
