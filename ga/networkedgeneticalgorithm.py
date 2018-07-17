@@ -34,7 +34,7 @@ creator.create("Individual", numpy.ndarray, fitness=creator.FitnessMax) # @Undef
 
 def defaultAlgorithmEaSimple(pop,toolbox,stats,hof):
 		return algorithms.eaSimple(pop,toolbox=toolbox,
-		cxpb=0.5, mutpb=0.2, ngen=5,verbose=False,stats=stats,halloffame=hof)
+		cxpb=0.5, mutpb=0.2, ngen=1,verbose=False,stats=stats,halloffame=hof)
 
 def defaultTwoPoint(ind1, ind2):
     size = len(ind1)
