@@ -525,12 +525,8 @@ def evaluateParticleInstance(np,simName):
         os.remove(outFilePath)
     return f,b
 
+def evaluateParticle(np,simName):
 
-def evaluate(individual):
-    phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-    
-    np = phenome.particle
-    simName = phenome.id + "_" + misctools.randomStr(3)
     fitnesses = []
     budding = []
 
@@ -572,6 +568,16 @@ def evaluate(individual):
     f = fmem
 
     return f,
+
+
+
+def evaluate(individual):
+    phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    
+    np = phenome.particle
+    simName = phenome.id + "_" + misctools.randomStr(3)
+    
+    return evaluatePartice(np,simName),
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
