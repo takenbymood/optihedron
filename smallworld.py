@@ -85,4 +85,4 @@ def runSmallWorldSweep(n,nodes,weight):
             file_.write(str(m).replace('(','').replace(')','').replace(' ','')[:-2]+"\n")
 
 
-runSmallWorldSweep(3,25,8)
+runSmallWorldSweep(100,25,8)
