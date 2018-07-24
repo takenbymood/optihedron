@@ -70,7 +70,7 @@ parser.add_argument('-f','--migfreq', type=int, default=1,
                     help='number of generations between migrations')
 parser.add_argument('-c','--cxpb', default=0.5,  type=float,
                     help='independant probability of crossover')
-parser.add_argument('-m','--mutpb', default=0.3, type=float,
+parser.add_argument('-m','--mutpb', default=0.2, type=float,
                     help='independant probability of mutation')
 parser.add_argument('-mg','--migrations', default=1, type=int,
                     help='number of migrations to do each time')
@@ -83,7 +83,7 @@ parser.add_argument('-g','--graph', default='islands',
                     help='type of network to use')
 parser.add_argument('-a', '--algorithm', default='eaSimple',
                     choices=['eaSimple'])
-parser.add_argument('-br', '--buddingreward',default=500.0, type=float,
+parser.add_argument('-br', '--buddingreward',default=400.0, type=float,
                     help='reward for successful budding in')
 parser.add_argument('-sg','--startinggen',default=0, type=int,
                     help='starting generation')
@@ -577,7 +577,7 @@ def evaluate(individual):
     np = phenome.particle
     simName = phenome.id + "_" + misctools.randomStr(3)
     
-    return evaluatePartice(np,simName),
+    return evaluateParticle(np,simName),
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
