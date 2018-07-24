@@ -1,6 +1,7 @@
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 import copy
 import time
 import pickle
@@ -54,8 +55,8 @@ def cleanLigands(data):
 
 def cleanFits(data):
     for ind in data['individuals']:
-        if ind['fitness'] > 400.0:
-            ind['fitness'] = 400.0 + 600.0*(1.0-((np.sum([lig.eps for lig in ind['phenome'].particle.ligands]))/(15.0*72.0)))
+        if ind['fitness'] > 400.0:            
+            ind['fitness'] = 400.0 + 600.0*(1.0-((np.sum([lig.eps for lig in ind['phenome'].particle.ligands]))/(15.0*72.0)))            
     return data
 
 def sortIndLigandCount(data):
@@ -187,11 +188,11 @@ def groupLineyLigands(ind):
     if 'lineyTags' in ind:
         return ind['lineyTags']
     else:
-        identity = ind['ligtags'][3]
+        _, _, _, identity = classifyLigands(ind)
         lineyLigands = []
 
         for ligand, ligandTags in identity.items():
-            if ligandInfo['character'] == 'liney':
+            if ligandTags['character'] == 'liney':
                 lineyLigands.append((ligand,ligandTags)) 
         lineyClusters = clusterLineyLigands(lineyLigands)
         ind['lineyTags'] = lineyClusters
@@ -263,7 +264,88 @@ def characterScore(ind, patchyScore = -1, spottyScore = -1, lineyScore = 1):
 
     return charScore
 
-def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, vmin = None, vmax = None, annotate=False, silent=True, backup=False):    
+def lineyABS(ind):
+    _, _, liney, _ = classifyLigands(ind)
+
+    return float(liney)
+
+def spottyABS(ind):
+    _, spotty, _, _ = classifyLigands(ind)
+
+    return float(spotty)
+
+def patchyABS(ind):
+    patchy, _, _, _ = classifyLigands(ind)
+
+    return float(patchy)
+
+def lineyREL(ind):
+    patchy, spotty, liney, _ = classifyLigands(ind)
+
+    return float(liney)/float(patchy+spotty+liney)
+
+def spottyREL(ind):
+    patchy, spotty, liney, _ = classifyLigands(ind)
+
+    return float(spotty)/float(patchy+spotty+liney)
+
+def patchyREL(ind):
+    patchy, spotty, liney, _ = classifyLigands(ind)
+
+    return float(patchy)/float(patchy+spotty+liney)
+
+def NNCountAVG(ind):
+    _, _, _, identity = classifyLigands(ind)
+    totalNNs = 0
+    totalLigands = 0
+    for ligand, ligandTags in identity.items():
+        totalNNs += ligandTags['NNcount']
+        totalLigands += 1
+    return float(totalNNs)/float(totalLigands)
+
+def lineyChainTags(ind, minChainLength):
+    lineyClusters = groupLineyLigands(ind)    
+    lineyChains = []
+
+    for cluster in lineyClusters:
+        if len(cluster) >= minChainLength:            
+            lineyChains.append(cluster)
+
+    return lineyChains    
+
+def lineyChainCount(ind, minChainLength=3):
+    lineyChains = lineyChainTags(ind, minChainLength)
+
+    return float(len(lineyChains))
+
+def lineyChainSizeAVG(ind, minChainLength=3):
+    lineyChains = lineyChainTags(ind, minChainLength)
+
+    if lineyChains:
+        return float(np.average([len(chain) for chain in lineyChains]))
+    else:
+        return 0.0
+
+def lineyChainSizeMAX(ind, minChainLength=3):
+    lineyChains = lineyChainTags(ind, minChainLength)
+
+    if lineyChains:
+        return float(np.max([len(chain) for chain in lineyChains]))
+    else:
+        return 0.0
+
+def lineyChainSizeMIN(ind, minChainLength=3):
+    lineyChains = lineyChainTags(ind, minChainLength)
+
+    if lineyChains:
+        return float(np.min([len(chain) for chain in lineyChains]))
+    else:
+        return 0.0
+
+def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, fmt='.2g', vmin = None, vmax = None, annotate=False, silent=True, visual=True, dump=False, backup=False, dumpdir='plots'):    
+    if not os.path.exists(dumpdir):
+        os.mkdir(dumpdir)
+
     scanPlotIndex, scanPlotData = scanGen(scanData, interest, indexOffset, aggregateMode, silent)
 
     if backup:
@@ -285,12 +367,14 @@ def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggrega
 
     annot = annotData if annotate else False        
 
-    ax = sns.heatmap(plotData, linewidth=1, annot=annot, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax = sns.heatmap(plotData, linewidth=1, annot=annot, cmap=cmap, vmin=vmin, vmax=vmax, fmt=fmt)
     plt.title('{}'.format(plotName))
     ax.set_xticks([i+0.5-indexOffset for i in scanIndices])
     ax.invert_yaxis()
     ax.set_xticklabels([i for i in scanIndices])
     plt.xlabel('{}'.format(scanLabel))
     plt.ylabel('generation')
-    plt.savefig('{}.png'.format(plotName))
-    plt.show();
+    if dump:
+        plt.savefig('{}.png'.format(plotName));
+    if visual:
+        plt.show();
