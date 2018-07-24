@@ -1,6 +1,9 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 import copy
 import time
+import pickle
 
 def dropChildren(data, parentKey, childKeys, silent=True):
 	if not silent:
@@ -68,30 +71,35 @@ def sortIndFits(data):
     return data
 
 def sameLigands(ligA, ligB):
-	if ligandA.__dict__ == ligandB.__dict__:
+	if ligA.__dict__ == ligB.__dict__:
 		return True
 	else:
 		return False
+
+def greatArcDist(Ang1, Ang2, rad=4):
+    #Ang = (PolarAng,AziAng)
+    #https://math.stackexchange.com/questions/231221/great-arc-distance-between-two-points-on-a-unit-sphere
+    arcDist=rad*(np.arccos((np.cos(Ang1[0])*np.cos(Ang2[0]))+((np.sin(Ang1[0])*np.sin(Ang2[0]))*(np.cos(Ang1[1]-Ang2[1])))))
+    return arcDist
 
 def tagLigands(data):
 	data['individuals'] = [classifyLigands(ind) for ind in data['individuals']]
 	return data		
 
-
 def classifyLigands(ind):
     cutoff = 2.0
 
-	if 'ligtags' in ind:
+    if 'ligtags' in ind:
 		return ind['ligtags']
-	else:
-		ligands = ind['phenome'].particle.ligands
-		spotty = 0
-		liney = 0
-		patchy = 0
-		identity = {}
+    else:
+        ligands = ind['phenome'].particle.ligands
+        spotty = 0
+        liney = 0
+        patchy = 0
+        identity = {}
 
-		for ligCursor in ligands:	
-			identity[ligCursor] = {}
+        for ligCursor in ligands:	
+            identity[ligCursor] = {}
             NNcount = 0
             NNlist = []
 
@@ -188,3 +196,101 @@ def groupLineyLigands(ind):
         lineyClusters = clusterLineyLigands(lineyLigands)
         ind['lineyTags'] = lineyClusters
         return lineyClusters
+
+def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
+    scanPlotIndex = []
+    scanPlotData = []
+
+    aggregateMethod = None
+    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG':
+        raise ValueError    
+
+    if not silent:
+        startTime = time.time()
+    for scanDatum in scanData:
+
+        aggregateInterest = []
+        aggregateInds = 0
+        cursorGen = 0
+        genAveragedInterest = []        
+
+        expectedTicks = len(scanDatum['individuals'])
+        actualTicks = 0
+
+        for ind in scanDatum['individuals']:            
+            if ind['gen'] != cursorGen:    
+                if not silent:
+                    print('analyzed gen{}'.format(cursorGen))
+
+                if aggregateMode == 'MIN':
+                    genAveragedInterest.append(((cursorGen),np.min(aggregateInterest)))
+                elif aggregateMode == 'MAX':
+                    genAveragedInterest.append(((cursorGen),np.max(aggregateInterest)))
+                elif aggregateMode == 'AVG':
+                    genAveragedInterest.append(((cursorGen),(np.sum(aggregateInterest)/float(aggregateInds))))
+                
+                actualTicks += aggregateInds
+                cursorGen = ind['gen']                    
+                aggregateInterest = [interest(ind)]        
+                aggregateInds = 1
+            else:                
+                aggregateInterest.append(interest(ind)) 
+                aggregateInds += 1
+
+        if aggregateMode == 'MIN':
+            genAveragedInterest.append(((cursorGen),np.min(aggregateInterest)))
+        elif aggregateMode == 'MAX':
+            genAveragedInterest.append(((cursorGen),np.max(aggregateInterest)))
+        elif aggregateMode == 'AVG':
+            genAveragedInterest.append(((cursorGen),(np.sum(aggregateInterest)/float(aggregateInds))))
+        actualTicks += aggregateInds
+
+        if expectedTicks != actualTicks:
+            raise ValueError
+
+        scanPlotIndex.append(indexOffset)
+        scanPlotData.append(genAveragedInterest)            
+        if not silent:
+            print('analyzed gen{}'.format(cursorGen))
+            print('analyzed index {} of scanData'.format(indexOffset))
+            print('analysis took {}s'.format(time.time() - startTime))            
+        indexOffset += 1
+    return scanPlotIndex, scanPlotData
+
+def characterScore(ind, patchyScore = -1, spottyScore = -1, lineyScore = 1):
+    patchy, spotty, liney, _ = classifyLigands(ind)
+    charScore = float((patchy*patchyScore) + (spotty*spottyScore) + (liney*lineyScore))/float(patchy+spotty+liney)
+
+    return charScore
+
+def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, vmin = None, vmax = None, annotate=False, silent=True, backup=False):    
+    scanPlotIndex, scanPlotData = scanGen(scanData, interest, indexOffset, aggregateMode, silent)
+
+    if backup:
+        pickle.dump(scanPlotIndex, open("{}-scanPlotIndex.pickle".format(plotName), "wb"))
+        pickle.dump(scanPlotData, open("{}-scanPlotData.pickle".format(plotName), "wb"))
+
+    plotData = np.zeros((len([i[1] for i in scanPlotData[0]]),len(scanPlotIndex)))
+    annotData = np.zeros((len([i[1] for i in scanPlotData[0]]),len(scanPlotIndex)))
+
+    cursorA = 0
+    for i in range(len(scanPlotIndex)):
+        scanPlotDatum = scanPlotData[cursorA]
+        cursorB = 0
+        for _ in [i[1] for i in scanPlotDatum]:        
+            plotData[cursorB][cursorA] = scanPlotDatum[cursorB][1]
+            annotData[cursorB][cursorA] = scanPlotDatum[cursorB][1]
+            cursorB += 1
+        cursorA += 1
+
+    annot = annotData if annotate else False        
+
+    ax = sns.heatmap(plotData, linewidth=1, annot=annot, cmap=cmap, vmin=vmin, vmax=vmax)
+    plt.title('{}'.format(plotName))
+    ax.set_xticks([i+0.5-indexOffset for i in scanIndices])
+    ax.invert_yaxis()
+    ax.set_xticklabels([i for i in scanIndices])
+    plt.xlabel('{}'.format(scanLabel))
+    plt.ylabel('generation')
+    plt.savefig('{}.png'.format(plotName))
+    plt.show();
