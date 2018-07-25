@@ -258,9 +258,9 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
         indexOffset += 1
     return scanPlotIndex, scanPlotData
 
-def scanCustom(scanData, customKey, tickerRange, tickerBlockSize, tickerBlockOffset, interest, indexOffset, aggregateMode, tickerInterval = 0.0, silent=True):
+def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlockSize, tickerBlockOffset, interest, indexOffset, aggregateMode, tickerInterval = 0.0, silent=True):
     scanPlotIndex = []
-    scanPlotData = []
+    scanPlotData = []    
 
     aggregateMethod = None
     if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG':
@@ -272,7 +272,7 @@ def scanCustom(scanData, customKey, tickerRange, tickerBlockSize, tickerBlockOff
 
         ticks = []
         for tickerBlock in range(tickerRange):
-            ticks.append(tickerBlock*tickerBlockSize+tickerBlockOffset)
+            ticks.append(tickerBlock*tickerBlockSize+tickerBlockOffset)        
 
         aggregateInterest = []
         aggregateInds = 0
@@ -280,29 +280,27 @@ def scanCustom(scanData, customKey, tickerRange, tickerBlockSize, tickerBlockOff
         tickAveragedInterest = []        
 
         expectedTicks = len(scanDatum['individuals'])
-        actualTicks = 0
+        actualTicks = 0        
 
-        for ind in scanDatum['individuals']:            
-            if ind[customKey] - cursorTick > tickerInterval:    
+        for ind in scanDatum['individuals']:                                   
+            if interestKey(ind) - cursorTick > tickerInterval:                    
                 if not silent:
-                    print('analyzed tick {} of {}'.format(cursorTick, customKey))
+                    print('analyzed tick {} of {}'.format(cursorTick, interestKeyLabel))
 
-                    if aggregateInds != 0:
-                        if aggregateMode == 'MIN':
-                            tickAveragedInterest.append(((cursorTick),np.min(aggregateInterest)))
-                        elif aggregateMode == 'MAX':
-                            tickAveragedInterest.append(((cursorTick),np.max(aggregateInterest)))
-                        elif aggregateMode == 'AVG':
-                            tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
-                        
-                        actualTicks += aggregateInds
-                        cursorTick = ticks.pop(0)
+                if aggregateInds != 0:
+                    if aggregateMode == 'MIN':
+                        tickAveragedInterest.append(((cursorTick),np.min(aggregateInterest)))
+                    elif aggregateMode == 'MAX':
+                        tickAveragedInterest.append(((cursorTick),np.max(aggregateInterest)))
+                    elif aggregateMode == 'AVG':
+                        tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
+                    
+                    actualTicks += aggregateInds
+                    cursorTick = ticks.pop(0)
 
-                    while ind[customKey] - cursorTick > tickerInterval:
-                        if not silent:
-                            print('analyzed tick {} of {}'.format(cursorTick, customKey))
-                        tickAveragedInterest.append(((cursorTick),np.nan))
-                        cursorTick = ticks.pop(0)
+                while interestKey(ind) - cursorTick > tickerInterval:                        
+                    tickAveragedInterest.append(((cursorTick),np.nan))
+                    cursorTick = ticks.pop(0)
                 
                 aggregateInterest = [interest(ind)]        
                 aggregateInds = 1
@@ -318,7 +316,7 @@ def scanCustom(scanData, customKey, tickerRange, tickerBlockSize, tickerBlockOff
             tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
         actualTicks += aggregateInds
 
-        if expectedTicks != actualTicks:
+        if expectedTicks != actualTicks:            
             raise ValueError
 
         while ticks:
@@ -327,7 +325,7 @@ def scanCustom(scanData, customKey, tickerRange, tickerBlockSize, tickerBlockOff
         scanPlotIndex.append(indexOffset)
         scanPlotData.append(tickAveragedInterest)            
         if not silent:
-            print('analyzed gen{}'.format(cursorGen))
+            print('analyzed tick {} of {}'.format(cursorTick, interestKeyLabel))
             print('analyzed index {} of scanData'.format(indexOffset))
             print('analysis took {}s'.format(time.time() - startTime))            
         indexOffset += 1
@@ -421,7 +419,7 @@ def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggrega
     if not os.path.exists(dumpdir):
         os.mkdir(dumpdir)
 
-    scanPlotIndex, scanPlotData = scanGen(scanData, interest, indexOffset, aggregateMode, silent)
+    scanPlotIndex, scanPlotData = scanGen(scanData, interest, indexOffset, aggregateMode, silent=silent)
 
     if backup:
         pickle.dump(scanPlotIndex, open("{}-gen-scanPlotIndex.pickle".format(plotName), "wb"))
@@ -455,15 +453,15 @@ def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggrega
         plt.show();
 
     
-def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, customKey, tickerRange, tickerBlockSize, tickerBlockOffset, fmt='.2g', vmin = None, vmax = None, annotate=False, linecolor='black', silent=True, visual=True, dump=False, backup=False, dumpdir='plots'):    
+def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, interestKey, interestKeyLabel, tickerRange, tickerBlockSize, tickerBlockOffset, tickerInterval=0.0, fmt='.2g', vmin = None, vmax = None, annotate=False, linecolor='black', silent=True, visual=True, dump=False, backup=False, dumpdir='plots'):    
     if not os.path.exists(dumpdir):
         os.mkdir(dumpdir)
 
-    scanPlotIndex, scanPlotData = scanCustom(scanData, customKey, tickerRange, tickerBlockSize, tickerBlockOffset, interest, indexOffset, aggregateMode, silent)
+    scanPlotIndex, scanPlotData = scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlockSize, tickerBlockOffset, interest, indexOffset, aggregateMode, tickerInterval=tickerInterval,silent=silent)
 
     if backup:
-        pickle.dump(scanPlotIndex, open("{}-{}-scanPlotIndex.pickle".format(plotName,customKey), "wb"))
-        pickle.dump(scanPlotData, open("{}-{}-scanPlotData.pickle".format(plotName,customKey), "wb"))
+        pickle.dump(scanPlotIndex, open("{}-{}-scanPlotIndex.pickle".format(plotName,interestKeyLabel), "wb"))
+        pickle.dump(scanPlotData, open("{}-{}-scanPlotData.pickle".format(plotName,interestKeyLabel), "wb"))
 
     plotData = np.zeros((len([i[1] for i in scanPlotData[0]]),len(scanPlotIndex)))
     annotData = np.zeros((len([i[1] for i in scanPlotData[0]]),len(scanPlotIndex)))
@@ -489,7 +487,7 @@ def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggr
     ax.set_yticklabels([i*tickerBlockSize for i in range(0,(tickerRange+1))])
     ax.set_facecolor('#F5F5F5')
     plt.xlabel('{}'.format(scanLabel))
-    plt.ylabel('{}'.format(customKey))
+    plt.ylabel('{}'.format(interestKeyLabel))
     if dump:
         plt.savefig('{}.png'.format(plotName),dpi=dpi);
     if visual:
