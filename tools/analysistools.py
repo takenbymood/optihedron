@@ -258,6 +258,81 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
         indexOffset += 1
     return scanPlotIndex, scanPlotData
 
+def scanCustom(scanData, customKey, tickerRange, tickerBlockSize, tickerBlockOffset, interest, indexOffset, aggregateMode, tickerInterval = 0.0, silent=True):
+    scanPlotIndex = []
+    scanPlotData = []
+
+    aggregateMethod = None
+    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG':
+        raise ValueError    
+
+    if not silent:
+        startTime = time.time()
+    for scanDatum in scanData:
+
+        ticks = []
+        for tickerBlock in range(tickerRange):
+            ticks.append(tickerBlock*tickerBlockSize+tickerBlockOffset)
+
+        aggregateInterest = []
+        aggregateInds = 0
+        cursorTick = ticks.pop(0)
+        tickAveragedInterest = []        
+
+        expectedTicks = len(scanDatum['individuals'])
+        actualTicks = 0
+
+        for ind in scanDatum['individuals']:            
+            if ind[customKey] - cursorTick > tickerInterval:    
+                if not silent:
+                    print('analyzed tick {} of {}'.format(cursorTick, customKey))
+
+                    if aggregateInds != 0:
+                        if aggregateMode == 'MIN':
+                            tickAveragedInterest.append(((cursorTick),np.min(aggregateInterest)))
+                        elif aggregateMode == 'MAX':
+                            tickAveragedInterest.append(((cursorTick),np.max(aggregateInterest)))
+                        elif aggregateMode == 'AVG':
+                            tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
+                        
+                        actualTicks += aggregateInds
+                        cursorTick = ticks.pop(0)
+
+                    while ind[customKey] - cursorTick > tickerInterval:
+                        if not silent:
+                            print('analyzed tick {} of {}'.format(cursorTick, customKey))
+                        tickAveragedInterest.append(((cursorTick),np.nan))
+                        cursorTick = ticks.pop(0)
+                
+                aggregateInterest = [interest(ind)]        
+                aggregateInds = 1
+            else:                
+                aggregateInterest.append(interest(ind)) 
+                aggregateInds += 1
+
+        if aggregateMode == 'MIN':
+            tickAveragedInterest.append(((cursorTick),np.min(aggregateInterest)))
+        elif aggregateMode == 'MAX':
+            tickAveragedInterest.append(((cursorTick),np.max(aggregateInterest)))
+        elif aggregateMode == 'AVG':
+            tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
+        actualTicks += aggregateInds
+
+        if expectedTicks != actualTicks:
+            raise ValueError
+
+        while ticks:
+            tickAveragedInterest.append(((ticks.pop(0)),np.nan))
+
+        scanPlotIndex.append(indexOffset)
+        scanPlotData.append(tickAveragedInterest)            
+        if not silent:
+            print('analyzed gen{}'.format(cursorGen))
+            print('analyzed index {} of scanData'.format(indexOffset))
+            print('analysis took {}s'.format(time.time() - startTime))            
+        indexOffset += 1
+    return scanPlotIndex, scanPlotData
+
 def characterScore(ind, patchyScore = -1, spottyScore = -1, lineyScore = 1):
     patchy, spotty, liney, _ = classifyLigands(ind)
     charScore = float((patchy*patchyScore) + (spotty*spottyScore) + (liney*lineyScore))/float(patchy+spotty+liney)
@@ -349,8 +424,8 @@ def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggrega
     scanPlotIndex, scanPlotData = scanGen(scanData, interest, indexOffset, aggregateMode, silent)
 
     if backup:
-        pickle.dump(scanPlotIndex, open("{}-scanPlotIndex.pickle".format(plotName), "wb"))
-        pickle.dump(scanPlotData, open("{}-scanPlotData.pickle".format(plotName), "wb"))
+        pickle.dump(scanPlotIndex, open("{}-gen-scanPlotIndex.pickle".format(plotName), "wb"))
+        pickle.dump(scanPlotData, open("{}-gen-scanPlotData.pickle".format(plotName), "wb"))
 
     plotData = np.zeros((len([i[1] for i in scanPlotData[0]]),len(scanPlotIndex)))
     annotData = np.zeros((len([i[1] for i in scanPlotData[0]]),len(scanPlotIndex)))
@@ -376,5 +451,46 @@ def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggrega
     plt.ylabel('generation')
     if dump:
         plt.savefig('{}.png'.format(plotName));
+    if visual:
+        plt.show();
+
+    
+def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, customKey, tickerRange, tickerBlockSize, tickerBlockOffset, fmt='.2g', vmin = None, vmax = None, annotate=False, linecolor='black', silent=True, visual=True, dump=False, backup=False, dumpdir='plots'):    
+    if not os.path.exists(dumpdir):
+        os.mkdir(dumpdir)
+
+    scanPlotIndex, scanPlotData = scanCustom(scanData, customKey, tickerRange, tickerBlockSize, tickerBlockOffset, interest, indexOffset, aggregateMode, silent)
+
+    if backup:
+        pickle.dump(scanPlotIndex, open("{}-{}-scanPlotIndex.pickle".format(plotName,customKey), "wb"))
+        pickle.dump(scanPlotData, open("{}-{}-scanPlotData.pickle".format(plotName,customKey), "wb"))
+
+    plotData = np.zeros((len([i[1] for i in scanPlotData[0]]),len(scanPlotIndex)))
+    annotData = np.zeros((len([i[1] for i in scanPlotData[0]]),len(scanPlotIndex)))
+
+    cursorA = 0
+    for i in range(len(scanPlotIndex)):
+        scanPlotDatum = scanPlotData[cursorA]
+        cursorB = 0
+        for _ in [i[1] for i in scanPlotDatum]:        
+            plotData[cursorB][cursorA] = scanPlotDatum[cursorB][1]
+            annotData[cursorB][cursorA] = scanPlotDatum[cursorB][1]
+            cursorB += 1
+        cursorA += 1
+
+    annot = annotData if annotate else False        
+
+    ax = sns.heatmap(plotData, linewidth=1, annot=annot, cmap=cmap, vmin=vmin, vmax=vmax, fmt=fmt, linecolor=linecolor)
+    plt.title('{}'.format(plotName))
+    ax.set_xticks([i+0.5-indexOffset for i in scanIndices])
+    ax.set_xticklabels([i for i in scanIndices])
+    ax.invert_yaxis()
+    ax.set_yticks([i for i in range(0,(tickerRange+1))])
+    ax.set_yticklabels([i*tickerBlockSize for i in range(0,(tickerRange+1))])
+    ax.set_facecolor('#F5F5F5')
+    plt.xlabel('{}'.format(scanLabel))
+    plt.ylabel('{}'.format(customKey))
+    if dump:
+        plt.savefig('{}.png'.format(plotName),dpi=dpi);
     if visual:
         plt.show();
