@@ -27,7 +27,8 @@ def createRandomLigandNetwork(n):
         delta = 0
         azi = 0
         pol = 0
-        while delta < 1.65:
+        attempts = 0
+        while delta < 1.65 and attempts < 100:
             azi = random.uniform(0,6.2831)
             pol = random.uniform(0,3.141)
             minDelta = 100
@@ -36,9 +37,13 @@ def createRandomLigandNetwork(n):
                 if d < minDelta:
                     minDelta = d
             delta = minDelta
+            attempts += 1
         azipol.append((pol,azi))
         w['azi'] = azi
         w['pol'] = pol
+        
+    if attempts >= 100:
+            return createRandomLigandNetwork(n)
 
     for (u,v,w) in SWG.edges(data=True):
         unode = SWG.nodes(data=True)[u]
