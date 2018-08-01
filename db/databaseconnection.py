@@ -124,12 +124,15 @@ class Individual(Base):
 	genes = relationship('Gene',secondary=association_table,back_populates='individuals')
 	deme = relationship('Deme',secondary=ind_deme,uselist=False,back_populates='individuals')
 
+	phenomeId = Column('phenome_id',String)
+
 	def __init__(self, individual, phenome):
 		self.fitness = individual.fitness.values[-1]
 		self.genome = str(individual).replace('[','').replace(']','').replace(',','').replace(' ','')
 		self.genomePickle = individual
 		self.phenomePickle = phenome
 		self.gh_index = individual.history_index
+		self.phenomeId = phenome.id
 		
 
 	def addGene(self,gene):

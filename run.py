@@ -114,6 +114,8 @@ parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
 parser.add_argument('-pw','--penaltyweight', default=1.0, type=float,
                     help='weighting of the ligand affinity penalty')
+parser.add_argument('-tw','--timeweight', default=1.0, type=float,
+                    help='weighting of the budding time reward')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
 
@@ -284,7 +286,10 @@ REPEATS = runArgs.repeats
 
 PENALTYWEIGHT = runArgs.penaltyweight
 BUDDINGREWARD = runArgs.buddingreward
+TIMEWEIGHT = runArgs.timeweight
 STARTINGGEN = runArgs.startinggen
+
+PARTICLES = []
 
 #god what a mess
 
@@ -315,6 +320,7 @@ if runArgs != args:
     setattr(args,"penaltyweight",PENALTYWEIGHT)
     setattr(args,"buddingreward",BUDDINGREWARD)
     setattr(args,"startinggen",STARTINGGEN)
+    setattr(args,"timeweight",TIMEWEIGHT)
 
 
 
@@ -423,9 +429,16 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
 
     msum = stepData[-1]['mNum']
+    lstep = stepData[-1]['timestep']
 
     if(msum == 0):        
         return minFit, noBud
+
+    budTime = -1
+    for step in stepData:
+        if step['budded'] == True:
+            budTime = step['timestep']
+            break
 
     
     #reward = msum
@@ -433,9 +446,9 @@ def evaluateNPWrapping(np,outFilename,runtime):
     # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
-    reward = (float(BUDDINGREWARD)) if stepData[-1]['budded'] else float(msum)
+    reward = (float(BUDDINGREWARD)) + TIMEWEIGHT*(lstep - budTime) if stepData[-1]['budded'] else float(msum)
 
-    return reward, stepData[-1]['budded']
+    return reward, stepData[-1]['budded'], budTime
 
 def runCmd(cmd,timeout):
     try:
@@ -514,7 +527,8 @@ def evaluateParticleInstance(np,simName):
     
     f = 1E-8
     b = False
-    f,b = evaluateNPWrapping(np,outFilePath,RUNTIME)
+    bt = -1
+    f,b,bt = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
@@ -523,17 +537,19 @@ def evaluateParticleInstance(np,simName):
         sim.postProcessOutput(outFilePath)
     else:
         os.remove(outFilePath)
-    return f,b
+    return f,b,bt
 
 def evaluateParticle(np,simName):
 
     fitnesses = []
     budding = []
+    budTime = []
 
     for i in range(REPEATS):
-        pf,pb = evaluateParticleInstance(np,simName+"_"+str(i))
+        pf,pb,pbt = evaluateParticleInstance(np,simName+"_"+str(i))
         fitnesses.append(pf)
         budding.append(pb)
+        budTime.append(pbt)
 
     fsum = 0
     for fit in fitnesses:
@@ -567,17 +583,34 @@ def evaluateParticle(np,simName):
         
     f = fmem
 
-    return f,
+    bTot = 0.0
+    bI = 0.0
+    bPerc = 0.0
+
+    for b in budding:
+        if b:
+            bPerc += 1.0
+
+    bPerc = bPerc/len(budding)
+
+    for b in budTime:
+        if b != -1:
+            bTot += b
+            bI += 1
+
+    bAvg = float(bTot)/float(bI) if bI > 0 else -1
+
+    return f,bPerc,bAvg
 
 
 
 def evaluate(individual):
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-    
     np = phenome.particle
-    simName = phenome.id + "_" + misctools.randomStr(3)
+    simName = phenome.id
+    r = evaluateParticle(np,simName)
     
-    return evaluateParticle(np,simName),
+    return r[0],
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
@@ -648,18 +681,7 @@ def afterMigration(ga):
 
     if KEEPBEST:
         saveBest(ga.hof,ga.gen)
-    # outFile = ""
-    # isleNum = 0
-    # i = 0
-    # for isle in ga.islands:
-    #     isleNum += 1
-    #     points = [makeXYZTriplet(p,2,-2,2,-2,2,-2) for p in isle]
-    #     fit = [p.fitness.values[-1] for p in isle]
-    #     for p in points:
-    #         i+=1
-    #         outFile += str(i)+","+str(p[0])+","+str(p[1])+","+str(p[2])+"\n"
-    # with open(os.path.join(WDIR,'coords.csv'), 'a') as file_:    
-    #     file_.write(outFile)
+
     return
 
 def saveBest(hof,gen):
