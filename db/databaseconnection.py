@@ -126,6 +126,9 @@ class Individual(Base):
 
 	phenomeId = Column('phenome_id',String)
 
+	budPerc = Column('budding_rate',Numeric)
+	budTime = Column('bud_time',Numeric)
+
 	def __init__(self, individual, phenome):
 		self.fitness = individual.fitness.values[-1]
 		self.genome = str(individual).replace('[','').replace(']','').replace(',','').replace(' ','')

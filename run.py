@@ -17,6 +17,7 @@ import pathos
 import sys
 from pathos import pools
 import traceback
+import pickle
 
 from operator import itemgetter
 
@@ -600,7 +601,7 @@ def evaluateParticle(np,simName):
 
     bAvg = float(bTot)/float(bI) if bI > 0 else -1
 
-    return f,bPerc,bAvg
+    return f,bPerc,bAvg,
 
 
 
@@ -609,6 +610,9 @@ def evaluate(individual):
     np = phenome.particle
     simName = phenome.id
     r = evaluateParticle(np,simName)
+    if SAVERESULTS:
+        with open(os.path.join(OUTDIR,simName+'.pickle'), 'wb') as handle:
+            pickle.dump(r, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     return r[0],
 
@@ -631,8 +635,19 @@ def commitSession(ga):
             dbdeme = ga.dbconn.gaSession.demes[iNum]
             for individual in isle:
                 np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+                budData = None
+                pickleFile = os.path.join(OUTDIR,np.id+'.pickle')
+                try:
+                    with open(pickleFile, 'rb') as handle:
+                        budData = pickle.load(handle)
+                except:
+                    print "no bud data"
+
                 i = dao.Individual(individual, np)
                 i.deme = dbdeme
+                if budData != None:
+                    i.budPerc = budData[1]
+                    i.budTime = budData[2]
                 dbGen.individuals.append(i)
                 for g in np.genelist:
                     gene = dao.Gene(g)
@@ -837,6 +852,7 @@ def main():
         try:
            ga.dbconn.commit()
            ga.dbconn.close()
+           misctools.removeByPattern(OUTDIR,"pickle")
         except IOError as e:
             print "I/O error({0}): {1}".format(e.errno, e.strerror)
         except:
