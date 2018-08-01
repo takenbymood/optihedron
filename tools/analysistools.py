@@ -492,3 +492,67 @@ def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggr
         plt.savefig('{}.png'.format(plotName),dpi=dpi);
     if visual:
         plt.show();
+
+def measureLigandContact(xyzaFile, silent=True):
+    headersize = 9
+    xyzallsize = 2973
+    timestepinterval = 100
+    intrange = 1.8
+
+    with open(xyzaFile) as f:
+        content = f.readlines()
+    content = [x.strip() for x in content] 
+
+    steps = []
+    timestep = 0
+    while content:
+        #remove header    
+        xyz_iter = content[headersize:headersize+xyzallsize]
+        steps.append((timestep, xyz_iter))
+        content = content[headersize+xyzallsize:]
+        timestep += timestepinterval
+
+    contactData = []
+    progress = 1
+    for step in steps:
+        if not silent:
+            print('{}/{}'.format(progress, len(steps)))
+        progress+=1
+        time, coords = step
+        coords = coords[:-1] #remove NP
+        coordsCLEANED = []
+        for coord in coords:
+            coordsCLEANED.append(coord.split())
+        ligands = [i for i in coordsCLEANED if float(i[-1]) > 0.0]
+        mems = [i for i in coordsCLEANED if float(i[1]) == 1.0]
+        
+        cLIG = []
+        cMEM = []
+        #convert strings to ints...    
+        for ligand in ligands:
+            ligand = [float(i) for i in ligand]
+            cLIG.append(ligand)
+        for mem in mems:
+            mem = [float(i) for i in mem]
+            cMEM.append(mem)
+        ligands = cLIG
+        mems = cMEM
+        
+        #count number of ligands that are within range
+        ligandContact = 0
+        for ligand in ligands:
+            contact = False
+            for mem in mems:
+                if not contact:
+                    lx, ly, lz = ligand[2], ligand[3], ligand[4]
+                    mx, my, mz = mem[2], mem[3], mem[4]
+                    dist = np.sqrt( (lx - mx)**2 + (ly - my)**2 + (lz - mz)**2 )
+                    if dist <= intrange:
+                        contact = True
+            if contact:
+                ligandContact += 1
+        if ligandContact > len(ligands):
+            raise ValueError
+        contactData.append((time, ligandContact))
+        
+    return contactData
