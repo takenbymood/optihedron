@@ -554,5 +554,5 @@ def measureLigandContact(xyzaFile, silent=True):
         if ligandContact > len(ligands):
             raise ValueError
         contactData.append((time, ligandContact))
-        
-    return contactData
+
+    return contactData, len(ligands)
