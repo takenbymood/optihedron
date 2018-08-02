@@ -85,9 +85,9 @@ parser.add_argument('-g','--graph', default='islands',
 parser.add_argument('-a', '--algorithm', default='eaSimple',
                     choices=['eaSimple'])
 parser.add_argument('-mo', '--mutation', default='defaultMut',
-                    choices=['defaultMut'])
+                    choices=['defaultMut', 'fixedActivationMut'])
 parser.add_argument('-xo', '--mate', default='defaultGeneWiseTwoPoint',
-                    choices=['defaultGeneWiseTwoPoint'])
+                    choices=['defaultGeneWiseTwoPoint', 'fixedActivationGeneWiseTwoPoint'])
 parser.add_argument('-br', '--buddingreward',default=400.0, type=float,
                     help='reward for successful budding in')
 parser.add_argument('-sg','--startinggen',default=0, type=int,
@@ -582,7 +582,7 @@ def evaluate(individual):
     np = phenome.particle
     simName = phenome.id + "_" + misctools.randomStr(3)
     
-    return evaluateParticle(np,simName)
+    return evaluateParticle(np,simName),
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
@@ -594,8 +594,14 @@ def algorithmEaSimple(pop,toolbox,stats,hof,verbose=VERBOSE):
 def operatorDefaultMut(individual):
     return operators.defaultMut(individual, MINPDB)
 
+def operatorFixedActivationMut(individual):
+    return operators.fixedActivationMut(individual, MINPDB)
+
 def operatorDefaultGeneWiseTwoPoint(ind1, ind2):
     return operators.defaultGeneWiseTwoPoint(ind1, ind2, GENES, GENESIZE)
+
+def operatorFixedActivationGeneWiseTwoPoint(ind1, ind2):
+    return operators.fixedActivationGeneWiseTwoPoint(ind1, ind2, GENES, GENESIZE)
 
 def commitSession(ga):
     novelGenes = []
@@ -757,12 +763,16 @@ def main():
 
     if runArgs.mutation == 'defaultMut':
         mut = operatorDefaultMut
+    elif runArgs.mutation == 'fixedActivationMut':
+        mut = operatorFixedActivationMut
     else:
         raw_input('malformed mutation option, continuing with defaultMut.. (Enter)')
         mut = operatorDefaultMut
 
     if runArgs.mate == 'defaultGeneWiseTwoPoint':
         mate = operatorDefaultGeneWiseTwoPoint
+    elif runArgs.mate == 'fixedActivationGeneWiseTwoPoint':
+        mate = operatorFixedActivationGeneWiseTwoPoint
     else:
         raw_input('malformed mate option, continuing with defaultGeneWiseTwoPoint.. (Enter)')
         mate = operatorDefaultGeneWiseTwoPoint
