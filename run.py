@@ -380,7 +380,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
     for s in steps:   
         outVectors = {}
-        for line in outData[ts]:
+        for line in outData[s]:
             slist = line.split(",")[1:]
             sId = line.split(",")[0]
             if(len(slist)<3):            
@@ -391,6 +391,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
         cStep = []
         mStep = []
+        ligandsInContact = 0
         boxsize = 20
         for key, value in outVectors.iteritems():
             budded = False
@@ -409,6 +410,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
             if key == 2:
                 for v in value:
+                    contact = False
                     inrange = 0
                     fmag = 0
                     for v2 in outVectors[1]:
@@ -420,15 +422,24 @@ def evaluateNPWrapping(np,outFilename,runtime):
                         if(m<25.0):
                             mStep.append(v2['id'])
 
-            nLargeClusters = 0
-            for v in sorted(cStep, key=itemgetter('size')):
-                if v['size'] > 250:
-                    nLargeClusters += 1
-            budded = nLargeClusters > 1
-                                       
-            stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded})
+        for key, value in outVectors.iteritems():
+            if key > 2:
+                for v in value:
+                    for c in cStep:
+                        if c['id'] == v['c']:
+                            if c['size'] > 5:
+                                ligandsInContact+=1
 
-
+        nLargeClusters = 0
+        for v in sorted(cStep, key=itemgetter('size')):
+            if v['size'] > 250:
+                nLargeClusters += 1
+        percentCoverage = 0
+        if len(outVectors[2])>0:
+            percentCoverage = float(ligandsInContact)/float(len(outVectors[2]))
+        budded = nLargeClusters > 1 
+        print percentCoverage                        
+        stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage})
     msum = stepData[-1]['mNum']
     lstep = stepData[-1]['timestep']
 
@@ -447,9 +458,9 @@ def evaluateNPWrapping(np,outFilename,runtime):
     # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
-    reward = (float(BUDDINGREWARD)) + TIMEWEIGHT*(lstep - budTime) if stepData[-1]['budded'] else float(msum)
+    reward = (float(BUDDINGREWARD)) + TIMEWEIGHT*100*(lstep/budTime) if stepData[-1]['budded'] and budTime != 0 else float(msum)
 
-    return reward, stepData[-1]['budded'], budTime
+    return reward, stepData[-1]['budded'], budTime,stepData
 
 def runCmd(cmd,timeout):
     try:
@@ -529,7 +540,7 @@ def evaluateParticleInstance(np,simName):
     f = 1E-8
     b = False
     bt = -1
-    f,b,bt = evaluateNPWrapping(np,outFilePath,RUNTIME)
+    f,b,bt,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
@@ -538,19 +549,21 @@ def evaluateParticleInstance(np,simName):
         sim.postProcessOutput(outFilePath)
     else:
         os.remove(outFilePath)
-    return f,b,bt
+    return f,b,bt,stepData
 
 def evaluateParticle(np,simName):
 
     fitnesses = []
     budding = []
     budTime = []
+    stepData = []
 
     for i in range(REPEATS):
-        pf,pb,pbt = evaluateParticleInstance(np,simName+"_"+str(i))
+        pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i))
         fitnesses.append(pf)
         budding.append(pb)
         budTime.append(pbt)
+        stepData.append(psd)
 
     fsum = 0
     for fit in fitnesses:
@@ -601,7 +614,7 @@ def evaluateParticle(np,simName):
 
     bAvg = float(bTot)/float(bI) if bI > 0 else -1
 
-    return f,bPerc,bAvg,
+    return f,bPerc,bAvg,stepData
 
 
 
@@ -648,6 +661,10 @@ def commitSession(ga):
                 if budData != None:
                     i.budPerc = budData[1]
                     i.budTime = budData[2]
+                for simData in budData[3]:
+                    s = dao.Simulation()
+                    s.data = simData
+                    i.sims.append(s)
                 dbGen.individuals.append(i)
                 for g in np.genelist:
                     gene = dao.Gene(g)
