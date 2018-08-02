@@ -30,6 +30,7 @@ from deap import tools
 
 from ga import networks
 from ga import algorithms
+from ga import operators
 from ga import phenome
 from ga import networkedgeneticalgorithm as nga
 from ga import grayencoder as ge
@@ -83,6 +84,10 @@ parser.add_argument('-g','--graph', default='islands',
                     help='type of network to use')
 parser.add_argument('-a', '--algorithm', default='eaSimple',
                     choices=['eaSimple'])
+parser.add_argument('-mo', '--mutation', default='defaultMut',
+                    choices=['defaultMut'])
+parser.add_argument('-xo', '--mate', default='defaultGeneWiseTwoPoint',
+                    choices=['defaultGeneWiseTwoPoint'])
 parser.add_argument('-br', '--buddingreward',default=400.0, type=float,
                     help='reward for successful budding in')
 parser.add_argument('-sg','--startinggen',default=0, type=int,
@@ -577,17 +582,20 @@ def evaluate(individual):
     np = phenome.particle
     simName = phenome.id + "_" + misctools.randomStr(3)
     
-    return evaluateParticle(np,simName),
+    return evaluateParticle(np,simName)
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
 
-def mut(individual):
-    return tools.mutFlipBit(individual,MINPDB)
-
 def algorithmEaSimple(pop,toolbox,stats,hof,verbose=VERBOSE):
     return algorithms.eaSimple(pop,toolbox=toolbox,
         cxpb=CXPB, mutpb=MUTPB, ngen=1,verbose=verbose,stats=stats,halloffame=hof)
+
+def operatorDefaultMut(individual):
+    return operators.defaultMut(individual, MINPDB)
+
+def operatorDefaultGeneWiseTwoPoint(ind1, ind2):
+    return operators.defaultGeneWiseTwoPoint(ind1, ind2, GENES, GENESIZE)
 
 def commitSession(ga):
     novelGenes = []
@@ -706,21 +714,6 @@ def saveHOF(hof):
         outFilePath = os.path.join(sim.outdir,sim.outName)
         sim.postProcessOutput(outFilePath)
 
-
-def geneWiseTwoPoint(ind1,ind2):
-    size = len(ind1)
-    cxpoint1 = random.randint(1, GENES)*GENESIZE
-    cxpoint2 = random.randint(1, GENES-1)*GENESIZE
-    if cxpoint2 >= cxpoint1:
-        cxpoint2 += GENESIZE
-    else: # Swap the two cx points
-        cxpoint1, cxpoint2 = cxpoint2, cxpoint1
-
-    ind1[cxpoint1:cxpoint2], ind2[cxpoint1:cxpoint2] \
-        = ind2[cxpoint1:cxpoint2].copy(), ind1[cxpoint1:cxpoint2].copy()
-        
-    return ind1, ind2
-
 def mkdirs(directory):
     try:
         os.makedirs(directory)
@@ -762,6 +755,18 @@ def main():
         raw_input('malformed algorithm option, continuing with eaSimple.. (Enter)')
         algorithm = algorithmEaSimple
 
+    if runArgs.mutation == 'defaultMut':
+        mut = operatorDefaultMut
+    else:
+        raw_input('malformed mutation option, continuing with defaultMut.. (Enter)')
+        mut = operatorDefaultMut
+
+    if runArgs.mate == 'defaultGeneWiseTwoPoint':
+        mate = operatorDefaultGeneWiseTwoPoint
+    else:
+        raw_input('malformed mate option, continuing with defaultGeneWiseTwoPoint.. (Enter)')
+        mate = operatorDefaultGeneWiseTwoPoint
+
     random.seed(runArgs.seed)
 
     if SAVERESULTS:
@@ -786,7 +791,7 @@ def main():
        beforeMigration = beforeMigration,
        afterMigration = afterMigration,
        verbose = VERBOSE,
-       mate = geneWiseTwoPoint,
+       mate = mate,
        dbconn = dbconn,
        jsonFile = initPopFile,
        loadFromFile = LOADFROMFILE
