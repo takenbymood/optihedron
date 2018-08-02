@@ -163,6 +163,7 @@ def clusterLineyLigands(ligands, silent=True):
         del ligandsTmp[0]
         while nextSeedQueue:
             seed = nextSeedQueue.pop()
+            rLigands = []
             for ligand in ligandsTmp:
                 NNlist = ligand[1]['NNlist']
                 existingCopies = 0
@@ -172,9 +173,11 @@ def clusterLineyLigands(ligands, silent=True):
                 if existingCopies == 1:                                    
                     nextSeedQueue.append(ligand)
                     clusterTmp.append(ligand)
-                    ligandsTmp.remove(ligand)
+                    rLigands.append(ligands)
                 elif existingCopies > 1:
                     raise ValueError
+            for rLig in rLigands:
+                ligandsTmp.remove(rLig)
         clusters.append(clusterTmp)        
 
     if not silent:
