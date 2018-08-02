@@ -486,8 +486,11 @@ def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggr
     ax.set_xticks([i+0.5-indexOffset for i in scanIndices])
     ax.set_xticklabels([i for i in scanIndices])
     ax.invert_yaxis()
+    yticklabels = [0]
+    for tickerBlock in range(tickerRange):
+        yticklabels.append(tickerBlock*tickerBlockSize+tickerBlockOffset)
     ax.set_yticks([i for i in range(0,(tickerRange+1))])
-    ax.set_yticklabels([i*tickerBlockSize for i in range(0,(tickerRange+1))])
+    ax.set_yticklabels(yticklabels)
     ax.set_facecolor('#F5F5F5')
     plt.xlabel('{}'.format(scanLabel))
     plt.ylabel('{}'.format(interestKeyLabel))
