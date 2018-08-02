@@ -122,6 +122,10 @@ parser.add_argument('-pw','--penaltyweight', default=1.0, type=float,
                     help='weighting of the ligand affinity penalty')
 parser.add_argument('-tw','--timeweight', default=1.0, type=float,
                     help='weighting of the budding time reward')
+parser.add_argument('-lw','--ligandweight', default=1.0, type=float,
+                    help='weighting of the target ligand reward')
+parser.add_argument('-tl','--targetligands', default=-1, type=int,
+                    help='ideal number of ligands')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
 
@@ -291,6 +295,8 @@ GENOMESIZE = GENES*GENESIZE
 REPEATS = runArgs.repeats
 
 PENALTYWEIGHT = runArgs.penaltyweight
+TARGETWEIGHT = runArgs.ligandweight
+TARGETLIGANDS = runArgs.targetligands
 BUDDINGREWARD = runArgs.buddingreward
 TIMEWEIGHT = runArgs.timeweight
 STARTINGGEN = runArgs.startinggen
@@ -327,6 +333,8 @@ if runArgs != args:
     setattr(args,"buddingreward",BUDDINGREWARD)
     setattr(args,"startinggen",STARTINGGEN)
     setattr(args,"timeweight",TIMEWEIGHT)
+    setattr(args,"ligandweight",TARGETWEIGHT)
+    setattr(args,"targetligands",TARGETLIGANDS)
 
 
 
@@ -596,6 +604,9 @@ def evaluateParticle(np,simName):
         npTotalEps += l.eps
 
     penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+
+    if TARGETLIGANDS > 0:
+        penalty += TARGETWEIGHT*10.0*float(abs(TARGETLIGANDS-nActiveLigands))
 
     if budded:
         fmem += penalty
