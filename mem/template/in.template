@@ -15,6 +15,7 @@ velocity	np	set 0 0 -2
 #membrane parameters
 variable	rc			equal	2.6
 variable	rmin		equal	1.122462
+variable	rclus		equal	2.0
 variable	mu			equal	3
 variable	zeta		equal	4
 variable	eps			equal	4.34
@@ -23,7 +24,7 @@ variable	theta0_11	equal	0
 
 variable memsize equal "count(mem)"
 #compute 1 all pair lj/cut epair
-compute cls mem cluster/atom ${rmin}
+compute cls all cluster/atom ${rclus}
 compute ct all temp/sphere
 compute_modify ct extra ${memsize}
 

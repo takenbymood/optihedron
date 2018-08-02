@@ -107,6 +107,17 @@ class Gene(Base):
 	def __init__(self, rawGene):
 		self.rawGene = str(rawGene).replace('[','').replace(']','').replace(',','').replace(' ','')
 
+ind_sim = Table('association_ind_sim', Base.metadata,
+    Column('individual_id', Integer, ForeignKey('individuals.id')),
+    Column('sim_id', Integer, ForeignKey('simulations.id'))
+)
+
+class Simulation(Base):
+	__tablename__ = 'simulations'
+	pID = Column('id', Integer, primary_key=True)
+	individual = relationship('Individual',secondary=ind_sim,back_populates='sims')
+	data = Column('data_pickle', PickleType)
+
 
 class Individual(Base):
 	__tablename__ = 'individuals'
@@ -122,7 +133,13 @@ class Individual(Base):
 	genomePickle = Column('genome_pickle', PickleType)
 	phenomePickle = Column('phenome_pickle', PickleType)
 	genes = relationship('Gene',secondary=association_table,back_populates='individuals')
+	sims = relationship('Simulation',secondary=ind_sim,back_populates='individual')
 	deme = relationship('Deme',secondary=ind_deme,uselist=False,back_populates='individuals')
+
+	phenomeId = Column('phenome_id',String)
+
+	budPerc = Column('budding_rate',Numeric)
+	budTime = Column('bud_time',Numeric)
 
 	def __init__(self, individual, phenome):
 		self.fitness = individual.fitness.values[-1]
@@ -130,6 +147,7 @@ class Individual(Base):
 		self.genomePickle = individual
 		self.phenomePickle = phenome
 		self.gh_index = individual.history_index
+		self.phenomeId = phenome.id
 		
 
 	def addGene(self,gene):

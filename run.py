@@ -17,6 +17,7 @@ import pathos
 import sys
 from pathos import pools
 import traceback
+import pickle
 
 from operator import itemgetter
 
@@ -119,6 +120,8 @@ parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
 parser.add_argument('-pw','--penaltyweight', default=1.0, type=float,
                     help='weighting of the ligand affinity penalty')
+parser.add_argument('-tw','--timeweight', default=1.0, type=float,
+                    help='weighting of the budding time reward')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
 
@@ -289,7 +292,10 @@ REPEATS = runArgs.repeats
 
 PENALTYWEIGHT = runArgs.penaltyweight
 BUDDINGREWARD = runArgs.buddingreward
+TIMEWEIGHT = runArgs.timeweight
 STARTINGGEN = runArgs.startinggen
+
+PARTICLES = []
 
 #god what a mess
 
@@ -320,6 +326,7 @@ if runArgs != args:
     setattr(args,"penaltyweight",PENALTYWEIGHT)
     setattr(args,"buddingreward",BUDDINGREWARD)
     setattr(args,"startinggen",STARTINGGEN)
+    setattr(args,"timeweight",TIMEWEIGHT)
 
 
 
@@ -378,7 +385,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
     for s in steps:   
         outVectors = {}
-        for line in outData[ts]:
+        for line in outData[s]:
             slist = line.split(",")[1:]
             sId = line.split(",")[0]
             if(len(slist)<3):            
@@ -389,6 +396,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
         cStep = []
         mStep = []
+        ligandsInContact = 0
         boxsize = 20
         for key, value in outVectors.iteritems():
             budded = False
@@ -407,6 +415,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
             if key == 2:
                 for v in value:
+                    contact = False
                     inrange = 0
                     fmag = 0
                     for v2 in outVectors[1]:
@@ -418,19 +427,35 @@ def evaluateNPWrapping(np,outFilename,runtime):
                         if(m<25.0):
                             mStep.append(v2['id'])
 
-            nLargeClusters = 0
-            for v in sorted(cStep, key=itemgetter('size')):
-                if v['size'] > 250:
-                    nLargeClusters += 1
-            budded = nLargeClusters > 1
-                                       
-            stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded})
+        for key, value in outVectors.iteritems():
+            if key > 2:
+                for v in value:
+                    for c in cStep:
+                        if c['id'] == v['c']:
+                            if c['size'] > 5:
+                                ligandsInContact+=1
 
-
+        nLargeClusters = 0
+        for v in sorted(cStep, key=itemgetter('size')):
+            if v['size'] > 250:
+                nLargeClusters += 1
+        percentCoverage = 0
+        if len(outVectors[2])>0:
+            percentCoverage = float(ligandsInContact)/float(len(outVectors[2]))
+        budded = nLargeClusters > 1 
+        print percentCoverage                        
+        stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage})
     msum = stepData[-1]['mNum']
+    lstep = stepData[-1]['timestep']
 
     if(msum == 0):        
         return minFit, noBud
+
+    budTime = -1
+    for step in stepData:
+        if step['budded'] == True:
+            budTime = step['timestep']
+            break
 
     
     #reward = msum
@@ -438,9 +463,9 @@ def evaluateNPWrapping(np,outFilename,runtime):
     # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
-    reward = (float(BUDDINGREWARD)) if stepData[-1]['budded'] else float(msum)
+    reward = (float(BUDDINGREWARD)) + TIMEWEIGHT*100*(lstep/budTime) if stepData[-1]['budded'] and budTime != 0 else float(msum)
 
-    return reward, stepData[-1]['budded']
+    return reward, stepData[-1]['budded'], budTime,stepData
 
 def runCmd(cmd,timeout):
     try:
@@ -519,7 +544,8 @@ def evaluateParticleInstance(np,simName):
     
     f = 1E-8
     b = False
-    f,b = evaluateNPWrapping(np,outFilePath,RUNTIME)
+    bt = -1
+    f,b,bt,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
 
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
@@ -528,17 +554,21 @@ def evaluateParticleInstance(np,simName):
         sim.postProcessOutput(outFilePath)
     else:
         os.remove(outFilePath)
-    return f,b
+    return f,b,bt,stepData
 
 def evaluateParticle(np,simName):
 
     fitnesses = []
     budding = []
+    budTime = []
+    stepData = []
 
     for i in range(REPEATS):
-        pf,pb = evaluateParticleInstance(np,simName+"_"+str(i))
+        pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i))
         fitnesses.append(pf)
         budding.append(pb)
+        budTime.append(pbt)
+        stepData.append(psd)
 
     fsum = 0
     for fit in fitnesses:
@@ -572,17 +602,37 @@ def evaluateParticle(np,simName):
         
     f = fmem
 
-    return f,
+    bTot = 0.0
+    bI = 0.0
+    bPerc = 0.0
+
+    for b in budding:
+        if b:
+            bPerc += 1.0
+
+    bPerc = bPerc/len(budding)
+
+    for b in budTime:
+        if b != -1:
+            bTot += b
+            bI += 1
+
+    bAvg = float(bTot)/float(bI) if bI > 0 else -1
+
+    return f,bPerc,bAvg,stepData
 
 
 
 def evaluate(individual):
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-    
     np = phenome.particle
-    simName = phenome.id + "_" + misctools.randomStr(3)
+    simName = phenome.id
+    r = evaluateParticle(np,simName)
+    if SAVERESULTS:
+        with open(os.path.join(OUTDIR,simName+'.pickle'), 'wb') as handle:
+            pickle.dump(r, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-    return evaluateParticle(np,simName)
+    return r[0],
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
@@ -612,8 +662,23 @@ def commitSession(ga):
             dbdeme = ga.dbconn.gaSession.demes[iNum]
             for individual in isle:
                 np = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+                budData = None
+                pickleFile = os.path.join(OUTDIR,np.id+'.pickle')
+                try:
+                    with open(pickleFile, 'rb') as handle:
+                        budData = pickle.load(handle)
+                except:
+                    print "no bud data"
+
                 i = dao.Individual(individual, np)
                 i.deme = dbdeme
+                if budData != None:
+                    i.budPerc = budData[1]
+                    i.budTime = budData[2]
+                for simData in budData[3]:
+                    s = dao.Simulation()
+                    s.data = simData
+                    i.sims.append(s)
                 dbGen.individuals.append(i)
                 for g in np.genelist:
                     gene = dao.Gene(g)
@@ -662,18 +727,7 @@ def afterMigration(ga):
 
     if KEEPBEST:
         saveBest(ga.hof,ga.gen)
-    # outFile = ""
-    # isleNum = 0
-    # i = 0
-    # for isle in ga.islands:
-    #     isleNum += 1
-    #     points = [makeXYZTriplet(p,2,-2,2,-2,2,-2) for p in isle]
-    #     fit = [p.fitness.values[-1] for p in isle]
-    #     for p in points:
-    #         i+=1
-    #         outFile += str(i)+","+str(p[0])+","+str(p[1])+","+str(p[2])+"\n"
-    # with open(os.path.join(WDIR,'coords.csv'), 'a') as file_:    
-    #     file_.write(outFile)
+
     return
 
 def saveBest(hof,gen):
@@ -830,6 +884,7 @@ def main():
         try:
            ga.dbconn.commit()
            ga.dbconn.close()
+           misctools.removeByPattern(OUTDIR,"pickle")
         except IOError as e:
             print "I/O error({0}): {1}".format(e.errno, e.strerror)
         except:
