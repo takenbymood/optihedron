@@ -163,6 +163,7 @@ def clusterLineyLigands(ligands, silent=True):
         del ligandsTmp[0]
         while nextSeedQueue:
             seed = nextSeedQueue.pop()
+            rLigands = []
             for ligand in ligandsTmp:
                 NNlist = ligand[1]['NNlist']
                 existingCopies = 0
@@ -172,9 +173,11 @@ def clusterLineyLigands(ligands, silent=True):
                 if existingCopies == 1:                                    
                     nextSeedQueue.append(ligand)
                     clusterTmp.append(ligand)
-                    ligandsTmp.remove(ligand)
+                    rLigands.append(ligands)
                 elif existingCopies > 1:
                     raise ValueError
+            for rLig in rLigands:
+                ligandsTmp.remove(rLig)
         clusters.append(clusterTmp)        
 
     if not silent:
@@ -448,7 +451,7 @@ def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggrega
     plt.xlabel('{}'.format(scanLabel))
     plt.ylabel('generation')
     if dump:
-        plt.savefig('{}.png'.format(plotName));
+        plt.savefig('{}/{}.png'.format(dumpdir,plotName));
     if visual:
         plt.show();
 
@@ -483,13 +486,16 @@ def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggr
     ax.set_xticks([i+0.5-indexOffset for i in scanIndices])
     ax.set_xticklabels([i for i in scanIndices])
     ax.invert_yaxis()
+    yticklabels = [0]
+    for tickerBlock in range(tickerRange):
+        yticklabels.append(tickerBlock*tickerBlockSize+tickerBlockOffset)
     ax.set_yticks([i for i in range(0,(tickerRange+1))])
-    ax.set_yticklabels([i*tickerBlockSize for i in range(0,(tickerRange+1))])
+    ax.set_yticklabels(yticklabels)
     ax.set_facecolor('#F5F5F5')
     plt.xlabel('{}'.format(scanLabel))
     plt.ylabel('{}'.format(interestKeyLabel))
     if dump:
-        plt.savefig('{}.png'.format(plotName),dpi=dpi);
+        plt.savefig('{}/{}.png'.format(dumpdir,plotName));
     if visual:
         plt.show();
 
