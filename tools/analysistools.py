@@ -451,7 +451,7 @@ def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggrega
     plt.xlabel('{}'.format(scanLabel))
     plt.ylabel('generation')
     if dump:
-        plt.savefig('{}.png'.format(plotName));
+        plt.savefig('{}/{}.png'.format(dumpdir,plotName));
     if visual:
         plt.show();
 
@@ -495,6 +495,6 @@ def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggr
     plt.xlabel('{}'.format(scanLabel))
     plt.ylabel('{}'.format(interestKeyLabel))
     if dump:
-        plt.savefig('{}.png'.format(plotName),dpi=dpi);
+        plt.savefig('{}/{}.png'.format(dumpdir,plotName));
     if visual:
         plt.show();
