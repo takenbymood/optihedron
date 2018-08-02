@@ -577,7 +577,7 @@ def evaluate(individual):
     np = phenome.particle
     simName = phenome.id + "_" + misctools.randomStr(3)
     
-    return evaluateParticle(np,simName),
+    return evaluateParticle(np,simName)
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
