@@ -499,12 +499,7 @@ def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggr
     if visual:
         plt.show();
 
-def measureLigandContact(xyzaFile, silent=True):
-    headersize = 9
-    xyzallsize = 2973
-    timestepinterval = 100
-    intrange = 1.8
-
+def measureLigandContact(xyzaFile, headersize=9, xyzallsize=2973, timestepinterval=100, intrange=1.8, silent=True):
     with open(xyzaFile) as f:
         content = f.readlines()
     content = [x.strip() for x in content] 
@@ -525,7 +520,6 @@ def measureLigandContact(xyzaFile, silent=True):
             print('{}/{}'.format(progress, len(steps)))
         progress+=1
         time, coords = step
-        coords = coords[:-1] #remove NP
         coordsCLEANED = []
         for coord in coords:
             coordsCLEANED.append(coord.split())
