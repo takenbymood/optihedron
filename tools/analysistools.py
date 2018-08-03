@@ -520,7 +520,6 @@ def measureLigandContact(xyzaFile, headersize=9, xyzallsize=2973, timestepinterv
             print('{}/{}'.format(progress, len(steps)))
         progress+=1
         time, coords = step
-        coords = coords[:-1] #remove NP
         coordsCLEANED = []
         for coord in coords:
             coordsCLEANED.append(coord.split())
