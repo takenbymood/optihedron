@@ -206,7 +206,7 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
     scanPlotData = []
 
     aggregateMethod = None
-    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG':
+    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG' and aggregateMode != 'POP':
         raise ValueError    
 
     if not silent:
@@ -214,6 +214,7 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
     for scanDatum in scanData:
 
         aggregateInterest = []
+        aggregateBucket = []
         aggregateInds = 0
         cursorGen = 0
         genAveragedInterest = []        
@@ -232,13 +233,17 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
                     genAveragedInterest.append(((cursorGen),np.max(aggregateInterest)))
                 elif aggregateMode == 'AVG':
                     genAveragedInterest.append(((cursorGen),(np.sum(aggregateInterest)/float(aggregateInds))))
+                elif aggregateMode == 'POP':
+                    genAveragedInterest.append(((cursorGen),interest(aggregateBucket)))
                 
                 actualTicks += aggregateInds
                 cursorGen = ind['gen']                    
-                aggregateInterest = [interest(ind)]        
+                aggregateInterest = [interest(ind)]
+                aggregateBucket = [ind]
                 aggregateInds = 1
             else:                
                 aggregateInterest.append(interest(ind)) 
+                aggregateBucket.append(ind)
                 aggregateInds += 1
 
         if aggregateMode == 'MIN':
@@ -247,6 +252,8 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
             genAveragedInterest.append(((cursorGen),np.max(aggregateInterest)))
         elif aggregateMode == 'AVG':
             genAveragedInterest.append(((cursorGen),(np.sum(aggregateInterest)/float(aggregateInds))))
+        elif aggregateMode == 'POP':
+            genAveragedInterest.append(((cursorGen),interest(aggregateBucket)))
         actualTicks += aggregateInds
 
         if expectedTicks != actualTicks:
@@ -266,7 +273,7 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
     scanPlotData = []    
 
     aggregateMethod = None
-    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG':
+    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG' and aggregateMode != 'POP':
         raise ValueError    
 
     if not silent:
@@ -278,6 +285,7 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
             ticks.append(tickerBlock*tickerBlockSize+tickerBlockOffset)        
 
         aggregateInterest = []
+        aggregateBucket = []
         aggregateInds = 0
         cursorTick = ticks.pop(0)
         tickAveragedInterest = []        
@@ -297,6 +305,8 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
                         tickAveragedInterest.append(((cursorTick),np.max(aggregateInterest)))
                     elif aggregateMode == 'AVG':
                         tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
+                    elif aggregateMode == 'POP':
+                        tickAveragedInterest.append(((cursorTick),interest(aggregateBucket)))
                     
                     actualTicks += aggregateInds
                     cursorTick = ticks.pop(0)
@@ -306,9 +316,11 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
                     cursorTick = ticks.pop(0)
                 
                 aggregateInterest = [interest(ind)]        
+                aggregateBucket = [ind]
                 aggregateInds = 1
             else:                
-                aggregateInterest.append(interest(ind)) 
+                aggregateInterest.append(interest(ind))
+                aggregateBucket.append(ind) 
                 aggregateInds += 1
 
         if aggregateMode == 'MIN':
@@ -317,6 +329,8 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
             tickAveragedInterest.append(((cursorTick),np.max(aggregateInterest)))
         elif aggregateMode == 'AVG':
             tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
+        elif aggregateMode == 'POP':
+            tickAveragedInterest.append(((cursorTick),interest(aggregateBucket)))
         actualTicks += aggregateInds
 
         if expectedTicks != actualTicks:            
