@@ -88,6 +88,7 @@ class MembraneSimulation():
 																								self.dumpres, os.path.join(self.outdir, self.outName)))				
 		tt.fillTemplate(simScript, scratch, '_TIMESTEP PLACEHOLDER_', 'timestep       {}'.format(self.timestep))		
 		tt.fillTemplate(simScript, scratch, '_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))
+		print "saved files: "+str(simData)+", "+str(simScript)
 
 	def postProcessOutput(self,outPath):
 		#this function adds the ligand strengths as a column in the output file
@@ -134,3 +135,4 @@ class MembraneSimulation():
 	def deleteFiles(self):
 		os.remove(os.path.join(self.filedir, self.scriptName))
 		os.remove(os.path.join(self.filedir, self.dataName))
+		print "removed files: "+str(os.path.join(self.filedir, self.scriptName))+", "+str(os.path.join(self.filedir, self.dataName))

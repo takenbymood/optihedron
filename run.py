@@ -450,8 +450,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
         percentCoverage = 0
         if len(outVectors[2])>0:
             percentCoverage = float(ligandsInContact)/float(len(outVectors[2]))
-        budded = nLargeClusters > 1 
-        print percentCoverage                        
+        budded = nLargeClusters > 1                        
         stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage})
     msum = stepData[-1]['mNum']
     lstep = stepData[-1]['timestep']
@@ -549,11 +548,16 @@ def evaluateParticleInstance(np,simName):
             print('error in qsub of {}, file: '.format(simName,pbs))
     else:
         runSim(scriptPath)
-    
+
+    time.sleep(1)
     f = 1E-8
     b = False
     bt = -1
-    f,b,bt,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
+    try:
+        f,b,bt,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
+    except (FileNotFoundError, IOError):
+        print("Something went wrong...")
+        print(outFilePath + ", Wrong file or file path")
 
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
