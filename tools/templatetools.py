@@ -1,5 +1,10 @@
 import os
 
+def loadTemplate(template):
+	with open(template) as templateFile:
+		data = templateFile.read()
+	return data
+
 def fillTemplate(template, filledTemplate, placeHolder, filledPlaceHolder):
 	with open(template) as templateFile:
 		with open(filledTemplate, 'w') as filledTemplateFile:
