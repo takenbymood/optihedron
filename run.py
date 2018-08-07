@@ -557,7 +557,7 @@ def evaluateParticleInstance(np,simName):
     bt = -1
     try:
         f,b,bt,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
-    except (FileNotFoundError, IOError):
+    except (OSError, IOError):
         print("Something went wrong...")
         print(outFilePath + ", Wrong file or file path")
     except:
@@ -572,7 +572,7 @@ def evaluateParticleInstance(np,simName):
         try:
             os.remove(outFilePath)
             print "deleted file" + str(outFilename)
-        except (FileNotFoundError, IOError):
+        except (OSError, IOError):
             print "no output file to delete"
     return f,b,bt,stepData
 
