@@ -13,3 +13,13 @@ def fixedAffinityGenomes(epstotal,epsmin,numligandtiles):
         cleanGenome[i] = 1
 
     return cleanGenome
+
+def fixedLigandsGenomes(numligs,epsmin,numligandtiles):    
+    numLigandsInit = numligs
+
+    cleanGenome = [0] * numligandtiles    
+    replacementPos = np.random.choice(len(cleanGenome), size=numLigandsInit, replace=False)
+    for i in replacementPos:
+        cleanGenome[i] = 1
+
+    return cleanGenome
