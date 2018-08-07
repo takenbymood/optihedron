@@ -30,30 +30,39 @@ from joblib import Parallel, delayed, parallel_backend
 from distributed.joblib import DaskDistributedBackend
 from tools import misctools
 
-class uniqueIndividual(numpy.ndarray):
-    def __init__(self, attributes):
-        # Some initialisation with received values
-        #self.id = attributes[0]
-        super(uniqueIndividual, self).__init__(dtype=int)
-        self.uniqueId = misctools.randomStr(10)
-        pass
-
 #https://docs.scipy.org/doc/numpy-1.13.0/user/basics.subclassing.html
 
+class IndArray(numpy.ndarray):
+
+    def __init__(self, attributes):
+        # Some initialisation with received values
+        pass
+
+    def __new__(subtype, shape, dtype=int, buffer=None, offset=0,
+                strides=None, order=None, info=None):
+        obj = super(IndArray, subtype).__new__(subtype, shape, dtype,
+                                                buffer, offset, strides,
+                                                order)
+        obj.info = info
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        self.info = getattr(obj, 'info', None)
+
+def make_individual_valid(ind,params):
+    ind.info = params
+    return ind
+
 def generate_individual(ind_class, size):
-    iarr = numpy.zeros((size,),dtype=int)
-    individual = iarr.view(uniqueIndividual)
-    individual.resize(size)
-    for i in range(size):
+    individual = ind_class(size)
+    for i in range(len(individual)):
         individual[i] = random.randint(0,1)
-    print individual
-    print individual.uniqueId
-    print len(individual)
-    # make_individual_valid is the self-defined order constraint function
+    individual = make_individual_valid(individual, 'test')
     return individual
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", uniqueIndividual, fitness=creator.FitnessMax) # @UndefinedVariable (for PyDev)
+creator.create("Individual", IndArray, fitness=creator.FitnessMax) # @UndefinedVariable (for PyDev)
 
 def defaultAlgorithmEaSimple(pop,toolbox,stats,hof):
 		return algorithms.eaSimple(pop,toolbox=toolbox,
