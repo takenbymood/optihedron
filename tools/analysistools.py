@@ -5,6 +5,7 @@ import os
 import copy
 import time
 import pickle
+import networkx
 
 def dropChildren(data, parentKey, childKeys, silent=True):
 	if not silent:
@@ -392,6 +393,73 @@ def NNCountAVG(ind):
         totalNNs += ligandTags['NNcount']
         totalLigands += 1
     return float(totalNNs)/float(totalLigands)
+
+def lineyLineTags(ind, minLineLength):      
+    if 'lineylinetags' in ind:
+        return ind['lineylinetags']
+    else:        
+        lineyClusters = groupLineyLigands(ind)
+        lineyLigands = []
+        for cluster in lineyClusters:
+            for ligand, ligandTags in cluster:
+                lineyLigands.append(ligand)
+        _, _, _, identity = classifyLigands(ind)
+        lineyLines = []
+                
+        for cluster in lineyClusters:            
+            if len(cluster) >= minLineLength:
+                G = networkx.Graph()
+                for lineyLig in cluster:
+                    G.add_node(lineyLig[0])                    
+                for lineyLig in cluster:
+                    for NN in lineyLig[1]['NNlist']:
+                        if NN in lineyLigands:                        
+                            G.add_edge(lineyLig[0], NN)                        
+
+                dists = []
+                for nodeA in G.nodes():
+                    tmpdists = []
+                    for nodeB in G.nodes():
+                        if not sameLigands(nodeA, nodeB):
+                            for pathl in [len(path) for path in networkx.all_simple_paths(G, nodeA, nodeB)]:
+                                tmpdists.append(pathl)                        
+                    dists.append(np.max(tmpdists))                                            
+                lineyLines.append(np.max(dists))
+
+        lineyLines = [line for line in lineyLines if line >= minLineLength]
+
+        ind['lineylinetags'] = lineyLines
+
+        return lineyLines
+
+def lineyLineCount(ind, minLineLength=3):
+    lineyLines = lineyLineTags(ind, minLineLength)
+
+    return float(len(lineyLines))
+
+def lineyLineSizeAVG(ind, minLineLength=3):
+    lineyLines = lineyLineTags(ind, minLineLength)
+
+    if lineyLines:
+        return float(np.average(lineyLines))
+    else:
+        return 0.0
+
+def lineyLineSizeMAX(ind, minLineLength=3):
+    lineyLines = lineyLineTags(ind, minLineLength)
+
+    if lineyLines:
+        return float(np.max(lineyLines))
+    else:
+        return 0.0
+
+def lineyLineSizeMIN(ind, minLineLength=3):
+    lineyLines = lineyLineTags(ind, minLineLength)
+
+    if lineyLines:
+        return float(np.min(lineyLines))
+    else:
+        return 0.0
 
 def lineyChainTags(ind, minChainLength):
     lineyClusters = groupLineyLigands(ind)    
