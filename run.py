@@ -636,8 +636,8 @@ def evaluateParticle(np,simName):
 
 def evaluate(individual):
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-    np = phenome.particle
-    simName = phenome.id
+    np = phenome.particle    
+    simName = phenome.id + "_" + misctools.randomStr(10)
     r = evaluateParticle(np,simName)
     if SAVERESULTS:
         with open(os.path.join(OUTDIR,simName+'.pickle'), 'wb') as handle:
