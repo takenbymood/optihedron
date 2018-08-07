@@ -541,7 +541,9 @@ def evaluateParticleInstance(np,simName):
             out = job.communicate()[0]
             while(qtools.hasRQJob(out)):
                 time.sleep(1)
-            os.remove(pbs)
+            if os.path.exists(pbs):
+                os.remove(pbs)
+                print "removed file: " + str(pbs)
             
         except Exception as err:
             traceback.print_exc()
@@ -558,14 +560,20 @@ def evaluateParticleInstance(np,simName):
     except (FileNotFoundError, IOError):
         print("Something went wrong...")
         print(outFilePath + ", Wrong file or file path")
+    except:
+        print('something unexpected went wrong...')
 
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
         sim.deleteFiles()
     if KEEPOUTPUT:
         sim.postProcessOutput(outFilePath)
-    else:
-        os.remove(outFilePath)
+    elif os.path.exists(outFilePath):
+        try:
+            os.remove(outFilePath)
+            print "deleted file" + str(outFilename)
+        except (FileNotFoundError, IOError):
+            print "no output file to delete"
     return f,b,bt,stepData
 
 def evaluateParticle(np,simName):
@@ -646,7 +654,6 @@ def evaluate(individual):
     if SAVERESULTS:
         with open(os.path.join(OUTDIR,simName+'.pickle'), 'wb') as handle:
             pickle.dump(r, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
     return r[0],
 
 def sel(pop,k):

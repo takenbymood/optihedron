@@ -142,6 +142,11 @@ class MembraneSimulation():
 
 
 	def deleteFiles(self):
-		os.remove(os.path.join(self.filedir, self.scriptName))
-		os.remove(os.path.join(self.filedir, self.dataName))
-		print "removed files: "+str(os.path.join(self.filedir, self.scriptName))+", "+str(os.path.join(self.filedir, self.dataName))
+		sPath = os.path.join(self.filedir, self.scriptName)
+		dPath = os.path.join(self.filedir, self.dataName)
+		if os.path.exists(sPath):
+			os.remove(os.path.join(self.filedir, self.scriptName))
+			print "removed file: " + str(sPath)
+		if os.path.exists(dPath):
+			os.remove(os.path.join(self.filedir, self.dataName))
+			print "removed file: " + str(dPath)
