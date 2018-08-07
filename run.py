@@ -648,7 +648,7 @@ def evaluateParticle(np,simName):
 
 def evaluate(individual):
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
-    np = phenome.particle
+    np = phenome.particle    
     simName = phenome.id
     r = evaluateParticle(np,simName)
     if SAVERESULTS:
