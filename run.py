@@ -571,7 +571,7 @@ def evaluateParticleInstance(np,simName):
     elif os.path.exists(outFilePath):
         try:
             os.remove(outFilePath)
-            print "deleted file" + str(outFilename)
+            print "deleted file" + str(outFilePath)
         except (OSError, IOError):
             print "no output file to delete"
     return f,b,bt,stepData
