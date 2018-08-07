@@ -555,6 +555,8 @@ def evaluateParticleInstance(np,simName):
     f = 1E-8
     b = False
     bt = -1
+    stepData = []
+    
     try:
         f,b,bt,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
     except (OSError, IOError):
