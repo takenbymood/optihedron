@@ -173,7 +173,7 @@ def clusterLineyLigands(ligands, silent=True):
                 if existingCopies == 1:                                    
                     nextSeedQueue.append(ligand)
                     clusterTmp.append(ligand)
-                    rLigands.append(ligands)
+                    rLigands.append(ligand)
                 elif existingCopies > 1:
                     raise ValueError
             for rLig in rLigands:
