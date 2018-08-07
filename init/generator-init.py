@@ -1,6 +1,5 @@
 import json
 import generators
-import numpy as np
 
 epstotal = 150
 numligandtiles = 72
