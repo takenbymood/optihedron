@@ -188,8 +188,8 @@ def clusterLineyLigands(ligands, silent=True):
     return clusters
 
 def groupLineyLigands(ind):
-    if 'lineyTags' in ind:
-        return ind['lineyTags']
+    if 'lineyclustertags' in ind:
+        return ind['lineyclustertags']
     else:
         _, _, _, identity = classifyLigands(ind)
         lineyLigands = []
@@ -198,7 +198,7 @@ def groupLineyLigands(ind):
             if ligandTags['character'] == 'liney':
                 lineyLigands.append((ligand,ligandTags)) 
         lineyClusters = clusterLineyLigands(lineyLigands)
-        ind['lineyTags'] = lineyClusters
+        ind['lineyclustertags'] = lineyClusters
         return lineyClusters
 
 def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
