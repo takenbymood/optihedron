@@ -28,9 +28,32 @@ import joblib
 
 from joblib import Parallel, delayed, parallel_backend
 from distributed.joblib import DaskDistributedBackend
+from tools import misctools
+
+class uniqueIndividual(numpy.ndarray):
+    def __init__(self, attributes):
+        # Some initialisation with received values
+        #self.id = attributes[0]
+        super(uniqueIndividual, self).__init__(dtype=int)
+        self.uniqueId = misctools.randomStr(10)
+        pass
+
+#https://docs.scipy.org/doc/numpy-1.13.0/user/basics.subclassing.html
+
+def generate_individual(ind_class, size):
+    iarr = numpy.zeros((size,),dtype=int)
+    individual = iarr.view(uniqueIndividual)
+    individual.resize(size)
+    for i in range(size):
+        individual[i] = random.randint(0,1)
+    print individual
+    print individual.uniqueId
+    print len(individual)
+    # make_individual_valid is the self-defined order constraint function
+    return individual
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", numpy.ndarray, fitness=creator.FitnessMax) # @UndefinedVariable (for PyDev)
+creator.create("Individual", uniqueIndividual, fitness=creator.FitnessMax) # @UndefinedVariable (for PyDev)
 
 def defaultAlgorithmEaSimple(pop,toolbox,stats,hof):
 		return algorithms.eaSimple(pop,toolbox=toolbox,
@@ -105,7 +128,7 @@ class NetworkedGeneticAlgorithm:
         self.toolbox.register("attr_bool", random.randint, 0, 1)
 
         # Structure initializers
-        self.toolbox.register("individual", tools.initRepeat, creator.Individual, self.toolbox.attr_bool, genomeSize)  # @UndefinedVariable (for PyDev)
+        self.toolbox.register("individual", generate_individual, creator.Individual, size=genomeSize)  # @UndefinedVariable (for PyDev)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
         self.toolbox.register("individual_guess", self.initIndividual, creator.Individual)
