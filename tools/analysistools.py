@@ -500,6 +500,23 @@ def lineyChainSizeMIN(ind, minChainLength=3):
     else:
         return 0.0
 
+def geneticDiversity(inds):
+    genomes = {}    
+    for ind in inds:
+        genome = tuple(ind['genome'])
+        if genome not in genomes:
+            genomes[genome] = 1
+        else:
+            genomes[genome] += 1
+
+    if len(inds) != np.sum(genomes.values()):        
+        raise ValueError
+    return genomes
+
+def genomeConvergence(inds):
+    genomes = geneticDiversity(inds)
+    return 1.0 - float(len(genomes.keys()))/float(len(inds))  
+
 def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, fmt='.2g', vmin = None, vmax = None, annotate=False, silent=True, visual=True, dump=False, backup=False, dumpdir='plots'):    
     if not os.path.exists(dumpdir):
         os.mkdir(dumpdir)
