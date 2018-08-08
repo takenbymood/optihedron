@@ -651,11 +651,13 @@ def evaluateParticle(np,simName):
 def evaluate(individual):
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle    
-    simName = phenome.id
+    simName = phenome.id + misctools.randomStr(10)
     r = evaluateParticle(np,simName)
+    pickleFilePath = os.path.join(OUTDIR,phenome.id+'.pickle')
     if SAVERESULTS:
-        with open(os.path.join(OUTDIR,simName+'.pickle'), 'wb') as handle:
-            pickle.dump(r, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        if not os.path.exists(pickleFilePath):
+            with open(pickleFilePath, 'wb') as handle:
+                pickle.dump(r, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return r[0],
 
 def sel(pop,k):
@@ -700,9 +702,13 @@ def commitSession(ga):
                     i.budPerc = budData[1]
                     i.budTime = budData[2]
                 for simData in budData[3]:
-                    s = dao.Simulation()
-                    s.data = simData
-                    i.sims.append(s)
+                    if not ga.dbconn.ifSimExists(simData):
+                        s = dao.Simulation()
+                        s.data = simData
+                        i.sims.append(s)
+                    else:
+                        s = ga.dbconn.getSimByData(simData)
+                        i.sims.append(s)
                 dbGen.individuals.append(i)
                 for g in np.genelist:
                     gene = dao.Gene(g)
