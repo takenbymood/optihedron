@@ -16,6 +16,7 @@ DS_Store*
 *.script
 *out.xyz
 *.xyz*
+*.pickle
 
 # C extensions
 *.so
