@@ -5,6 +5,7 @@ import os
 import copy
 import time
 import pickle
+import networkx
 
 def dropChildren(data, parentKey, childKeys, silent=True):
 	if not silent:
@@ -173,7 +174,7 @@ def clusterLineyLigands(ligands, silent=True):
                 if existingCopies == 1:                                    
                     nextSeedQueue.append(ligand)
                     clusterTmp.append(ligand)
-                    rLigands.append(ligands)
+                    rLigands.append(ligand)
                 elif existingCopies > 1:
                     raise ValueError
             for rLig in rLigands:
@@ -188,8 +189,8 @@ def clusterLineyLigands(ligands, silent=True):
     return clusters
 
 def groupLineyLigands(ind):
-    if 'lineyTags' in ind:
-        return ind['lineyTags']
+    if 'lineyclustertags' in ind:
+        return ind['lineyclustertags']
     else:
         _, _, _, identity = classifyLigands(ind)
         lineyLigands = []
@@ -198,7 +199,7 @@ def groupLineyLigands(ind):
             if ligandTags['character'] == 'liney':
                 lineyLigands.append((ligand,ligandTags)) 
         lineyClusters = clusterLineyLigands(lineyLigands)
-        ind['lineyTags'] = lineyClusters
+        ind['lineyclustertags'] = lineyClusters
         return lineyClusters
 
 def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
@@ -206,7 +207,7 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
     scanPlotData = []
 
     aggregateMethod = None
-    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG':
+    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG' and aggregateMode != 'POP':
         raise ValueError    
 
     if not silent:
@@ -214,6 +215,7 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
     for scanDatum in scanData:
 
         aggregateInterest = []
+        aggregateBucket = []
         aggregateInds = 0
         cursorGen = 0
         genAveragedInterest = []        
@@ -232,13 +234,17 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
                     genAveragedInterest.append(((cursorGen),np.max(aggregateInterest)))
                 elif aggregateMode == 'AVG':
                     genAveragedInterest.append(((cursorGen),(np.sum(aggregateInterest)/float(aggregateInds))))
+                elif aggregateMode == 'POP':
+                    genAveragedInterest.append(((cursorGen),interest(aggregateBucket)))
                 
                 actualTicks += aggregateInds
                 cursorGen = ind['gen']                    
-                aggregateInterest = [interest(ind)]        
+                aggregateInterest = [interest(ind)]
+                aggregateBucket = [ind]
                 aggregateInds = 1
             else:                
                 aggregateInterest.append(interest(ind)) 
+                aggregateBucket.append(ind)
                 aggregateInds += 1
 
         if aggregateMode == 'MIN':
@@ -247,6 +253,8 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
             genAveragedInterest.append(((cursorGen),np.max(aggregateInterest)))
         elif aggregateMode == 'AVG':
             genAveragedInterest.append(((cursorGen),(np.sum(aggregateInterest)/float(aggregateInds))))
+        elif aggregateMode == 'POP':
+            genAveragedInterest.append(((cursorGen),interest(aggregateBucket)))
         actualTicks += aggregateInds
 
         if expectedTicks != actualTicks:
@@ -266,7 +274,7 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
     scanPlotData = []    
 
     aggregateMethod = None
-    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG':
+    if aggregateMode != 'MIN' and aggregateMode != 'MAX' and aggregateMode != 'AVG' and aggregateMode != 'POP':
         raise ValueError    
 
     if not silent:
@@ -278,6 +286,7 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
             ticks.append(tickerBlock*tickerBlockSize+tickerBlockOffset)        
 
         aggregateInterest = []
+        aggregateBucket = []
         aggregateInds = 0
         cursorTick = ticks.pop(0)
         tickAveragedInterest = []        
@@ -297,6 +306,8 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
                         tickAveragedInterest.append(((cursorTick),np.max(aggregateInterest)))
                     elif aggregateMode == 'AVG':
                         tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
+                    elif aggregateMode == 'POP':
+                        tickAveragedInterest.append(((cursorTick),interest(aggregateBucket)))
                     
                     actualTicks += aggregateInds
                     cursorTick = ticks.pop(0)
@@ -306,9 +317,11 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
                     cursorTick = ticks.pop(0)
                 
                 aggregateInterest = [interest(ind)]        
+                aggregateBucket = [ind]
                 aggregateInds = 1
             else:                
-                aggregateInterest.append(interest(ind)) 
+                aggregateInterest.append(interest(ind))
+                aggregateBucket.append(ind) 
                 aggregateInds += 1
 
         if aggregateMode == 'MIN':
@@ -317,6 +330,8 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
             tickAveragedInterest.append(((cursorTick),np.max(aggregateInterest)))
         elif aggregateMode == 'AVG':
             tickAveragedInterest.append(((cursorTick),(np.sum(aggregateInterest)/float(aggregateInds))))
+        elif aggregateMode == 'POP':
+            tickAveragedInterest.append(((cursorTick),interest(aggregateBucket)))
         actualTicks += aggregateInds
 
         if expectedTicks != actualTicks:            
@@ -378,6 +393,73 @@ def NNCountAVG(ind):
         totalNNs += ligandTags['NNcount']
         totalLigands += 1
     return float(totalNNs)/float(totalLigands)
+
+def lineyLineTags(ind, minLineLength):      
+    if 'lineylinetags' in ind:
+        return ind['lineylinetags']
+    else:        
+        lineyClusters = groupLineyLigands(ind)
+        lineyLigands = []
+        for cluster in lineyClusters:
+            for ligand, ligandTags in cluster:
+                lineyLigands.append(ligand)
+        _, _, _, identity = classifyLigands(ind)
+        lineyLines = []
+                
+        for cluster in lineyClusters:            
+            if len(cluster) >= minLineLength:
+                G = networkx.Graph()
+                for lineyLig in cluster:
+                    G.add_node(lineyLig[0])                    
+                for lineyLig in cluster:
+                    for NN in lineyLig[1]['NNlist']:
+                        if NN in lineyLigands:                        
+                            G.add_edge(lineyLig[0], NN)                        
+
+                dists = []
+                for nodeA in G.nodes():
+                    tmpdists = []
+                    for nodeB in G.nodes():
+                        if not sameLigands(nodeA, nodeB):
+                            for pathl in [len(path) for path in networkx.all_simple_paths(G, nodeA, nodeB)]:
+                                tmpdists.append(pathl)                        
+                    dists.append(np.max(tmpdists))                                            
+                lineyLines.append(np.max(dists))
+
+        lineyLines = [line for line in lineyLines if line >= minLineLength]
+
+        ind['lineylinetags'] = lineyLines
+
+        return lineyLines
+
+def lineyLineCount(ind, minLineLength=3):
+    lineyLines = lineyLineTags(ind, minLineLength)
+
+    return float(len(lineyLines))
+
+def lineyLineSizeAVG(ind, minLineLength=3):
+    lineyLines = lineyLineTags(ind, minLineLength)
+
+    if lineyLines:
+        return float(np.average(lineyLines))
+    else:
+        return 0.0
+
+def lineyLineSizeMAX(ind, minLineLength=3):
+    lineyLines = lineyLineTags(ind, minLineLength)
+
+    if lineyLines:
+        return float(np.max(lineyLines))
+    else:
+        return 0.0
+
+def lineyLineSizeMIN(ind, minLineLength=3):
+    lineyLines = lineyLineTags(ind, minLineLength)
+
+    if lineyLines:
+        return float(np.min(lineyLines))
+    else:
+        return 0.0
 
 def lineyChainTags(ind, minChainLength):
     lineyClusters = groupLineyLigands(ind)    

@@ -1,5 +1,6 @@
 from . import grayencoder as ge
 import hashlib
+from tools import misctools
 
 class Phenome:
 	def __init__(self,ind):
@@ -22,5 +23,5 @@ class Phenome:
 		return None
 
 	def makeUniqueId(self,ind):
-		return hashlib.sha1(ind).hexdigest()
+		return hashlib.sha1(ind).hexdigest() + "_" + misctools.randomStr(5)
 

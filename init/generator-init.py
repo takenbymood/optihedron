@@ -1,22 +1,9 @@
 import json
-import numpy as np
+import generators
 
 epstotal = 150
 numligandtiles = 72
 epsmin = 14
-
-def guessGenome(epstotal,epsmin):    
-    numLigandsExact = float(epstotal)/float(epsmin)
-    numLigandsApprox = int(numLigandsExact)
-    numLigandsRemainder = numLigandsExact - numLigandsApprox
-    numLigandsInit = numLigandsApprox + np.random.choice([0,1],p=[1.0-numLigandsRemainder,numLigandsRemainder])
-
-    cleanGenome = [0] * numligandtiles    
-    replacementPos = np.random.choice(len(cleanGenome), size=numLigandsInit, replace=False)
-    for i in replacementPos:
-        cleanGenome[i] = 1
-
-    return cleanGenome
 
 initPop = []
 pop = 78
@@ -25,7 +12,7 @@ demes = 2
 for d in range(demes):
     popTmp = []
     for p in range(pop):
-        popTmp.append(guessGenome(epstotal, epsmin))
+        popTmp.append(generators.fixedAffinityGenomes(epstotal, epsmin, numligandtiles))        
     initPop.append(popTmp)
 
 
