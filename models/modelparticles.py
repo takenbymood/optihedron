@@ -62,3 +62,16 @@ def modelpatchy34():
     if len(set(express)) != len(express):
         raise ValueError
     return ind
+
+def modelpatchy30():
+    #3 x 10
+    ind = [0]*72
+    express = [70, 24, 30, 71, 19, 40, 47, 33, 12, 67, 23, 60, 57, 2, 53, 16, 0, 1, 10, 35, 50, 64, 59, 8, 27, 49, 15, 3, 28, 31]
+    
+
+    for express_i in express:
+        ind[express_i] = 1
+    print(len(set(express)))
+    if len(set(express)) != len(express):
+        raise ValueError
+    return ind
