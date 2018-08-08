@@ -239,12 +239,16 @@ def scanGen(scanData, interest, indexOffset, aggregateMode, silent=True):
                 
                 actualTicks += aggregateInds
                 cursorGen = ind['gen']                    
-                aggregateInterest = [interest(ind)]
-                aggregateBucket = [ind]
+                if aggregateMode == 'MIN' or aggregateMode == 'MAX' or aggregateMode == 'AVG':
+                    aggregateInterest = [interest(ind)]
+                elif aggregateMode == 'POP':
+                    aggregateBucket = [ind]
                 aggregateInds = 1
             else:                
-                aggregateInterest.append(interest(ind)) 
-                aggregateBucket.append(ind)
+                if aggregateMode == 'MIN' or aggregateMode == 'MAX' or aggregateMode == 'AVG':
+                    aggregateInterest.append(interest(ind)) 
+                elif aggregateMode == 'POP':
+                    aggregateBucket.append(ind)
                 aggregateInds += 1
 
         if aggregateMode == 'MIN':
@@ -316,12 +320,16 @@ def scanCustom(scanData, interestKey, interestKeyLabel, tickerRange, tickerBlock
                     tickAveragedInterest.append(((cursorTick),np.nan))
                     cursorTick = ticks.pop(0)
                 
-                aggregateInterest = [interest(ind)]        
-                aggregateBucket = [ind]
+                if aggregateMode == 'MIN' or aggregateMode == 'MAX' or aggregateMode == 'AVG':
+                    aggregateInterest = [interest(ind)]
+                elif aggregateMode == 'POP':
+                    aggregateBucket = [ind]
                 aggregateInds = 1
-            else:                
-                aggregateInterest.append(interest(ind))
-                aggregateBucket.append(ind) 
+            else:
+                if aggregateMode == 'MIN' or aggregateMode == 'MAX' or aggregateMode == 'AVG':
+                    aggregateInterest.append(interest(ind)) 
+                elif aggregateMode == 'POP':
+                    aggregateBucket.append(ind)                                
                 aggregateInds += 1
 
         if aggregateMode == 'MIN':
@@ -637,4 +645,4 @@ def measureLigandContact(xyzaFile, headersize=9, xyzallsize=2973, timestepinterv
             raise ValueError
         contactData.append((time, ligandContact))
 
-    return contactData, len(ligands)
+    return contactData, len(ligands)  
