@@ -702,9 +702,13 @@ def commitSession(ga):
                     i.budPerc = budData[1]
                     i.budTime = budData[2]
                 for simData in budData[3]:
-                    s = dao.Simulation()
-                    s.data = simData
-                    i.sims.append(s)
+                    if not ga.dbconn.ifSimExists(simData):
+                        s = dao.Simulation()
+                        s.data = simData
+                        i.sims.append(s)
+                    else:
+                        s = ga.dbconn.getSimByData(simData)
+                        i.sims.append(s)
                 dbGen.individuals.append(i)
                 for g in np.genelist:
                     gene = dao.Gene(g)

@@ -1,6 +1,8 @@
 from sqlalchemy import Table, create_engine, Column, String, PickleType, Integer, Numeric, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy import *
+from sqlalchemy.orm import *
 
 import time
 
@@ -196,6 +198,13 @@ class DatabaseConnection:
 
 	def getGeneByRawGene(self,rawGene):
 		return self.dbSession.query(Gene).filter(Gene.rawGene == rawGene).first()
+
+	def ifSimExists(self,sim):
+		ret = self.dbSession.query(exists().where(Simulation.data==sim)).scalar()
+		return ret
+
+	def getSimByData(self,sim):
+		return self.dbSession.query(Simulation).filter(Simulation.data==sim).first()
 
 	#deprecated
 	def loadSession(self, sessionId):
