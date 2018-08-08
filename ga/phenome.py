@@ -1,6 +1,7 @@
 from . import grayencoder as ge
 import hashlib
 from tools import misctools
+from ga import indarray
 
 class Phenome:
 	def __init__(self,ind):
@@ -23,5 +24,5 @@ class Phenome:
 		return None
 
 	def makeUniqueId(self,ind):
-		return hashlib.sha1(ind).hexdigest() + "_" + '1'
+		return hashlib.sha1(ind).hexdigest() + "_"
 

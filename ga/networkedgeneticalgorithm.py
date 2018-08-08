@@ -32,51 +32,10 @@ from joblib import Parallel, delayed, parallel_backend
 from distributed.joblib import DaskDistributedBackend
 from tools import misctools
 
-#https://docs.scipy.org/doc/numpy-1.13.0/user/basics.subclassing.html
-
-class IndArray(numpy.ndarray):
-
-    def __init__(self, attributes):
-        # Some initialisation with received values
-        pass
-
-    def __new__(subtype, shape, dtype=int, buffer=None, offset=0,
-                strides=None, order=None, info=None):
-        obj = super(IndArray, subtype).__new__(subtype, shape, dtype,
-                                                buffer, offset, strides,
-                                                order)
-        obj.info = info
-        return obj
-
-    def __array_finalize__(self, obj):
-        if obj is None: return
-        self.info = getattr(obj, 'info', None)
-
-    def __deepcopy__(self,memo):
-        cls = self.__class__
-        result = cls.__new__(cls,len(self))
-        for i in range(len(self)):
-            result[i] = deepcopy(self[i])
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        result.fitness = deepcopy(self.fitness)
-        result.info = deepcopy(self.info)
-        return result
-
-def make_individual_valid(ind,params):
-    ind.info = params
-    return ind
-
-def generate_individual(ind_class, size):
-    individual = ind_class(size)
-    for i in range(len(individual)):
-        individual[i] = random.randint(0,1)
-    individual = make_individual_valid(individual, 'test')
-    return individual
+from ga import indarray as ind
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", IndArray, fitness=creator.FitnessMax)
+creator.create("Individual", ind.IndArray, fitness=creator.FitnessMax)
 
 def defaultAlgorithmEaSimple(pop,toolbox,stats,hof):
 		return algorithms.eaSimple(pop,toolbox=toolbox,
@@ -136,7 +95,8 @@ class NetworkedGeneticAlgorithm:
         verbose = False,
         dbconn = None,
         jsonFile = "init.json",
-        loadFromFile = False
+        loadFromFile = False,
+        workers = 10
         ):
 
         
@@ -150,7 +110,7 @@ class NetworkedGeneticAlgorithm:
         self.toolbox.register("attr_bool", random.randint, 0, 1)
 
         # Structure initializers
-        self.toolbox.register("individual", generate_individual, creator.Individual, size=genomeSize)  # @UndefinedVariable (for PyDev)
+        self.toolbox.register("individual", ind.generate_individual, creator.Individual, size=genomeSize)  # @UndefinedVariable (for PyDev)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
         self.toolbox.register("individual_guess", self.initIndividual, creator.Individual)
@@ -268,7 +228,6 @@ class NetworkedGeneticAlgorithm:
         
     def run(self,ngen,freq,migr,startingGen=0):
         self.metrics = []
-        pool = pools.ProcessPool(10)
         for i in range(startingGen, ngen):
             self.gen = i+1
             if self.verbose:

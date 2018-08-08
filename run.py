@@ -882,7 +882,8 @@ def main():
        mate = mate,
        dbconn = dbconn,
        jsonFile = initPopFile,
-       loadFromFile = LOADFROMFILE
+       loadFromFile = LOADFROMFILE,
+       workers = WORKERS
        )
 
     
