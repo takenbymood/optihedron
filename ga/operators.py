@@ -18,7 +18,7 @@ def defaultGeneWiseTwoPoint(ind1, ind2, GENES, GENESIZE):
 
     ind1[cxpoint1:cxpoint2], ind2[cxpoint1:cxpoint2] \
         = ind2[cxpoint1:cxpoint2].copy(), ind1[cxpoint1:cxpoint2].copy()
-        
+    print ind1.info
     return ind1, ind2
 
 def fixActivation(ind, targetActivations):

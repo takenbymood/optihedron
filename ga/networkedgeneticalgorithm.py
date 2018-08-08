@@ -24,6 +24,8 @@ from pathos import pools
 
 import time
 
+from copy import deepcopy
+
 import joblib
 
 from joblib import Parallel, delayed, parallel_backend
@@ -50,6 +52,18 @@ class IndArray(numpy.ndarray):
         if obj is None: return
         self.info = getattr(obj, 'info', None)
 
+    def __deepcopy__(self,memo):
+        cls = self.__class__
+        result = cls.__new__(cls,len(self))
+        for i in range(len(self)):
+            result[i] = deepcopy(self[i])
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        result.fitness = deepcopy(self.fitness)
+        result.info = deepcopy(self.info)
+        return result
+
 def make_individual_valid(ind,params):
     ind.info = params
     return ind
@@ -62,11 +76,11 @@ def generate_individual(ind_class, size):
     return individual
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", IndArray, fitness=creator.FitnessMax) # @UndefinedVariable (for PyDev)
+creator.create("Individual", IndArray, fitness=creator.FitnessMax)
 
 def defaultAlgorithmEaSimple(pop,toolbox,stats,hof):
 		return algorithms.eaSimple(pop,toolbox=toolbox,
-		cxpb=0.5, mutpb=0.2, ngen=1,verbose=False,stats=stats,halloffame=hof)
+		cxpb=0.5, mutpb=0.2, ngen=1,verbose=False,stats=stats)
 
 def defaultTwoPoint(ind1, ind2):
     size = len(ind1)
@@ -79,7 +93,6 @@ def defaultTwoPoint(ind1, ind2):
 
     ind1[cxpoint1:cxpoint2], ind2[cxpoint1:cxpoint2] \
         = ind2[cxpoint1:cxpoint2].copy(), ind1[cxpoint1:cxpoint2].copy()
-        
     return ind1, ind2
 
 def defaultEvalMax(individual):
