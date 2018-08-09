@@ -685,10 +685,45 @@ def jitterLigandContact(contactData, windowSize, mode):
 
     return timeJitter, jitter
 
-def jitterLigandContactSUM(contactData, windowSize=10, mode='same', jitTolerance=0):
+def jitterLigandContactSUM(contactData, windowSize=10, mode='same', jitTolerance=0.1):
     _, jitter = jitterLigandContact(contactData, windowSize, mode)
-    return np.sum([abs(jit) for jit in jitter if jit >= jitTolerance])
+    return np.sum([abs(jit) for jit in jitter if abs(jit) >= jitTolerance])
 
-def jitterLigandContactMAX(contactData, windowSize=10, mode='same', jitTolerance=0):
+def jitterLigandContactMAX(contactData, windowSize=10, mode='same', jitTolerance=0.1):
     _, jitter = jitterLigandContact(contactData, windowSize, mode)
-    return np.max([abs(jit) for jit in jitter if jit >= jitTolerance])
+    return np.max([abs(jit) for jit in jitter if abs(jit) >= jitTolerance])
+
+def digitalJitter(jitter, jitTolerance):
+    jitDigital = []
+    for jit in jitter:
+        if abs(jit) >= jitTolerance:
+            jitDigital.append(1)
+        else:
+            jitDigital.append(0)
+    return jitDigital
+
+def jitterLigandContactLIFETIME(contactData, windowSize=10, mode='same', jitTolerance=0.1):
+    _, jitter = jitterLigandContact(contactData, windowSize, mode)
+    jitter = digitalJitter(jitter, jitTolerance)
+
+    totalLifeTime = 0    
+
+    jitPacketALL = []
+    jitPacket = []
+    for jit in jitter:
+        if jit == 1:
+            jitPacket.append(1)
+            totalLifeTime += 1
+        elif jit == 0:
+            if jitPacket:
+                jitPacketALL.append(jitPacket)
+                jitPacket = []
+        else:
+            raise ValueError
+    jitPacketALL.append(jitPacket)
+
+    averageLifeTime = np.average([len(jitPack) for jitPack in jitPacketALL])
+    maxLifeTime = np.max([len(jitPack) for jitPack in jitPacketALL])
+    minLifeTime = np.min([len(jitPack) for jitPack in jitPacketALL])
+
+    return totalLifeTime, averageLifeTime, maxLifeTime, minLifeTime
