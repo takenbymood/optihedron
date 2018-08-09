@@ -116,8 +116,10 @@ parser.add_argument('-r','--runtime', default=25000, type=int,
                     help='lammps timesteps')
 parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
-parser.add_argument('-rs','--repeats', default=4, type=int,
+parser.add_argument('-rs','--repeats', default=6, type=int,
                     help='number of repeat tests for each individual')
+parser.add_argument('-fr', '--fixedrepeats', action='store_true',
+                    help='option to use standardized tests for each individual')
 parser.add_argument('-pw','--penaltyweight', default=1.0, type=float,
                     help='weighting of the ligand affinity penalty')
 parser.add_argument('-tw','--timeweight', default=1.0, type=float,
@@ -265,6 +267,11 @@ if args.epsplaces == 0:
         print('overwriting max ligand eps ({}) with min ligand eps ({})'.format(args.epsmax, args.epsmin))
         args.epsmax = args.epsmin
 
+if args.fixedrepeats:    
+    if args.repeats > 6:
+        print('more repeat standardized tests of individuals was requested than is available')
+        print('overwriting requested number of repeat tests ({}) with the maximum for standardized tests (6)'.format(args.repeats)) 
+        args.repeats = 6
 
 
 NSPOKES = 2
@@ -293,6 +300,7 @@ TIMESTEP = runArgs.timestep
 GENESIZE = (EXPRPLACES+EPSPLACES+POLANGPLACES+AZIANGPLACES) if PARTIAL else (EXPRPLACES+EPSPLACES)
 GENOMESIZE = GENES*GENESIZE
 REPEATS = runArgs.repeats
+FIXEDREPEATS = runArgs.fixedrepeats
 
 PENALTYWEIGHT = runArgs.penaltyweight
 TARGETWEIGHT = runArgs.ligandweight
@@ -515,8 +523,15 @@ def evaluatePyLammps(individual):
 def runSim(path):    
     return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
 
-def evaluateParticleInstance(np,simName):
+def evaluateParticleInstance(np,simName,testRot=None):
     
+    if not testRot:
+        rAxisTest = vectools.randomUnitVector()
+        rAmountTest = random.uniform(0.3141,3.141)
+    else:
+        rAxisTest = testRot[0]
+        rAmountTest = testRot[1]
+
     sim = MembraneSimulation(
         'sim_'+simName,
         np,
@@ -526,8 +541,8 @@ def evaluateParticleInstance(np,simName):
         RUNDIR,
         TEMPLATEDATAPATH,
         TEMPLATEINPUTPATH,
-        rAxis=vectools.randomUnitVector(),
-        rAmount=random.uniform(0.3141,3.141)        
+        rAxis=rAxisTest,
+        rAmount=rAmountTest        
         )
     sim.saveFiles()
     scriptPath=os.path.join(sim.filedir,sim.scriptName)
@@ -566,13 +581,24 @@ def evaluateParticleInstance(np,simName):
 
 def evaluateParticle(np,simName):
 
+    standardRots = []
+    standardRots.append([[0.0, 1.0, 0.0],0.0,0])
+    standardRots.append([[0.0, 1.0, 0.0],3.141,0])
+    standardRots.append([[-1.0,0.0, 0.0],1.571,0])
+    standardRots.append([[1.0, 0.0, 0.0],1.571,0])
+    standardRots.append([[0.0,-1.0, 0.0],1.571,0])
+    standardRots.append([[0.0, 1.0, 0.0],1.571,0])
+
     fitnesses = []
     budding = []
     budTime = []
     stepData = []
 
-    for i in range(REPEATS):
-        pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i))
+    for i in range(REPEATS):         
+        if FIXEDREPEATS:
+            pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i),standardRots[i])
+        else:
+            pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i))
         fitnesses.append(pf)
         budding.append(pb)
         budTime.append(pbt)
