@@ -8,7 +8,8 @@ class Phenome:
 		self.genelist = self.constructGenelist(self.ind)
 		self.genome = self.constructGenome(self.ind)
 		self.constructPhenome(self.genome)
-		self.id = self.makeUniqueId(self.ind)
+		#self.id = self.makeUniqueId(self.ind)
+		self.id = 'AAA'
 
 	def constructGenelist(self,ind):
 		#gene list construction goes here for inherited classes

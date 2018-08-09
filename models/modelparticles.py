@@ -1,3 +1,5 @@
+import numpy as np
+
 def modelpatchy36():
     #4 x 6 strips (a bit bent) + 2 x 6 star
     ind = [0]*72
@@ -75,3 +77,14 @@ def modelpatchy30():
     if len(set(express)) != len(express):
         raise ValueError
     return ind
+
+def ptl(ind, checksum):
+    otherind = [0]*72    
+    for i in range(len(ind)):
+        if ind[i] == 1:
+            otherind[i] = 0
+        elif ind[i] == 0:            
+            otherind[i] = 1            
+    if np.sum(otherind) + np.sum(ind) != checksum:
+        raise ValueError
+    return otherind
