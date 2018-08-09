@@ -663,3 +663,108 @@ def measureLigandContact(xyzaFile, headersize=9, xyzallsize=2973, timestepinterv
         contactData.append((time, ligandContact))
 
     return contactData, len(ligands)  
+
+def smoothLigandContact(timeWindow, ligandContactWindow, windowSize, mode):
+    window = np.ones(windowSize)/windowSize
+    ligandContactWindowSmooth = np.convolve(ligandContactWindow, window, mode=mode)
+    timeWindow = timeWindow[windowSize:][:-windowSize]
+    ligandContactWindowSmooth = ligandContactWindowSmooth[windowSize:][:-windowSize]
+    return timeWindow, ligandContactWindowSmooth
+
+def jitterLigandContact(contactData, windowSize, mode):
+    time = [i[0] for i in contactData]
+    ligandContact = [i[1] for i in contactData]
+
+    timeJitter = time[windowSize:][:-windowSize]
+    ligandContactInterest = ligandContact[windowSize:][:-windowSize]
+    _, ligandContactSmooth = smoothLigandContact(time, ligandContact, windowSize, mode)
+    
+    jitter = []
+    for ligandContactInterest_i, ligandContactSmooth_i in zip(ligandContactInterest, ligandContactSmooth):
+        jitter.append(ligandContactInterest_i - ligandContactSmooth_i)
+
+    return timeJitter, jitter
+
+def jitterLigandContactSUM(contactData, windowSize=10, mode='same', jitTolerance=0.1):
+    _, jitter = jitterLigandContact(contactData, windowSize, mode)
+    return np.sum([abs(jit) for jit in jitter if abs(jit) >= jitTolerance])
+
+def jitterLigandContactMAX(contactData, windowSize=10, mode='same', jitTolerance=0.1):
+    _, jitter = jitterLigandContact(contactData, windowSize, mode)
+    return np.max([abs(jit) for jit in jitter if abs(jit) >= jitTolerance])
+
+def digitalJitter(jitter, jitTolerance):
+    jitDigital = []
+    for jit in jitter:
+        if abs(jit) >= jitTolerance:
+            jitDigital.append(1)
+        else:
+            jitDigital.append(0)
+    return jitDigital
+
+def jitterLigandContactLIFETIME(contactData, windowSize=10, mode='same', jitTolerance=0.1):
+    _, jitter = jitterLigandContact(contactData, windowSize, mode)
+    jitter = digitalJitter(jitter, jitTolerance)
+
+    totalLifeTime = 0    
+
+    jitPacketALL = []
+    jitPacket = []
+    for jit in jitter:
+        if jit == 1:
+            jitPacket.append(1)
+            totalLifeTime += 1
+        elif jit == 0:
+            if jitPacket:
+                jitPacketALL.append(jitPacket)
+                jitPacket = []
+        else:
+            raise ValueError
+    jitPacketALL.append(jitPacket)
+
+    averageLifeTime = np.average([len(jitPack) for jitPack in jitPacketALL])
+    maxLifeTime = np.max([len(jitPack) for jitPack in jitPacketALL])
+    minLifeTime = np.min([len(jitPack) for jitPack in jitPacketALL])
+
+    return totalLifeTime, averageLifeTime, maxLifeTime, minLifeTime
+
+def metastableLIFETIME(contactData):    
+    ligandContact = [i[1] for i in contactData]
+
+    prevLigandContact = 0
+    digitalChange = []
+    for nextLigandContact in ligandContact:
+        if nextLigandContact != prevLigandContact:
+            digitalChange.append(1)
+            prevLigandContact = nextLigandContact
+        else:
+            digitalChange.append(0)
+
+    totalLifeTime = 0
+
+    stablePacketALL = []
+    stablePacket = []
+    for digitalChange_i in digitalChange:
+        if digitalChange_i == 0:
+            stablePacket.append(0)
+            totalLifeTime += 1
+        elif digitalChange_i == 1:
+            if stablePacket:
+                stablePacketALL.append(stablePacket)
+                stablePacket = []
+        else:
+            raise ValueError
+    stablePacketALL.append(stablePacket)
+
+    averageLifeTime = np.average([len(stablePack) for stablePack in stablePacketALL])
+    maxLifeTime = np.max([len(stablePack) for stablePack in stablePacketALL])
+    minLifeTime = np.min([len(stablePack) for stablePack in stablePacketALL])    
+
+    return totalLifeTime, averageLifeTime, maxLifeTime, minLifeTime
+
+def cleanContactData(contactData, budTime):
+    contactDataTRIMMED = []
+    for contactData_i in contactData:
+        if contactData_i[0] <= budTime:
+            contactDataTRIMMED.append(contactData_i)
+    return contactDataTRIMMED
