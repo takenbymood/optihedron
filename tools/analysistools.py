@@ -685,10 +685,10 @@ def jitterLigandContact(contactData, windowSize, mode):
 
     return timeJitter, jitter
 
-def jitterLigandContactSUM(contactData, windowSize=10, mode='same'):
+def jitterLigandContactSUM(contactData, windowSize=10, mode='same', jitTolerance=0):
     _, jitter = jitterLigandContact(contactData, windowSize, mode)
-    return np.sum(jitter)
+    return np.sum([abs(jit) for jit in jitter if jit >= jitTolerance])
 
-def jitterLigandContactMAX(contactData, windowSize=10, mode='same'):
+def jitterLigandContactMAX(contactData, windowSize=10, mode='same', jitTolerance=0):
     _, jitter = jitterLigandContact(contactData, windowSize, mode)
-    return np.max([abs(jit) for jit in jitter])
+    return np.max([abs(jit) for jit in jitter if jit >= jitTolerance])
