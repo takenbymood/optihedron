@@ -663,3 +663,10 @@ def measureLigandContact(xyzaFile, headersize=9, xyzallsize=2973, timestepinterv
         contactData.append((time, ligandContact))
 
     return contactData, len(ligands)  
+
+def smoothLigandContact(timeWindow, ligandContactWindow, windowSize=10, mode='same'):
+    window = np.ones(windowSize)/windowSize
+    ligandContactWindowSmooth = np.convolve(ligandContactWindow, window, mode=mode)
+    timeWindow = timeWindow[windowSize:][:-windowSize]
+    ligandContactWindowSmooth = ligandContactWindowSmooth[windowSize:][:-windowSize]
+    return timeWindow, ligandContactWindowSmooth
