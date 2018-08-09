@@ -664,9 +664,31 @@ def measureLigandContact(xyzaFile, headersize=9, xyzallsize=2973, timestepinterv
 
     return contactData, len(ligands)  
 
-def smoothLigandContact(timeWindow, ligandContactWindow, windowSize=10, mode='same'):
+def smoothLigandContact(timeWindow, ligandContactWindow, windowSize, mode):
     window = np.ones(windowSize)/windowSize
     ligandContactWindowSmooth = np.convolve(ligandContactWindow, window, mode=mode)
     timeWindow = timeWindow[windowSize:][:-windowSize]
     ligandContactWindowSmooth = ligandContactWindowSmooth[windowSize:][:-windowSize]
     return timeWindow, ligandContactWindowSmooth
+
+def jitterLigandContact(contactData, windowSize, mode):
+    time = [i[0] for i in contactData]
+    ligandContact = [i[1] for i in contactData]
+
+    timeJitter = time[windowSize:][:-windowSize]
+    ligandContactInterest = ligandContact[windowSize:][:-windowSize]
+    _, ligandContactSmooth = smoothLigandContact(time, ligandContact, windowSize, mode)
+    
+    jitter = []
+    for ligandContactInterest_i, ligandContactSmooth_i in zip(ligandContactInterest, ligandContactSmooth):
+        jitter.append(ligandContactInterest_i - ligandContactSmooth_i)
+
+    return timeJitter, jitter
+
+def jitterLigandContactSUM(contactData, windowSize=10, mode='same'):
+    _, jitter = jitterLigandContact(contactData, windowSize, mode)
+    return np.sum(jitter)
+
+def jitterLigandContactMAX(contactData, windowSize=10, mode='same'):
+    _, jitter = jitterLigandContact(contactData, windowSize, mode)
+    return np.max([abs(jit) for jit in jitter])
