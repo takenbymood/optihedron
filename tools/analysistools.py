@@ -761,3 +761,10 @@ def metastableLIFETIME(contactData):
     minLifeTime = np.min([len(stablePack) for stablePack in stablePacketALL])    
 
     return totalLifeTime, averageLifeTime, maxLifeTime, minLifeTime
+
+def cleanContactData(contactData, budTime):
+    contactDataTRIMMED = []
+    for contactData_i in contactData:
+        if contactData_i[0] <= budTime:
+            contactDataTRIMMED.append(contactData_i)
+    return contactDataTRIMMED
