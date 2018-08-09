@@ -727,3 +727,37 @@ def jitterLigandContactLIFETIME(contactData, windowSize=10, mode='same', jitTole
     minLifeTime = np.min([len(jitPack) for jitPack in jitPacketALL])
 
     return totalLifeTime, averageLifeTime, maxLifeTime, minLifeTime
+
+def metastableLIFETIME(contactData):    
+    ligandContact = [i[1] for i in contactData]
+
+    prevLigandContact = 0
+    digitalChange = []
+    for nextLigandContact in ligandContact:
+        if nextLigandContact != prevLigandContact:
+            digitalChange.append(1)
+            prevLigandContact = nextLigandContact
+        else:
+            digitalChange.append(0)
+
+    totalLifeTime = 0
+
+    stablePacketALL = []
+    stablePacket = []
+    for digitalChange_i in digitalChange:
+        if digitalChange_i == 0:
+            stablePacket.append(0)
+            totalLifeTime += 1
+        elif digitalChange_i == 1:
+            if stablePacket:
+                stablePacketALL.append(stablePacket)
+                stablePacket = []
+        else:
+            raise ValueError
+    stablePacketALL.append(stablePacket)
+
+    averageLifeTime = np.average([len(stablePack) for stablePack in stablePacketALL])
+    maxLifeTime = np.max([len(stablePack) for stablePack in stablePacketALL])
+    minLifeTime = np.min([len(stablePack) for stablePack in stablePacketALL])    
+
+    return totalLifeTime, averageLifeTime, maxLifeTime, minLifeTime
