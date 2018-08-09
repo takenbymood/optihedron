@@ -89,8 +89,6 @@ parser.add_argument('-mo', '--mutation', default='defaultMut',
                     choices=['defaultMut', 'fixedActivationMut'])
 parser.add_argument('-xo', '--mate', default='defaultGeneWiseTwoPoint',
                     choices=['defaultGeneWiseTwoPoint', 'fixedActivationGeneWiseTwoPoint'])
-parser.add_argument('-br', '--buddingreward',default=400.0, type=float,
-                    help='reward for successful budding in')
 parser.add_argument('-sg','--startinggen',default=0, type=int,
                     help='starting generation')
 
@@ -118,11 +116,13 @@ parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
 parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
-parser.add_argument('-pw','--penaltyweight', default=1.0, type=float,
+parser.add_argument('-br', '--buddingreward',default=500.0, type=float,
+                    help='reward for successful budding in')
+parser.add_argument('-pw','--penaltyweight', default=10.0, type=float,
                     help='weighting of the ligand affinity penalty')
-parser.add_argument('-tw','--timeweight', default=1.0, type=float,
+parser.add_argument('-tw','--timeweight', default=10.0, type=float,
                     help='weighting of the budding time reward')
-parser.add_argument('-lw','--ligandweight', default=1.0, type=float,
+parser.add_argument('-lw','--ligandweight', default=10.0, type=float,
                     help='weighting of the target ligand reward')
 parser.add_argument('-tl','--targetligands', default=-1, type=int,
                     help='ideal number of ligands')
@@ -470,7 +470,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
     # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
-    reward = (float(BUDDINGREWARD)) + TIMEWEIGHT*100*(lstep/budTime) if stepData[-1]['budded'] and budTime != 0 else float(msum)
+    reward = (float(BUDDINGREWARD)) + TIMEWEIGHT*(lstep/budTime) if stepData[-1]['budded'] and budTime != 0 else float(msum)
 
     return reward, stepData[-1]['budded'], budTime,stepData
 
@@ -617,10 +617,10 @@ def evaluateParticle(np,simName):
         nActiveLigands += 1
         npTotalEps += l.eps
 
-    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
+    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES)))) if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
     if TARGETLIGANDS > 0:
-        penalty += TARGETWEIGHT*10.0*float(abs(TARGETLIGANDS-nActiveLigands))
+        penalty += TARGETWEIGHT*float(abs(TARGETLIGANDS-nActiveLigands))
 
     if budded:
         fmem += penalty
