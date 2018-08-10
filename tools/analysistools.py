@@ -563,7 +563,7 @@ def plotScanGen(scanData, scanLabel, scanIndices, interest, indexOffset, aggrega
         plt.show();
 
     
-def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, interestKey, interestKeyLabel, tickerRange, tickerBlockSize, tickerBlockOffset, tickerInterval=0.0, fmt='.2g', vmin = None, vmax = None, annotate=False, linecolor='black', silent=True, visual=True, dump=False, backup=False, dumpdir='plots'):    
+def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggregateMode, plotName, cmap, interestKey, interestKeyLabel, tickerRange, tickerBlockSize, tickerBlockOffset, tickerInterval=0.0, fmt='.2g', vmin = None, vmax = None, annotate=False, linecolor='black', silent=True, visual=True, dump=False, backup=False, dumpdir='plots', fitTranslate=None):    
     if not os.path.exists(dumpdir):
         os.mkdir(dumpdir)
 
@@ -597,7 +597,10 @@ def plotScanCustom(scanData, scanLabel, scanIndices, interest, indexOffset, aggr
     for tickerBlock in range(tickerRange):
         yticklabels.append(tickerBlock*tickerBlockSize+tickerBlockOffset)
     ax.set_yticks([i for i in range(0,(tickerRange+1))])
-    ax.set_yticklabels(yticklabels)
+    if not fitTranslate:
+        ax.set_yticklabels(yticklabels)
+    else:
+        ax.set_yticklabels(fitTranslate(yticklabels))
     ax.set_facecolor('#F5F5F5')
     plt.xlabel('{}'.format(scanLabel))
     plt.ylabel('{}'.format(interestKeyLabel))
