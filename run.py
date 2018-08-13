@@ -450,7 +450,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
                 nLargeClusters += 1
         percentCoverage = 0
         if len(outVectors[2])>0:
-            percentCoverage = float(ligandsInContact)/float(len(outVectors[2]))
+            percentCoverage = float(ligandsInContact)/float(nActiveLigands)
         budded = nLargeClusters > 1                        
         stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage})
         dbSteps.append({'timestep':s,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage, 'contact': ligandsInContact})
