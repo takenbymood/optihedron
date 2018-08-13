@@ -390,6 +390,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
         return minFit, noBud 
 
     stepData = []
+    dbSteps = []
 
     for s in steps:   
         outVectors = {}
@@ -452,6 +453,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
             percentCoverage = float(ligandsInContact)/float(len(outVectors[2]))
         budded = nLargeClusters > 1                        
         stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage})
+        dbSteps.append({'timestep':s,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage, 'contact': ligandsInContact})
     msum = stepData[-1]['mNum']
     lstep = stepData[-1]['timestep']
 
@@ -472,7 +474,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
     reward = (float(BUDDINGREWARD)) + TIMEWEIGHT*(lstep/budTime) if stepData[-1]['budded'] and budTime != 0 else float(msum)
 
-    return reward, stepData[-1]['budded'], budTime,stepData
+    return reward, stepData[-1]['budded'], budTime, dbSteps
 
 def runCmd(cmd,timeout):
     try:
