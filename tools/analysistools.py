@@ -44,7 +44,8 @@ def load(DBs, dbConnect, clean = None, drop = None, sort = None):
 				datum = task(datum)
 
 		data.append(datum)
-		dbConn.close()
+        print(len(data))
+        dbConn.close()
 		
 	return data
 
@@ -521,6 +522,10 @@ def geneticDiversity(inds):
         raise ValueError
     return genomes
 
+def genomeCount(inds):
+    genomes = geneticDiversity(inds)
+    return float(len(genomes.keys()))
+
 def genomeConvergence(inds):
     genomes = geneticDiversity(inds)
     return 1.0 - float(len(genomes.keys()))/float(len(inds))  
@@ -771,3 +776,82 @@ def cleanContactData(contactData, budTime):
         if contactData_i[0] <= budTime:
             contactDataTRIMMED.append(contactData_i)
     return contactDataTRIMMED
+
+def buildLigandNetwork(ind, silent=True):
+    if not silent:
+        startTime = time.time()
+    G=networkx.Graph()
+    
+    ligands = ind['phenome'].particle.ligands
+    
+    nIndex = 1
+    for i in ligands:        
+        G.add_node(nIndex)
+        nIndex += 1
+    
+    distMap = []
+    
+    iIndex = 1
+    for i in ligands:
+        jIndex = 1
+        hasNeighbors = False
+        closestNeighbor = None
+        closestNeighborDist = 99999
+        for j in ligands:
+            if not sameLigands(i, j):
+                dist = greatArcDist((i.polAng,i.aziAng),(j.polAng,j.aziAng))
+                distMap.append((iIndex,jIndex,dist))
+                if dist < closestNeighborDist:
+                    closestNeighborDist = dist
+                    closestNeighbor = jIndex
+                edgeWeight = 1.0/dist                
+                if dist <= 2.0:
+                    G.add_edge(iIndex, jIndex)
+                    hasNeighbors = True
+            jIndex += 1
+
+        iIndex += 1
+    
+    if not silent:
+        print('building ligand network took {}s'.format(time.time() - startTime))
+    return G
+
+def graphDiameters(ind, minDiameter):
+    if 'diameters' in ind:
+        return ind['diameters']
+    else:
+        G = buildLigandNetwork(ind)
+        diameters = []
+        for subgraph in networkx.connected_component_subgraphs(G):
+            diameters.append((networkx.diameter(subgraph)+1))
+        diameters = [d for d in diameters if d >= minDiameter]
+        ind['diameters'] = diameters
+        return diameters    
+
+def graphDiametersCount(ind, minDiameter=0):
+    diameters = graphDiameters(ind, minDiameter)
+    if diameters:
+        return float(len(diameters))
+    else:
+        return 0.0
+
+def graphDiametersMAX(ind, minDiameter=0):
+    diameters = graphDiameters(ind, minDiameter)
+    if diameters:
+        return float(np.max(diameters))
+    else:
+        return 0.0
+
+def graphDiametersMIN(ind, minDiameter=0):
+    diameters = graphDiameters(ind, minDiameter)
+    if diameters:
+        return float(np.min(diameters))
+    else:
+        return 0.0
+
+def graphDiametersAVG(ind, minDiameter=0):
+    diameters = graphDiameters(ind, minDiameter)
+    if diameters:
+        return float(np.average(diameters))
+    else:
+        return 0.0

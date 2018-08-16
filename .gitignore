@@ -131,3 +131,9 @@ ENV/
 
 # PyCharm project settings
 .idea
+
+# Ignore custom temp. save data
+*.p
+*.zip
+MODELSFIXED/
+MODELSRANDO/
