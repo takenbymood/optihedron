@@ -125,7 +125,7 @@ def pruneNetworkList(networks,pruning):
     return prunedNetworks
 
 def buildPrunedNetworkList(individuals,pruning):
-    return pruneNetworkList(buildNetworkList(individuals))
+    return pruneNetworkList(buildNetworkList(individuals),pruning)
 
 def gnmw(G):
     return(len(G.nodes()),len(G.edges()),np.sum([w['weight'] for (u,v,w) in G.edges(data=True)]))
@@ -154,18 +154,6 @@ def smallWorldNess(G):
     SW = (clusteringG/clusteringRG)/(pLengthG/pLengthRG)
     return SW
 
-def plotTuples(tS,title="Graph",xlabel="x",ylabel="y",alpha=1.0,polyfit=True,polyNum=1,ms=15):
-    if len(tS)>0:
-        x = [float(k[0]) for k in tS]
-        y = [float(k[1]) for k in tS]
-        plt.plot(x,y,'.',alpha=alpha,ms=ms)
-        axes = plt.gca()
-        if polyfit:
-            plt.plot(np.unique(x), np.poly1d(np.polyfit(x, y, polyNum))(np.unique(x)))
-        plt.xlabel(xlabel,fontsize=16)
-        plt.ylabel(ylabel,fontsize=16)
-        plt.title(title,fontsize=18)
-        plt.show()
 
 def dropChildren(data, parentKey, childKeys, silent=True):
 	if not silent:
