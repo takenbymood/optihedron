@@ -6,6 +6,166 @@ import copy
 import time
 import pickle
 import networkx
+import holoviews as hv
+
+
+
+def buildNanoParticleFromNetwork(G,weight,radius=4,sig=1):
+    particle = nanoparticle.NanoParticle()
+    for n,w in G.nodes(data=True):
+        particle.ligands.append(nanoparticle.Ligand(weight,sig,radius,w['pol'],w['azi']))
+    return particle
+
+
+def buildLigandNetwork(ligands, silent=True):
+    if not silent:
+        startTime = time.time()
+    G=networkx.Graph()
+    
+    nIndex = 1
+    for i in ligands:
+        if i.eps > 0.0:
+            G.add_node(nIndex,weight=i.eps,polAng=i.polAng,aziAng=i.aziAng)
+        nIndex += 1
+    
+    iIndex = 1
+    for i in ligands:
+        jIndex = 1
+        for j in ligands:
+            if i < j:
+                cartDist = 1.0/greatArcDist((i.polAng,i.aziAng),(j.polAng,j.aziAng))
+                #affDist = abs(i.eps - j.eps)
+                if i.eps > 0.0 and j.eps > 0.0:
+                    G.add_edge(iIndex, jIndex, weight=cartDist)
+            jIndex += 1
+        iIndex += 1
+    return G
+
+def pruneNetwork(G,pruning):
+    prunes = []
+    GP = copy.deepcopy(G)
+    maxW = 0
+    for e in GP.edges:
+        w = GP.get_edge_data(*e)['weight']
+        if(w<=pruning):
+            prunes.append(e)
+
+    GP.remove_edges_from(prunes)
+    return GP
+
+
+def buildPrunedLigandNetwork(ind,pruning):
+    G = buildLigandNetwork(ind.phenomePickle.particle.ligands)
+    return pruneNetwork(G,pruning)
+
+def buildPrunedNetworkView(ind,pruning):
+    G = buildPrunedLigandNetwork(ind,pruning)
+    padding = dict(x=(-1.2, 1.2), y=(-1.2, 1.2))
+    return hv.Graph.from_networkx(G, networkx.layout.spring_layout).opts(plot=dict(color_index='weight')).redim.range(**padding)
+
+def buildNetworkView(G):
+    padding = dict(x=(-1.2, 1.2), y=(-1.2, 1.2))
+    return hv.Graph.from_networkx(G, networkx.layout.spring_layout).opts(plot=dict(color_index='weight')).redim.range(**padding)
+
+def hammingDistance(s1,s2):
+    assert len(s1) == len(s2)
+    return sum(c1 != c2 for c1, c2 in zip(s1, s2))
+
+
+def formFactor(ligands):
+    
+    spottyLigands = 0    
+    lineyLigands = 0    
+    patchyLigands = 0
+    
+    minDist = 2.0
+    smallestDist = 100
+
+    #counting liney ligands
+    nZero = 0
+    for j in ligands:
+        if j.eps == 0.0:
+            nZero+=1
+            continue
+        NNlist = []
+        for k in ligands:        
+            if j != k and k.eps > 0.0:
+                dist = greatArcDist((j.polAng,j.aziAng),(k.polAng,k.aziAng))
+                if dist <= minDist:
+                    NNlist.append(k)
+                if dist < smallestDist:
+                    smallestDist = dist
+        NNcount = len(NNlist)
+        if NNcount == 2:#if it has 2 NNs 
+            dist = greatArcDist((NNlist[0].polAng,NNlist[0].aziAng),(NNlist[1].polAng,NNlist[1].aziAng))
+            if not dist <= minDist:#and the NNs are not each other's NN
+                lineyLigands += 1                              
+        elif NNcount == 1:
+            lineyLigands += 1 
+        elif NNcount == 0:
+            spottyLigands += 1
+    
+    #counting patchy ligands
+    totalLigands = float(len(ligands)) - nZero
+    patchyLigands = totalLigands - spottyLigands - lineyLigands
+    
+    return [float(patchyLigands)/totalLigands, float(lineyLigands)/totalLigands, float(spottyLigands)/totalLigands]
+
+def buildNetworkList(individuals):
+    networks = []
+    for i in individuals:
+        n = buildLigandNetwork(i.phenomePickle.particle.ligands)
+        networks.append((n,i))
+    return networks
+
+def pruneNetworkList(networks,pruning):
+    prunedNetworks = []
+    for n in networks:
+        prunedNetworks.append((pruneNetwork(n[0],pruning),n[1]))
+    return prunedNetworks
+
+def buildPrunedNetworkList(individuals,pruning):
+    return pruneNetworkList(buildNetworkList(individuals))
+
+def gnmw(G):
+    return(len(G.nodes()),len(G.edges()),np.sum([w['weight'] for (u,v,w) in G.edges(data=True)]))
+
+def gnmRandomWeightedGraph(nodes,edges,weight):
+    G = networkx.gnm_random_graph(nodes,edges)
+    totalWeight = 0
+    for (u,v,w) in G.edges(data=True):
+        w['weight'] = random.uniform(0,10)
+        totalWeight += w['weight']
+    
+    normFactor = weight/totalWeight
+    
+    for (u,v,w) in G.edges(data=True):
+        w['weight'] = w['weight']*normFactor
+        
+    return G
+
+def smallWorldNess(G):
+    gnmwG = gnmw(G)
+    RG = gnmRandomWeightedGraph(gnmwG[0],gnmwG[1],gnmwG[2])
+    pLengthG = networkx.average_shortest_path_length(G,weight='weight')
+    pLengthRG = networkx.average_shortest_path_length(RG,weight='weight')
+    clusteringG = networkx.average_clustering(G,weight='weight')
+    clusteringRG = networkx.average_clustering(RG,weight='weight')
+    SW = (clusteringG/clusteringRG)/(pLengthG/pLengthRG)
+    return SW
+
+def plotTuples(tS,title="Graph",xlabel="x",ylabel="y",alpha=1.0,polyfit=True,polyNum=1,ms=15):
+    if len(tS)>0:
+        x = [float(k[0]) for k in tS]
+        y = [float(k[1]) for k in tS]
+        plt.plot(x,y,'.',alpha=alpha,ms=ms)
+        axes = plt.gca()
+        if polyfit:
+            plt.plot(np.unique(x), np.poly1d(np.polyfit(x, y, polyNum))(np.unique(x)))
+        plt.xlabel(xlabel,fontsize=16)
+        plt.ylabel(ylabel,fontsize=16)
+        plt.title(title,fontsize=18)
+        plt.show()
 
 def dropChildren(data, parentKey, childKeys, silent=True):
 	if not silent:
