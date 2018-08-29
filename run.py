@@ -92,6 +92,7 @@ parser.add_argument('-xo', '--mate', default='defaultGeneWiseTwoPoint',
 parser.add_argument('-sg','--startinggen',default=0, type=int,
                     help='starting generation')
 
+
 #Model Options
 
 parser.add_argument('-s','--seed', default=int(time.time()), type=int,
@@ -126,6 +127,8 @@ parser.add_argument('-lw','--ligandweight', default=10.0, type=float,
                     help='weighting of the target ligand reward')
 parser.add_argument('-tl','--targetligands', default=-1, type=int,
                     help='ideal number of ligands')
+parser.add_argument('-fl','--fixedligands',default=-1, type=int,
+                    help='fixed number of ligands to use for individual')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
 
@@ -301,6 +304,8 @@ BUDDINGREWARD = runArgs.buddingreward
 TIMEWEIGHT = runArgs.timeweight
 STARTINGGEN = runArgs.startinggen
 
+FIXEDLIGANDS = runArgs.fixedligands
+
 PARTICLES = []
 
 #god what a mess
@@ -335,6 +340,7 @@ if runArgs != args:
     setattr(args,"timeweight",TIMEWEIGHT)
     setattr(args,"ligandweight",TARGETWEIGHT)
     setattr(args,"targetligands",TARGETLIGANDS)
+    setattr(args,"fixedligands",FIXEDLIGANDS)
 
 
 
