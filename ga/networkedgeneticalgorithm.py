@@ -17,6 +17,8 @@ from pprint import pprint
 
 import json
 
+import operators
+
 
 from ga import algorithms
 
@@ -91,7 +93,8 @@ class NetworkedGeneticAlgorithm:
         verbose = False,
         dbconn = None,
         jsonFile = "init.json",
-        loadFromFile = False
+        loadFromFile = False,
+        fixedLigands = -1
         ):
 
         
@@ -132,6 +135,12 @@ class NetworkedGeneticAlgorithm:
         self.novelty=[]
         self.metrics = []
         self.islands = self.toolbox.population_guess() if self.loadFromFile else [self.toolbox.population(n=self.islePop) for i in range(len(self.net))]
+
+        if fixedLigands > -1:
+            print "overriding population based on fixed ligand count of " + str(fixedLigands)
+            for isle in self.islands:
+                for ind in range(len(isle)):
+                    isle[ind] = operators.fixActivation(isle[ind],fixedLigands)
 
 
     def initIndividual(self,icls,content):

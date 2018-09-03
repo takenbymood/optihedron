@@ -5,8 +5,8 @@ from deap import tools
 def defaultMut(individual, MINPDB):    
     return tools.mutFlipBit(individual, MINPDB)
 
-def fixedActivationMut(individual, MINPDB):    
-    return tools.mutShuffleIndexes(individual, MINPDB)
+def fixedActivationMut(individual, MINPDB):   
+    return tools.mutShuffleIndexes(individual, MINPDB) 
 
 def defaultGeneWiseTwoPoint(ind1, ind2, GENES, GENESIZE):              
     cxpoint1 = random.randint(1, GENES)*GENESIZE

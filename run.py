@@ -92,6 +92,7 @@ parser.add_argument('-xo', '--mate', default='defaultGeneWiseTwoPoint',
 parser.add_argument('-sg','--startinggen',default=0, type=int,
                     help='starting generation')
 
+
 #Model Options
 
 parser.add_argument('-s','--seed', default=int(time.time()), type=int,
@@ -126,6 +127,8 @@ parser.add_argument('-lw','--ligandweight', default=10.0, type=float,
                     help='weighting of the target ligand reward')
 parser.add_argument('-tl','--targetligands', default=-1, type=int,
                     help='ideal number of ligands')
+parser.add_argument('-fl','--fixedligands',default=-1, type=int,
+                    help='fixed number of ligands to use for individual')
 parser.add_argument('-pp','--partialpacking', action='store_true',
                     help='option to run the algorithm with partially packed sphere. In this mode, the azimuthal and polar angles will be controlled by the genome')
 
@@ -301,6 +304,8 @@ BUDDINGREWARD = runArgs.buddingreward
 TIMEWEIGHT = runArgs.timeweight
 STARTINGGEN = runArgs.startinggen
 
+FIXEDLIGANDS = runArgs.fixedligands
+
 PARTICLES = []
 
 #god what a mess
@@ -335,6 +340,7 @@ if runArgs != args:
     setattr(args,"timeweight",TIMEWEIGHT)
     setattr(args,"ligandweight",TARGETWEIGHT)
     setattr(args,"targetligands",TARGETLIGANDS)
+    setattr(args,"fixedligands",FIXEDLIGANDS)
 
 
 
@@ -847,17 +853,18 @@ def main():
         raw_input('malformed algorithm option, continuing with eaSimple.. (Enter)')
         algorithm = algorithmEaSimple
 
-    if runArgs.mutation == 'defaultMut':
+    if runArgs.mutation == 'defaultMut' and runArgs.fixedligands == -1:
         mut = operatorDefaultMut
-    elif runArgs.mutation == 'fixedActivationMut':
+    elif runArgs.mutation == 'fixedActivationMut' or runArgs.fixedligands > -1:
         mut = operatorFixedActivationMut
     else:
         raw_input('malformed mutation option, continuing with defaultMut.. (Enter)')
         mut = operatorDefaultMut
 
-    if runArgs.mate == 'defaultGeneWiseTwoPoint':
+    if runArgs.mate == 'defaultGeneWiseTwoPoint' and runArgs.fixedligands == -1:
         mate = operatorDefaultGeneWiseTwoPoint
-    elif runArgs.mate == 'fixedActivationGeneWiseTwoPoint':
+    elif runArgs.mate == 'fixedActivationGeneWiseTwoPoint' or runArgs.fixedligands > -1:
+        print "HELLOOOO"
         mate = operatorFixedActivationGeneWiseTwoPoint
     else:
         raw_input('malformed mate option, continuing with defaultGeneWiseTwoPoint.. (Enter)')
@@ -890,7 +897,8 @@ def main():
        mate = mate,
        dbconn = dbconn,
        jsonFile = initPopFile,
-       loadFromFile = LOADFROMFILE
+       loadFromFile = LOADFROMFILE,
+       fixedLigands = runArgs.fixedligands
        )
 
     
