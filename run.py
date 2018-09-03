@@ -853,17 +853,18 @@ def main():
         raw_input('malformed algorithm option, continuing with eaSimple.. (Enter)')
         algorithm = algorithmEaSimple
 
-    if runArgs.mutation == 'defaultMut':
+    if runArgs.mutation == 'defaultMut' and runArgs.fixedligands == -1:
         mut = operatorDefaultMut
-    elif runArgs.mutation == 'fixedActivationMut':
+    elif runArgs.mutation == 'fixedActivationMut' or runArgs.fixedligands > -1:
         mut = operatorFixedActivationMut
     else:
         raw_input('malformed mutation option, continuing with defaultMut.. (Enter)')
         mut = operatorDefaultMut
 
-    if runArgs.mate == 'defaultGeneWiseTwoPoint':
+    if runArgs.mate == 'defaultGeneWiseTwoPoint' and runArgs.fixedligands == -1:
         mate = operatorDefaultGeneWiseTwoPoint
-    elif runArgs.mate == 'fixedActivationGeneWiseTwoPoint':
+    elif runArgs.mate == 'fixedActivationGeneWiseTwoPoint' or runArgs.fixedligands > -1:
+        print "HELLOOOO"
         mate = operatorFixedActivationGeneWiseTwoPoint
     else:
         raw_input('malformed mate option, continuing with defaultGeneWiseTwoPoint.. (Enter)')
@@ -896,7 +897,8 @@ def main():
        mate = mate,
        dbconn = dbconn,
        jsonFile = initPopFile,
-       loadFromFile = LOADFROMFILE
+       loadFromFile = LOADFROMFILE,
+       fixedLigands = runArgs.fixedligands
        )
 
     
