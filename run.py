@@ -9,7 +9,6 @@ import time
 import itertools
 import operator
 import numpy as np
-import joblib
 import sys
 import subprocess
 import parlammps
@@ -864,7 +863,6 @@ def main():
     if runArgs.mate == 'defaultGeneWiseTwoPoint' and runArgs.fixedligands == -1:
         mate = operatorDefaultGeneWiseTwoPoint
     elif runArgs.mate == 'fixedActivationGeneWiseTwoPoint' or runArgs.fixedligands > -1:
-        print "HELLOOOO"
         mate = operatorFixedActivationGeneWiseTwoPoint
     else:
         raw_input('malformed mate option, continuing with defaultGeneWiseTwoPoint.. (Enter)')
