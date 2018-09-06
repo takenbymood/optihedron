@@ -45,7 +45,7 @@ if [ ! -f $LAMMPSDIR/src/liblammps.so ]; then
 	cd $LAMMPSDIR/src
 	make clean-all
 	make no-all
-	make yes-dipole yes-rigid yes-molecule yes-python yes-opt #yes-gpu
+	make yes-dipole yes-rigid yes-molecule yes-python #yes-opt #yes-gpu
 	#cd ${LAMMPSDIR}/lib/gpu && make -f Makefile.mpi CUDA_LIB="-L${CUDA_HOME}/lib"
         make -j4 serial
         #make -j4 serial mode=shlib
@@ -58,9 +58,9 @@ if [ ! -d venv ]; then
 fi
 source activate.sh
 if [ "`which python2.7`" != "${WDIR}/venv/bin/python2.7" ]; then
-echo "ERROR: Virtualenv is not there or couldn't activate. Aborting so LAMMPS doesn't install on system python. Re-run this script to finish installation after sorting out whatever is wrong with virtualenv."
-exit
-fi
+        echo "ERROR: Virtualenv is not there or couldn't activate. Aborting so LAMMPS doesn't install on system python. Re-run this script to finish installation after sorting out whatever is wrong with virtualenv."
+#exit
+else
 source pipinstall.sh
 
 cd $LAMMPSDIR/python
@@ -68,3 +68,5 @@ python install.py
 
 cd "${STARTDIR}"
 echo "done!"
+fi
+
