@@ -75,10 +75,16 @@ def execute(cmd, timeout=None):
         # STDERR is redirected to STDOUT
         phandle = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, preexec_fn=os.setsid)
-
+        
+        # Read the stout/stderr line by line until subprocess is done
+        retcode = None
+        while (retcode == None):
+            for stdout_line in iter(phandle.stdout.readline, b''):
+                yield stdout_line
+            retcode = phandle.poll()
+        
         # Read the stdout/sterr buffers and retcode
-        output, error = phandle.communicate()
-        retcode = phandle.poll()
+        #output, error = phandle.communicate()
     except Signal:
         # Kill the running process
         phandle.kill()
@@ -94,11 +100,16 @@ def execute(cmd, timeout=None):
     #     print("MPI exited with code 1, did you forget to finalize?")
     #     raise Retcode(cmd, retcode, output=output)
 
-    return output, error
+    #return output, error
+    #yield retcode
 
-def runSim(script,np,timeout):
+def runSim(script,np,timeout,silent=True):
     try:
-        o, e = execute(['mpirun','-np',str(np),'./venv/bin/python','./plammps.py','-s',str(script)],timeout)
+        for stdout_line in execute(['mpirun','-np',str(np),'./venv/bin/python','./plammps.py','-s',str(script)],timeout):
+            if (silent):
+                pass
+            else:
+                print stdout_line,
         return True
     except TimeoutError:
         print('Process timed out')
@@ -107,12 +118,24 @@ def runSim(script,np,timeout):
         traceback.print_exc()
     return False
 
-def createPbs(script,wd,np,name,rundir):
+def createPbs(script,wd,np,name,rundir,mpirun):
     try:
         pbs = os.path.join(wd,"qsubtask.pbs")
         with open(pbs) as templateFile:
             content = templateFile.read()
+            if os.path.isfile("modules"): 
+                with open("modules") as moduleList:
+                    modLine = ""
+                    modules=moduleList.read().splitlines()
+                    if len(modules) > 0:
+                        modLine+="module load "
+                    for m in modules:
+                        modLine += m + ' '
+                    content = content.replace('_MODULES_',modLine)
+            else:
+                content = content.replace('_MODULES_','')
             content = content.replace('_DIR_',str(wd))
+            content = content.replace('_PRE_','mpirun -np _CORES_') if mpirun else content.replace('_PRE_ ','')
             content = content.replace('_CORES_',str(np))
             content = content.replace('_SCRIPT_',str(script))
             pbsPath = os.path.join(rundir,name+".pbs")
@@ -135,7 +158,7 @@ def runSims(scripts,np,timeout):
     processes = []
     for s in scripts:
         print(s)
-        p = Process(target=runSim, args=(s,np,timeout,))
+        p = Process(target=runSim, args=(s,np,timeout))
         p.start()
         processes.append(p)
 

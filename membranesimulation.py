@@ -4,6 +4,7 @@ import math
 import numpy as np
 from tools import templatetools as tt
 from tools import vectools
+from tools import misctools
 import random
 
 class MembraneSimulation():
@@ -19,7 +20,7 @@ class MembraneSimulation():
 		scripttemplate, 
 		corepos_x=0, 
 		corepos_y=0, 
-		corepos_z=7, 
+		corepos_z=6.5, 
 		dumpres="100",
 		rAxis = [0,0,1],
 		rAmount = 0.0
@@ -61,14 +62,9 @@ class MembraneSimulation():
 
 		for i, ligand in enumerate(self.protein.ligands, 1):
 			#physics convention, theta = polar, phi = azimuthal
-			ligand_v = [
-			ligand.rad*math.sin(ligand.polAng)*math.cos(ligand.aziAng),
-			ligand.rad*math.sin(ligand.polAng)*math.sin(ligand.aziAng),
-			ligand.rad*math.cos(ligand.polAng)
-			]			
+			ligand_v = vectools.polarToCartesianVector(ligand.rad, ligand.polAng, ligand.aziAng)
 
 			r_ligand_v = np.dot(self.rmat,ligand_v)
-
 
 			ligand_x = self.corepos_x+r_ligand_v[0]
 			ligand_y = self.corepos_y+r_ligand_v[1]
@@ -79,21 +75,78 @@ class MembraneSimulation():
 			npVelocities += '{0} 0 0 0 0 0 0\n'.format(self.nonLigandAtomCount+i)
 			ligandMembraneInteractions += 'pair_coeff		1	{}	lj/cut		{}	{}	{}\n'.format(2+i,ligand.eps,ligand.sig,ligand.sig*ligand.cutoff)
 
-		tt.fillTemplate(simData, scratch, '_ATOM COUNT PLACEHOLDER_', '{} atoms\n'.format(self.nonLigandAtomCount+len(self.protein.ligands)))
-		tt.fillTemplate(simData, scratch, '_ATOM TYPE COUNT PLACEHOLDER_', '{} atom types\n'.format(2+len(self.protein.ligands)))
-		tt.fillTemplate(simData, scratch, '_LIGAND MASSES PLACEHOLDER_', ligandMasses)
-		tt.fillTemplate(simData, scratch, '_NANOPARTICLE POSITIONS PLACEHOLDER_', npPositions)
-		tt.fillTemplate(simData, scratch, '_NANOPARTICLE VELOCITIES PLACEHOLDER_', npVelocities)		
-		tt.fillTemplate(simScript, scratch, '_DATA FILE PLACEHOLDER_', 'read_data			"{}"\n'.format(simData))
-		tt.fillTemplate(simScript, scratch, '_LIGAND GROUP PLACEHOLDER_', 'group				ligand 	type {}:{}\n'.format(3,2+len(self.protein.ligands)))
-		tt.fillTemplate(simScript, scratch, '_NANOPARTICLE GROUP PLACEHOLDER_', 'group				np      type 2:{}\n'.format(2+len(self.protein.ligands)))
-		tt.fillTemplate(simScript, scratch, '_LIGAND MEMBRANE INTERACTIONS PLACEHOLDER_', ligandMembraneInteractions)
-		tt.fillTemplate(simScript, scratch, '_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', 'dump			coords all custom {} {} id type x y z\ndump_modify	coords sort id'.format(
-																								self.dumpres, os.path.join(self.outdir, self.outName)))				
-		tt.fillTemplate(simScript, scratch, '_TIMESTEP PLACEHOLDER_', 'timestep       {}'.format(self.timestep))		
-		tt.fillTemplate(simScript, scratch, '_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))		
+		dataTemp = tt.loadTemplate(self.datatemplate)
+		scriptTemp = tt.loadTemplate(self.scripttemplate)
+		dataTemp = dataTemp.replace('_ATOM COUNT PLACEHOLDER_', '{} atoms\n'.format(self.nonLigandAtomCount+len(self.protein.ligands)))
+		dataTemp = dataTemp.replace('_ATOM TYPE COUNT PLACEHOLDER_', '{} atom types\n'.format(2+len(self.protein.ligands)))
+		dataTemp = dataTemp.replace('_LIGAND MASSES PLACEHOLDER_', ligandMasses)
+		dataTemp = dataTemp.replace('_NANOPARTICLE POSITIONS PLACEHOLDER_', npPositions)
+		dataTemp = dataTemp.replace('_NANOPARTICLE VELOCITIES PLACEHOLDER_', npVelocities)
+
+		scriptTemp = scriptTemp.replace('_DATA FILE PLACEHOLDER_', 'read_data			"{}"\n'.format(simData))
+		scriptTemp = scriptTemp.replace('_LIGAND GROUP PLACEHOLDER_', 'group				ligand 	type {}:{}\n'.format(3,2+len(self.protein.ligands)))
+		scriptTemp = scriptTemp.replace('_NANOPARTICLE GROUP PLACEHOLDER_', 'group				np      type 2:{}\n'.format(2+len(self.protein.ligands)))
+		scriptTemp = scriptTemp.replace('_LIGAND MEMBRANE INTERACTIONS PLACEHOLDER_', ligandMembraneInteractions)
+		scriptTemp = scriptTemp.replace('_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', 'dump			coords all custom {} {} id type x y z c_cls\ndump_modify	coords sort id'.format(self.dumpres, os.path.join(self.outdir, self.outName)))	
+		scriptTemp = scriptTemp.replace('_TIMESTEP PLACEHOLDER_', 'timestep       {}'.format(self.timestep))	
+		scriptTemp = scriptTemp.replace('_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))
+
+		with open(simData, 'w') as dataFile:
+			dataFile.write(dataTemp)
+
+		with open(simScript, 'w') as scriptFile:
+			scriptFile.write(scriptTemp)
+			
+		print "saved files: "+str(simData)+", "+str(simScript)
+
+	def postProcessOutput(self,outPath):
+		#this function adds the ligand strengths as a column in the output file
+		headerLength = 8
+		lowestLigandNumber = 3
+		if not os.path.exists(outPath):
+			return
+		with open(outPath) as f:
+			lines = f.readlines()
+		lines = [x.strip() for x in lines]
+		skipLines = 0
+		for i in range(len(lines)):
+			if str('ITEM: TIMESTEP') in lines[i]:
+				skipLines=headerLength
+			if skipLines>0:
+				skipLines-=1
+				continue
+			if str('ITEM: ATOMS') in lines[i]:
+				lines[i] += ' affinity'
+			else:
+				cols = lines[i].split(' ')
+				if len(cols) < 2:
+					continue
+				atomType = misctools.toInt(cols[1])
+				if atomType<lowestLigandNumber:
+					#the atom is the vehicle or a part of the membrane
+					lines[i] += ' 0.0'
+					#god, this is a mess...
+				else:
+					ligandType = atomType - lowestLigandNumber
+					lines[i] += ' ' + str(self.protein.ligands[ligandType].eps)
+
+		#add the new lines back in
+		lines = [x+'\n' for x in lines]
+
+		#write file as an xyza file
+		with open(outPath+'a','w') as f:
+			for l in lines:
+				f.write(l)
+
+
+
 
 	def deleteFiles(self):
-		os.remove(os.path.join(self.filedir, self.scriptName))
-		os.remove(os.path.join(self.filedir, self.dataName))
-		#os.remove(os.path.join(self.outdir, self.outName))
+		sPath = os.path.join(self.filedir, self.scriptName)
+		dPath = os.path.join(self.filedir, self.dataName)
+		if os.path.exists(sPath):
+			os.remove(os.path.join(self.filedir, self.scriptName))
+			print "removed file: " + str(sPath)
+		if os.path.exists(dPath):
+			os.remove(os.path.join(self.filedir, self.dataName))
+			print "removed file: " + str(dPath)

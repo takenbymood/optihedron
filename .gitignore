@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.pickle
+
 lammps/*
 
 *.lammps
@@ -15,6 +17,7 @@ DS_Store*
 *.data
 *.script
 *out.xyz
+*.xyz*
 
 # C extensions
 *.so
@@ -122,3 +125,11 @@ ENV/
 
 # Database file
 *.db
+
+# Eclipse stuff
+.project
+.pydevproject
+.settings
+
+# PyCharm project settings
+.idea
