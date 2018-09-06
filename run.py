@@ -477,7 +477,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
     # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
-    reward = (float(BUDDINGREWARD)) + TIMEWEIGHT*(lstep/budTime) if stepData[-1]['budded'] and budTime != 0 else float(msum)
+    reward = float(msum) + (float(BUDDINGREWARD)) + float(float(TIMEWEIGHT)*(float(lstep)/float(budTime))) if stepData[-1]['budded'] and budTime != 0 else float(msum)
 
     return reward, stepData[-1]['budded'], budTime, dbSteps
 
