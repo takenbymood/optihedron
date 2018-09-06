@@ -116,7 +116,7 @@ parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
 parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
-parser.add_argument('-br', '--buddingreward',default=500.0, type=float,
+parser.add_argument('-br', '--buddingreward',default=50.0, type=float,
                     help='reward for successful budding in')
 parser.add_argument('-pw','--penaltyweight', default=10.0, type=float,
                     help='weighting of the ligand affinity penalty')
