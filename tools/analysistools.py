@@ -17,7 +17,7 @@ def buildNanoParticleFromNetwork(G,weight,radius=4,sig=1):
     return particle
 
 
-def buildLigandNetwork(ligands, silent=True):
+def buildLigandNetwork(ligands, silent=True, ignoreZeros=False):
     if not silent:
         startTime = time.time()
     G=networkx.Graph()
@@ -26,6 +26,8 @@ def buildLigandNetwork(ligands, silent=True):
     for i in ligands:
         if i.eps > 0.0:
             G.add_node(nIndex,weight=i.eps,polAng=i.polAng,aziAng=i.aziAng)
+        elif not ignoreZeros:
+            G.add_node(nIndex,weight=i.eps,polAng=i.polAng,aziAng=i.aziAng)
         nIndex += 1
     
     iIndex = 1
@@ -33,9 +35,9 @@ def buildLigandNetwork(ligands, silent=True):
         jIndex = 1
         for j in ligands:
             if i < j:
-                cartDist = 1.0/greatArcDist((i.polAng,i.aziAng),(j.polAng,j.aziAng))
                 #affDist = abs(i.eps - j.eps)
                 if i.eps > 0.0 and j.eps > 0.0:
+                    cartDist = 1.0/greatArcDist((i.polAng,i.aziAng),(j.polAng,j.aziAng))
                     G.add_edge(iIndex, jIndex, weight=cartDist)
             jIndex += 1
         iIndex += 1
@@ -43,14 +45,20 @@ def buildLigandNetwork(ligands, silent=True):
 
 def pruneNetwork(G,pruning):
     prunes = []
+    pruneNodes = []
     GP = copy.deepcopy(G)
     maxW = 0
+    for n,w in G.nodes(data=True):
+        if w['weight'] <= 0.0:
+            pruneNodes.append(n)
+
     for e in GP.edges:
         w = GP.get_edge_data(*e)['weight']
         if(w<=pruning):
             prunes.append(e)
 
     GP.remove_edges_from(prunes)
+    GP.remove_nodes_from(pruneNodes)
     return GP
 
 
