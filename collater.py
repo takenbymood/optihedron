@@ -99,24 +99,29 @@ def indToParticle(ind):
     return part
 
 
-cDB = '/Users/joelforster/Projects/optidb/sep.db'
-engine = create_engine('sqlite:///{}'.format(cDB))
-Base.metadata.create_all(bind=engine)
-dbSession = sessionmaker(bind=engine)
-dbs= dbSession()
+def main():
 
-for p in dbPaths:
-    if p.split('.')[-1] != "db" or p.split('-')[0]=='eps10' :
-        continue
-    path = os.path.join(dbParentPath,p)
-    print(path)
-    c = dbc.DatabaseConnection(path)
-    s = c.getLastSession()
-    print(s)
-    time.sleep(1)
-    instance = sessToInst(s)
-    instance.originalDB = p
-    for i in progressbar(s.getIndividualsList()):
-        instance.particles.append(indToParticle(i))
-    dbs.add(instance)
-    dbs.commit()
+    cDB = '/Users/joelforster/Projects/optidb/sep.db'
+    engine = create_engine('sqlite:///{}'.format(cDB))
+    Base.metadata.create_all(bind=engine)
+    dbSession = sessionmaker(bind=engine)
+    dbs= dbSession()
+
+    for p in dbPaths:
+        if p.split('.')[-1] != "db" or p.split('-')[0]=='eps10' :
+            continue
+        path = os.path.join(dbParentPath,p)
+        print(path)
+        c = dbc.DatabaseConnection(path)
+        s = c.getLastSession()
+        print(s)
+        time.sleep(1)
+        instance = sessToInst(s)
+        instance.originalDB = p
+        for i in progressbar(s.getIndividualsList()):
+            instance.particles.append(indToParticle(i))
+        dbs.add(instance)
+        dbs.commit()
+
+if __name__ == "__main__":
+    main()
