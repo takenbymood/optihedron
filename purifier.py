@@ -70,7 +70,7 @@ with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
 
     budIndividuals = 0
     noBudIndividuals = 0
-    for i in dbSession.query(Particle).yield_per(100).limit(5000):
+    for i in dbSession.query(Particle).yield_per(100).limit(158000):
 
         nL = int(float(i.nligands))
         aE = int(np.round(float(i.avgEps)))
@@ -123,7 +123,8 @@ with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
 
         richclub = nx.rich_club_coefficient(pN,normalized=False)
 
-        netWriter.writerows([[str(i.nligands),
+        netWriter.writerows([[
+            str(i.nligands),
             str(i.avgEps),
             str(i.fitness),
             str(i.budTime),
