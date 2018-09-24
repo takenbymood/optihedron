@@ -7,6 +7,8 @@ import time
 import pickle
 import networkx
 import holoviews as hv
+import csv, codecs, cStringIO
+import sys
 
 
 
@@ -17,7 +19,7 @@ def buildNanoParticleFromNetwork(G,weight,radius=4,sig=1):
     return particle
 
 
-def buildLigandNetwork(ligands, silent=True):
+def buildLigandNetwork(ligands, silent=True, ignoreZeros=False):
     if not silent:
         startTime = time.time()
     G=networkx.Graph()
@@ -26,6 +28,8 @@ def buildLigandNetwork(ligands, silent=True):
     for i in ligands:
         if i.eps > 0.0:
             G.add_node(nIndex,weight=i.eps,polAng=i.polAng,aziAng=i.aziAng)
+        elif not ignoreZeros:
+            G.add_node(nIndex,weight=i.eps,polAng=i.polAng,aziAng=i.aziAng)
         nIndex += 1
     
     iIndex = 1
@@ -33,9 +37,9 @@ def buildLigandNetwork(ligands, silent=True):
         jIndex = 1
         for j in ligands:
             if i < j:
-                cartDist = 1.0/greatArcDist((i.polAng,i.aziAng),(j.polAng,j.aziAng))
                 #affDist = abs(i.eps - j.eps)
                 if i.eps > 0.0 and j.eps > 0.0:
+                    cartDist = 1.0/greatArcDist((i.polAng,i.aziAng),(j.polAng,j.aziAng))
                     G.add_edge(iIndex, jIndex, weight=cartDist)
             jIndex += 1
         iIndex += 1
@@ -43,14 +47,20 @@ def buildLigandNetwork(ligands, silent=True):
 
 def pruneNetwork(G,pruning):
     prunes = []
+    pruneNodes = []
     GP = copy.deepcopy(G)
     maxW = 0
+    for n,w in G.nodes(data=True):
+        if w['weight'] <= 0.0:
+            pruneNodes.append(n)
+
     for e in GP.edges:
         w = GP.get_edge_data(*e)['weight']
         if(w<=pruning):
             prunes.append(e)
 
     GP.remove_edges_from(prunes)
+    GP.remove_nodes_from(pruneNodes)
     return GP
 
 
@@ -924,3 +934,76 @@ def cleanContactData(contactData, budTime):
         if contactData_i[0] <= budTime:
             contactDataTRIMMED.append(contactData_i)
     return contactDataTRIMMED
+
+def progressbar(it, prefix="", size=60):
+    count = len(it)
+    def _show(_i):
+        x = int(size*_i/count)
+        sys.stdout.write("%s[%s%s] %i/%i\r" % (prefix, "#"*x, "."*(size-x), _i, count))
+        sys.stdout.flush()
+
+    _show(0)
+    for i, item in enumerate(it):
+        yield item
+        _show(i+1)
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+
+class UTF8Recoder:
+    """
+    Iterator that reads an encoded stream and reencodes the input to UTF-8
+    """
+    def __init__(self, f, encoding):
+        self.reader = codecs.getreader(encoding)(f)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.reader.next().encode("utf-8")
+
+class UnicodeReader:
+    """
+    A CSV reader which will iterate over lines in the CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        f = UTF8Recoder(f, encoding)
+        self.reader = csv.reader(f, dialect=dialect, **kwds)
+
+    def next(self):
+        row = self.reader.next()
+        return [unicode(s, "utf-8") for s in row]
+
+    def __iter__(self):
+        return self
+
+class UnicodeWriter:
+    """
+    A CSV writer which will write rows to CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        # Redirect output to a queue
+        self.queue = cStringIO.StringIO()
+        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
+        self.stream = f
+        self.encoder = codecs.getincrementalencoder(encoding)()
+
+    def writerow(self, row):
+        self.writer.writerow([s.encode("utf-8") for s in row])
+        # Fetch UTF-8 output from the queue ...
+        data = self.queue.getvalue()
+        data = data.decode("utf-8")
+        # ... and reencode it into the target encoding
+        data = self.encoder.encode(data)
+        # write to the target stream
+        self.stream.write(data)
+        # empty queue
+        self.queue.truncate(0)
+
+    def writerows(self, rows):
+        for row in rows:
+            self.writerow(row)
