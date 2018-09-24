@@ -18,23 +18,39 @@ from tools import analysistools as atools
 import colldb
 from colldb import Particle, Instance, indToParticle, sessToInst
 
+import argparse
 import sys
 
-Base = declarative_base()
+parser = argparse.ArgumentParser(description='')
+
+parser.add_argument('-dir','--dir', default=None, type=str, 
+                    help='base directory of all of the databases, they must by sqlite files and have the .db extension to be included')
+parser.add_argument('-db','--database', default='collated.db', type=str, 
+                    help='output database, will be in sqlite format')
+
+args = parser.parse_args()
+
 
 
 def main():
 
-    dbParentPath = '/Users/joelforster/Projects/optidb/sep'
+
+
+    dbParentPath = args.dir
     dbPaths = os.listdir(dbParentPath)
-    cDB = '/Users/joelforster/Projects/optidb/sep.db'
+    cDB = args.database
+
+    if dbParentPath == None:
+        print('no database collection specified, use the -dir argument')
+        return
+
     engine = create_engine('sqlite:///{}'.format(cDB))
-    Base.metadata.create_all(bind=engine)
+    colldb.Base.metadata.create_all(bind=engine)
     dbSession = sessionmaker(bind=engine)
     dbs= dbSession()
 
     for p in dbPaths:
-        if p.split('.')[-1] != "db" or p.split('-')[0]=='eps10' :
+        if p.split('.')[-1] != "db":
             continue
         path = os.path.join(dbParentPath,p)
         print(path)
