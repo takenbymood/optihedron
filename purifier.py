@@ -20,18 +20,31 @@ from tools import analysistools as atools
 import colldb
 from colldb import Particle, Instance, indToParticle, sessToInst
 
+import argparse
+
 import sys
 
-dbPath = '/Users/joel/Projects/optidb/sep.db'
+parser = argparse.ArgumentParser(description='')
+
+parser.add_argument('-out','--outdir', default="", type=str, 
+                    help='output directory for the generated csv files')
+parser.add_argument('-db','--database', default='', type=str, 
+                    help='input database, must be in sqlite format')
+
+args = parser.parse_args()
+
+dbPath = args.database
+
+outdir = args.outdir
 
 Base = declarative_base()
 engine = sqlalchemy.create_engine('sqlite:///{}'.format(dbPath))
 Base.metadata.create_all(bind=engine)
 dbSession = sessionmaker(bind=engine)
 dbSession = dbSession()
-budFilePath = '/Users/joel/Projects/optidb/opti-bud.csv'
-ffFilePath = '/Users/joel/Projects/optidb/opti-ff.csv'
-netFilePath = '/Users/joel/Projects/optidb/opti-net.csv'
+budFilePath = os.path.join(outdir,'opti-bud.csv')
+ffFilePath = os.path.join(outdir,'opti-ff.csv')
+netFilePath = os.path.join(outdir,'opti-net.csv')
 with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
     ffWriter = atools.UnicodeWriter(ffFile)
     netWriter = atools.UnicodeWriter(netFile)
@@ -70,10 +83,14 @@ with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
 
     budIndividuals = 0
     noBudIndividuals = 0
-    for i in dbSession.query(Particle).yield_per(100).limit(158000):
+    printed = []
+    for i in dbSession.query(Particle).yield_per(100):
 
         nL = int(float(i.nligands))
         aE = int(np.round(float(i.avgEps)))
+        if not (nL,aE) in printed:
+            printed.append((nL,aE))
+            print((nL,aE))
         if not nL in buddingRates:
             buddingRates[nL] = {}
             buddingTimes[nL] = {}
