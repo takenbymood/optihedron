@@ -1055,3 +1055,8 @@ def getMinimumRadius(coords):
             if d < minD:
                 minD = d
     return minD
+
+mag = lambda v : np.sqrt(np.sum([i*i for i in v]))
+
+def ang3D(v1,v2):
+    return np.arctan2(mag(np.cross(v1,v2)), np.dot(v1,v2))
