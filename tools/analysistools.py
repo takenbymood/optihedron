@@ -1060,3 +1060,8 @@ mag = lambda v : np.sqrt(np.sum([i*i for i in v]))
 
 def ang3D(v1,v2):
     return np.arctan2(mag(np.cross(v1,v2)), np.dot(v1,v2))
+
+def ensure_dir(file_path):
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
