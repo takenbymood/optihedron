@@ -8,7 +8,7 @@ import argparse
 import time
 import itertools
 import operator
-import numpy as np
+import numpy
 import sys
 import subprocess
 import parlammps
@@ -224,14 +224,14 @@ if DB != None:
                     initpop.append([])
                     for ind in d.individuals:
                         if ind.gen_id == lastGen.pID:
-                            initpop[-1].append(np.array(ind.genomePickle).tolist())
+                            initpop[-1].append(numpy.array(ind.genomePickle).tolist())
             else:
                 nDemes = runArgs.demes
                 print('no deme lists, splitting population into ' + str(nDemes) + ' new demes')
                 for d in range(nDemes):
                     initpop.append([])
                     for ind in range(d*runArgs.pop,d*runArgs.pop+runArgs.pop):
-                        initpop[-1].append(np.array(lastGen.individuals[ind].genomePickle).tolist())
+                        initpop[-1].append(numpy.array(lastGen.individuals[ind].genomePickle).tolist())
             initParams = {'init_pop':initpop}
             initFileName = 'db/init.json'
             with open(initFileName, 'w') as initFile:
@@ -524,7 +524,7 @@ def evaluatePyLammps(individual):
 def runSim(path):    
     return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
 
-def evaluateParticleInstance(np,simName):
+def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=random.uniform(0.3141,3.141)):
     
     sim = MembraneSimulation(
         'sim_'+simName,
@@ -535,8 +535,8 @@ def evaluateParticleInstance(np,simName):
         RUNDIR,
         TEMPLATEDATAPATH,
         TEMPLATEINPUTPATH,
-        rAxis=vectools.randomUnitVector(),
-        rAmount=random.uniform(0.3141,3.141)        
+        rAxis=rVec,
+        rAmount=rAm        
         )
     sim.saveFiles()
     scriptPath=os.path.join(sim.filedir,sim.scriptName)
@@ -595,8 +595,25 @@ def evaluateParticle(np,simName):
     budTime = []
     stepData = []
 
+    rVecs = []
+    rAms = []
+
+    xR = int(math.ceil(float(REPEATS)/2.0))
+    yR = REPEATS - xR
+
+    xRA = 2.0*numpy.pi/float(xR)
+    yRA = 2.0*numpy.pi/float(yR)
+
     for i in range(REPEATS):
-        pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i))
+        if i%2 ==0:
+            rVecs.append([1,0,0])
+            rAms.append(float(len(rVecs))*xRA)
+        else:
+            rVecs.append([0,1,0])
+            rAms.append(float(len(rVecs))*yRA+numpy.pi*0.5)
+
+    for i in range(REPEATS):
+        pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i),rVecs[i],rAms[i])
         fitnesses.append(pf)
         budding.append(pb)
         budTime.append(pbt)
