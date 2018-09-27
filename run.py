@@ -116,7 +116,7 @@ parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
 parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
-parser.add_argument('-br', '--buddingreward',default=50.0, type=float,
+parser.add_argument('-br', '--buddingreward',default=400.0, type=float,
                     help='reward for successful budding in')
 parser.add_argument('-pw','--penaltyweight', default=10.0, type=float,
                     help='weighting of the ligand affinity penalty')
@@ -477,7 +477,10 @@ def evaluateNPWrapping(np,outFilename,runtime):
     # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
-    reward = float(msum) + (float(BUDDINGREWARD)) + float(float(TIMEWEIGHT)*(float(lstep)/float(budTime))) if stepData[-1]['budded'] and budTime != 0 else float(msum)
+    if stepData[-1]['budded'] and budTime != 0 :
+        reward = float(msum) + float(float(TIMEWEIGHT)*(float(lstep)/float(budTime)))  
+    else:
+        reward = float(msum)
 
     return reward, stepData[-1]['budded'], budTime, dbSteps
 
@@ -614,6 +617,9 @@ def evaluateParticle(np,simName):
     else:
         fmem = float(fsum)
 
+    if budded:
+        fmem += BUDDINGREWARD
+
     #flig = len(np.ligands) 
     #feps = sum([ligand.eps for ligand in np.ligands])
 
@@ -624,12 +630,11 @@ def evaluateParticle(np,simName):
         nActiveLigands += 1
         npTotalEps += l.eps
 
-    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES)))) if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
-
     if TARGETLIGANDS > 0:
         penalty += TARGETWEIGHT*float(abs(TARGETLIGANDS-nActiveLigands))
 
-    if budded:
+    if budded and TARGETLIGANDS < 0 and FIXEDLIGANDS < 0:
+        penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES)))) if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
         fmem += penalty
         
     f = fmem
