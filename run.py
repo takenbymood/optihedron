@@ -8,7 +8,7 @@ import argparse
 import time
 import itertools
 import operator
-import numpy as np
+import numpy
 import sys
 import subprocess
 import parlammps
@@ -116,7 +116,7 @@ parser.add_argument('-ts','--timestep', default=0.01, type=float,
                     help='lammps timestep size')
 parser.add_argument('-rs','--repeats', default=4, type=int,
                     help='number of repeat tests for each individual')
-parser.add_argument('-br', '--buddingreward',default=50.0, type=float,
+parser.add_argument('-br', '--buddingreward',default=400.0, type=float,
                     help='reward for successful budding in')
 parser.add_argument('-pw','--penaltyweight', default=10.0, type=float,
                     help='weighting of the ligand affinity penalty')
@@ -224,14 +224,14 @@ if DB != None:
                     initpop.append([])
                     for ind in d.individuals:
                         if ind.gen_id == lastGen.pID:
-                            initpop[-1].append(np.array(ind.genomePickle).tolist())
+                            initpop[-1].append(numpy.array(ind.genomePickle).tolist())
             else:
                 nDemes = runArgs.demes
                 print('no deme lists, splitting population into ' + str(nDemes) + ' new demes')
                 for d in range(nDemes):
                     initpop.append([])
                     for ind in range(d*runArgs.pop,d*runArgs.pop+runArgs.pop):
-                        initpop[-1].append(np.array(lastGen.individuals[ind].genomePickle).tolist())
+                        initpop[-1].append(numpy.array(lastGen.individuals[ind].genomePickle).tolist())
             initParams = {'init_pop':initpop}
             initFileName = 'db/init.json'
             with open(initFileName, 'w') as initFile:
@@ -477,7 +477,10 @@ def evaluateNPWrapping(np,outFilename,runtime):
     # penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES))))*100 if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
 
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
-    reward = float(msum) + (float(BUDDINGREWARD)) + float(float(TIMEWEIGHT)*(float(lstep)/float(budTime))) if stepData[-1]['budded'] and budTime != 0 else float(msum)
+    if stepData[-1]['budded'] and budTime != 0 :
+        reward = float(msum) + float(float(TIMEWEIGHT)*(float(lstep)/float(budTime)))  
+    else:
+        reward = float(msum)
 
     return reward, stepData[-1]['budded'], budTime, dbSteps
 
@@ -521,7 +524,7 @@ def evaluatePyLammps(individual):
 def runSim(path):    
     return parlammps.runSim(path,NP,TIMEOUT) if MPI else parlammps.runSimSerial(path)
 
-def evaluateParticleInstance(np,simName):
+def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=random.uniform(0.3141,3.141)):
     
     sim = MembraneSimulation(
         'sim_'+simName,
@@ -532,8 +535,8 @@ def evaluateParticleInstance(np,simName):
         RUNDIR,
         TEMPLATEDATAPATH,
         TEMPLATEINPUTPATH,
-        rAxis=vectools.randomUnitVector(),
-        rAmount=random.uniform(0.3141,3.141)        
+        rAxis=rVec,
+        rAmount=rAm        
         )
     sim.saveFiles()
     scriptPath=os.path.join(sim.filedir,sim.scriptName)
@@ -592,8 +595,25 @@ def evaluateParticle(np,simName):
     budTime = []
     stepData = []
 
+    rVecs = []
+    rAms = []
+
+    xR = int(math.ceil(float(REPEATS)/2.0))
+    yR = REPEATS - xR
+
+    xRA = 2.0*numpy.pi/float(xR)
+    yRA = 2.0*numpy.pi/float(yR)
+
     for i in range(REPEATS):
-        pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i))
+        if i%2 ==0:
+            rVecs.append([1,0,0])
+            rAms.append(float(len(rVecs))*xRA)
+        else:
+            rVecs.append([0,1,0])
+            rAms.append(float(len(rVecs))*yRA+numpy.pi*0.5)
+
+    for i in range(REPEATS):
+        pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i),rVecs[i],rAms[i])
         fitnesses.append(pf)
         budding.append(pb)
         budTime.append(pbt)
@@ -614,6 +634,9 @@ def evaluateParticle(np,simName):
     else:
         fmem = float(fsum)
 
+    if budded:
+        fmem += BUDDINGREWARD
+
     #flig = len(np.ligands) 
     #feps = sum([ligand.eps for ligand in np.ligands])
 
@@ -624,12 +647,11 @@ def evaluateParticle(np,simName):
         nActiveLigands += 1
         npTotalEps += l.eps
 
-    penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES)))) if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
-
     if TARGETLIGANDS > 0:
         penalty += TARGETWEIGHT*float(abs(TARGETLIGANDS-nActiveLigands))
 
-    if budded:
+    if budded and TARGETLIGANDS < 0 and FIXEDLIGANDS < 0:
+        penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES)))) if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
         fmem += penalty
         
     f = fmem
