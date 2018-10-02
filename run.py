@@ -872,6 +872,7 @@ def main():
             with open(os.path.join(DBDIR,ZOO.split('.')[0]+'.csv'), "a") as csv:
                 csv.write(str(k))
                 csv.write(','+str(len(v.ligands)))
+                csv.write(','+str(numpy.mean([i.eps for i in v.ligands])))
                 for i in range(3):
                     csv.write(','+str(r[i]))
                 csv.write('\n')
