@@ -619,10 +619,10 @@ def evaluateParticle(np,simName):
     for i in range(REPEATS):
         if i%2 ==0:
             rVecs.append([1,0,0])
-            rAms.append(float(len(rVecs))*xRA)
+            rAms.append(float(len(rVecs))*0.5*xRA)
         else:
             rVecs.append([0,1,0])
-            rAms.append(float(len(rVecs))*yRA+numpy.pi*0.5)
+            rAms.append(float(len(rVecs))*0.5*yRA+numpy.pi*0.5)
 
     for i in range(REPEATS):
         pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i),rVecs[i],rAms[i])
