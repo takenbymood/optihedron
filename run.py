@@ -162,6 +162,8 @@ parser.add_argument('-db','--database', default=None, type=str,
                     help='set the input db')
 parser.add_argument('-dbs','--dbsession', default=-1, type=int, 
                     help='set the session to load from the db')
+parser.add_argument('-z','--zoo', default=None, type=str, 
+                    help='set the input zoo, does not run a GA in this mode')
 
 
 
@@ -198,7 +200,10 @@ KEEPINPUT = args.keepinput
 KEEPOUTPUT = args.keepoutput
 KEEPBEST = args.keepbest
 
+ZOO = args.zoo
+
 runArgs = args
+
 
 if DB != None:
     try:
@@ -295,6 +300,7 @@ TIMESTEP = runArgs.timestep
 GENESIZE = (EXPRPLACES+EPSPLACES+POLANGPLACES+AZIANGPLACES) if PARTIAL else (EXPRPLACES+EPSPLACES)
 GENOMESIZE = GENES*GENESIZE
 REPEATS = runArgs.repeats
+ZOO = runArgs.zoo
 
 PENALTYWEIGHT = runArgs.penaltyweight
 TARGETWEIGHT = runArgs.ligandweight
@@ -340,6 +346,7 @@ if runArgs != args:
     setattr(args,"ligandweight",TARGETWEIGHT)
     setattr(args,"targetligands",TARGETLIGANDS)
     setattr(args,"fixedligands",FIXEDLIGANDS)
+    setattr(args,"zoo",ZOO)
 
 
 
@@ -598,19 +605,24 @@ def evaluateParticle(np,simName):
     rVecs = []
     rAms = []
 
+    xRA = 1
+    yRA = 0
+
     xR = int(math.ceil(float(REPEATS)/2.0))
     yR = REPEATS - xR
 
-    xRA = 2.0*numpy.pi/float(xR)
-    yRA = 2.0*numpy.pi/float(yR)
+    if xR > 0:
+        xRA = 2.0*numpy.pi/float(xR)
+    if yR > 0:
+        yRA = 2.0*numpy.pi/float(yR)
 
     for i in range(REPEATS):
         if i%2 ==0:
             rVecs.append([1,0,0])
-            rAms.append(float(len(rVecs))*xRA)
+            rAms.append(float(len(rVecs))*0.5*xRA)
         else:
             rVecs.append([0,1,0])
-            rAms.append(float(len(rVecs))*yRA+numpy.pi*0.5)
+            rAms.append(float(len(rVecs))*0.5*yRA+numpy.pi*0.5)
 
     for i in range(REPEATS):
         pf,pb,pbt,psd = evaluateParticleInstance(np,simName+"_"+str(i),rVecs[i],rAms[i])
@@ -673,7 +685,7 @@ def evaluateParticle(np,simName):
 
     bAvg = float(bTot)/float(bI) if bI > 0 else -1
 
-    return f,bPerc,bAvg,stepData
+    return f,bPerc,bAvg,stepData,fitnesses,budding,budTime
 
 
 
@@ -841,6 +853,31 @@ def mkdirs(directory):
             raise        
 
 def main():
+
+    if ZOO != None:
+        if os.path.isfile(ZOO) and os.access(ZOO, os.R_OK):
+            print "Loading zoo pickle file..."
+        else:
+            print "Either the file is missing or not readable"
+            return
+        zooList = {}
+        try:
+            with open(ZOO, 'rb') as handle:
+                zooList = pickle.load(handle)
+        except:
+            print "Something went wrong reading the zoo file"
+            return
+        for k,v in zooList.iteritems():
+            r = evaluateParticle(v,k)
+            with open(os.path.join(DBDIR,ZOO.split('.')[0]+'.csv'), "a") as csv:
+                csv.write(str(k))
+                csv.write(','+str(len(v.ligands)))
+                csv.write(','+str(numpy.mean([i.eps for i in v.ligands])))
+                for i in range(3):
+                    csv.write(','+str(r[i]))
+                csv.write('\n')
+        return
+
 
     try:
         if not os.path.isdir(WDIR):
