@@ -621,7 +621,7 @@ def evaluateParticle(np,simName):
             rVecs.append([1,0,0])
             rAms.append(float(len(rVecs))*0.5*xRA)
         else:
-            rVecs.append([0,1,0])
+            rVecs.append([0,1,1])
             rAms.append(float(len(rVecs))*0.5*yRA+numpy.pi*0.5)
 
     for i in range(REPEATS):
