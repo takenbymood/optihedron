@@ -72,8 +72,7 @@ with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
         "Min Radius",
         "Average Radius",
         "Subgraph Number",
-        "Estrada Coefficient",
-        "Rich Club Coefficients"
+        "Estrada Coefficient"
         ]])
 
     buddingRates = {}
@@ -138,8 +137,6 @@ with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
 
         estrada = nx.estrada_index(pN)
 
-        richclub = nx.rich_club_coefficient(pN,normalized=False)
-
         netWriter.writerows([[
             str(i.nligands),
             str(i.avgEps),
@@ -152,8 +149,7 @@ with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
             str(minRadius),
             str(avgRadius),
             str(subgraphs),
-            str(estrada),
-            str(richclub)
+            str(estrada)
             ]])
 
         if i.budTime != -1:
