@@ -28,13 +28,13 @@ parser.add_argument('-dir','--dir', default=None, type=str,
 parser.add_argument('-db','--database', default='collated.db', type=str, 
                     help='output database, will be in sqlite format')
 
-args = parser.parse_args()
+
 
 
 
 def main():
 
-
+    args = parser.parse_args()
 
     dbParentPath = args.dir
     dbPaths = os.listdir(dbParentPath)
