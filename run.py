@@ -120,7 +120,7 @@ parser.add_argument('-br', '--buddingreward',default=400.0, type=float,
                     help='reward for successful budding in')
 parser.add_argument('-pw','--penaltyweight', default=10.0, type=float,
                     help='weighting of the ligand affinity penalty')
-parser.add_argument('-tw','--timeweight', default=10.0, type=float,
+parser.add_argument('-tw','--timeweight', default=25.0, type=float,
                     help='weighting of the budding time reward')
 parser.add_argument('-lw','--ligandweight', default=10.0, type=float,
                     help='weighting of the target ligand reward')
@@ -485,7 +485,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
     # reward = (float(BUDDINGREWARD) + float(penalty)) if stepData[-1]['budded'] else float(msum)
     if stepData[-1]['budded'] and budTime != 0 :
-        reward = float(msum) + float(float(TIMEWEIGHT)*(float(lstep)/float(budTime)))  
+        reward = float(msum) + float(float(TIMEWEIGHT)*(float(lstep)/float(budTime))) + float(BUDDINGREWARD)
     else:
         reward = float(msum)
 
@@ -661,6 +661,7 @@ def evaluateParticle(np,simName):
 
     if TARGETLIGANDS > 0:
         penalty += TARGETWEIGHT*float(abs(TARGETLIGANDS-nActiveLigands))
+        fmem += penalty
 
     if budded and TARGETLIGANDS < 0 and FIXEDLIGANDS < 0:
         penalty = PENALTYWEIGHT*(1.0-(float(npTotalEps)/(float(EPSMAX)*float(GENES)))) if float(EPSMAX)*float(nActiveLigands) > 0.0 else 0.0
@@ -850,7 +851,10 @@ def mkdirs(directory):
         os.makedirs(directory)
     except OSError as e:
         if e.errno != errno.EEXIST:
-            raise        
+            raise
+
+def mEval(tu):
+    return (tu[1],tu[0],evaluateParticle(tu[0],tu[1]))
 
 def main():
 
@@ -867,14 +871,15 @@ def main():
         except:
             print "Something went wrong reading the zoo file"
             return
-        for k,v in zooList.iteritems():
-            r = evaluateParticle(v,k)
-            with open(os.path.join(DBDIR,ZOO.split('.')[0]+'.csv'), "a") as csv:
-                csv.write(str(k))
-                csv.write(','+str(len(v.ligands)))
-                csv.write(','+str(numpy.mean([i.eps for i in v.ligands])))
+        pmap = pools.ProcessPool(WORKERS).map
+        results = pmap(mEval,[(v,k) for k,v in zooList.iteritems()])
+        with open(os.path.join(DBDIR,ZOO.split('.')[0]+'.csv'), "a") as csv:
+            for r in results:
+                csv.write(str(r[0]))
+                csv.write(','+str(len(r[1].ligands)))
+                csv.write(','+str(numpy.mean([i.eps for i in r[1].ligands])))
                 for i in range(3):
-                    csv.write(','+str(r[i]))
+                    csv.write(','+str(r[2][i]))
                 csv.write('\n')
         return
 
