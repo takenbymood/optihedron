@@ -26,10 +26,6 @@ from pathos import pools
 
 import time
 
-import joblib
-
-from joblib import Parallel, delayed, parallel_backend
-from distributed.joblib import DaskDistributedBackend
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", numpy.ndarray, fitness=creator.FitnessMax) # @UndefinedVariable (for PyDev)

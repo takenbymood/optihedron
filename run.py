@@ -377,9 +377,13 @@ def evaluateNPWrapping(np,outFilename,runtime):
     nActiveLigands = 0
     npTotalEps = 0.0
 
+    ligMap = []
+    builtLigMap = False
+
     for l in np.ligands:
         nActiveLigands += 1
         npTotalEps += l.eps
+
 
     if(not os.path.exists(outFilename)):                                
             return minFit, noBud
@@ -417,6 +421,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
 
         cStep = []
         mStep = []
+        lStep = []
         ligandsInContact = 0
         boxsize = 20
         for key, value in outVectors.iteritems():
@@ -447,6 +452,14 @@ def evaluateNPWrapping(np,outFilename,runtime):
                         m = xd*xd+yd*yd+zd*zd                                          
                         if(m<25.0):
                             mStep.append(v2['id'])
+                            
+
+        if not builtLigMap:
+            for key, value in outVectors.iteritems():
+                if key > 2:
+                    for v in value:
+                        ligMap.append(v['id'])
+            builtLigMap = True
 
         for key, value in outVectors.iteritems():
             if key > 2:
@@ -455,6 +468,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
                         if c['id'] == v['c']:
                             if c['size'] > 5:
                                 ligandsInContact+=1
+                                lStep.append(ligMap.index(v['id']))
 
         nLargeClusters = 0
         for v in sorted(cStep, key=itemgetter('size')):
@@ -464,7 +478,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
         if len(outVectors[2])>0:
             percentCoverage = float(ligandsInContact)/float(len(outVectors[2]))
         budded = nLargeClusters > 1                        
-        stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage})
+        stepData.append({'timestep':s,'clusters':cStep,'magnitudes':mStep,'walk':list(set(lStep)),'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage,'contact': ligandsInContact})
         dbSteps.append({'timestep':s,'cNum':len(cStep),'mNum':len(mStep), 'budded': budded, 'coverage':percentCoverage, 'contact': ligandsInContact})
     msum = stepData[-1]['mNum']
     lstep = stepData[-1]['timestep']
@@ -489,7 +503,7 @@ def evaluateNPWrapping(np,outFilename,runtime):
     else:
         reward = float(msum)
 
-    return reward, stepData[-1]['budded'], budTime, dbSteps
+    return reward, stepData[-1]['budded'], budTime, dbSteps, stepData
 
 def runCmd(cmd,timeout):
     try:
@@ -575,7 +589,45 @@ def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=ran
     stepData = []
     
     try:
-        f,b,bt,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
+        f,b,bt,dbData,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
+        walk = []
+        captured = []
+        lost = []
+        ps = []
+        walkStep = 0
+        for s in stepData:
+            captured = []
+            lost = []
+            if walkStep == 0:
+                ps = s['walk']
+                captured = ps
+                walk.append((captured,lost))
+                walkStep +=1
+                continue
+            else:
+                sw = s['walk']
+                for w in sw:
+                    if not w in ps:
+                        captured.append(w)
+                for w in ps:
+                    if not w in sw:
+                        lost.append(w)
+                walk.append((captured,lost))
+                ps = sw
+        activeWalk = []
+        for w in walk:
+            cap = w[0]
+            los = w[1]
+            activeCap = []
+            activeLos = []
+            for l in cap:
+                if np.ligands[l].eps > 1e-4:
+                    activeCap.append(l)
+            for l in los:
+                if np.ligands[l].eps > 1e-4:
+                    activeLos.append(l)
+            activeWalk.append((activeCap,activeLos))
+        dbData['walk']=activeWalk
     except (OSError, IOError):
         print("Something went wrong...")
         print(outFilePath + ", Wrong file or file path")
@@ -593,7 +645,7 @@ def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=ran
             print "deleted file" + str(outFilePath)
         except (OSError, IOError):
             print "no output file to delete"
-    return f,b,bt,stepData
+    return f,b,bt,dbData
 
 def evaluateParticle(np,simName):
 
