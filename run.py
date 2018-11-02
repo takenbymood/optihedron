@@ -601,7 +601,7 @@ def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=ran
             if walkStep == 0:
                 ps = s['walk']
                 captured = ps
-                walk.append((captured,lost))
+                walk.append((ps,captured,lost))
                 walkStep +=1
                 continue
             else:
@@ -612,22 +612,30 @@ def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=ran
                 for w in ps:
                     if not w in sw:
                         lost.append(w)
-                walk.append((captured,lost))
+                walk.append((sw,captured,lost))
                 ps = sw
         activeWalk = []
         for w in walk:
-            cap = w[0]
-            los = w[1]
+            wal = w[0]
+            cap = w[1]
+            los = w[2]
+            activeWal = []
             activeCap = []
             activeLos = []
+            for l in wal:
+                if np.ligands[l].eps > 1e-4:
+                    activeWal.append(l)
             for l in cap:
                 if np.ligands[l].eps > 1e-4:
                     activeCap.append(l)
             for l in los:
                 if np.ligands[l].eps > 1e-4:
                     activeLos.append(l)
-            activeWalk.append((activeCap,activeLos))
-        dbData['walk']=activeWalk
+            activeWalk.append((activeWal,activeCap,activeLos))
+        wS = 0
+        for s in dbData:
+            s['walk']=activeWalk[wS]
+            wS+=1
     except (OSError, IOError):
         print("Something went wrong...")
         print(outFilePath + ", Wrong file or file path")
