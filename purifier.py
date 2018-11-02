@@ -24,6 +24,12 @@ import argparse
 
 import sys
 
+def frange(start, stop, step):
+    x = start
+    while x < stop:
+        yield x
+        x += step
+
 parser = argparse.ArgumentParser(description='')
 
 parser.add_argument('-out','--outdir', default="", type=str, 
@@ -44,11 +50,40 @@ dbSession = sessionmaker(bind=engine)
 dbSession = dbSession()
 budFilePath = os.path.join(outdir,'opti-bud.csv')
 ffFilePath = os.path.join(outdir,'opti-ff.csv')
-netFilePath = os.path.join(outdir,'opti-net.csv')
-with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
-    ffWriter = atools.UnicodeWriter(ffFile)
-    netWriter = atools.UnicodeWriter(netFile)
 
+netFilePaths = []
+
+minPrune = 0.0
+maxPrune = 2.6
+pruneStep = 0.5
+
+pruneSteps = [x for x in frange(minPrune,maxPrune,pruneStep)]
+
+for pruning in pruneSteps:
+    netFilePaths.append(os.path.join(outdir,'opti-net'+str(pruning)+'.csv'))
+
+
+for n in netFilePaths:
+    with open(n, 'w') as netFile:
+        netWriter = atools.UnicodeWriter(netFile)
+        netWriter.writerows([[
+            "Ligand Number",
+            "Average Affinity",
+            "Fitness",
+            "Average Budding Time",
+            "Budding Rate",
+            "Density",
+            "Max Diameter",
+            "Mean Diameter",
+            "Min Radius",
+            "Average Radius",
+            "Subgraph Number",
+            "Estrada Coefficient",
+            "Pruning"
+        ]])
+
+with open(ffFilePath, 'w') as ffFile:
+    ffWriter = atools.UnicodeWriter(ffFile)
     ffWriter.writerows([[
         "Ligand Number",
         "Average Affinity",
@@ -60,20 +95,6 @@ with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
         "Spottiness"
         ]])
 
-    netWriter.writerows([[
-        "Ligand Number",
-        "Average Affinity",
-        "Fitness",
-        "Average Budding Time",
-        "Budding Rate",
-        "Density",
-        "Max Diameter",
-        "Mean Diameter",
-        "Min Radius",
-        "Average Radius",
-        "Subgraph Number",
-        "Estrada Coefficient"
-        ]])
 
     buddingRates = {}
     buddingTimes = {}
@@ -118,39 +139,45 @@ with open(ffFilePath, 'w') as ffFile, open(netFilePath, 'w') as netFile:
             str(i.spottiness)
             ]])
         
-        pN = atools.pruneNetwork(i.network,0.5)
+        c = 0
+        for n in netFilePaths:
+            with open(n, 'a') as netFile:
+                netWriter = atools.UnicodeWriter(netFile)
+                pN = atools.pruneNetwork(i.network,pruneSteps[c])
 
-        density = nx.density(pN)
-        graphs = list(nx.connected_component_subgraphs(pN))
-        dS = []
-        rS = []
-        for g in graphs:
-            d = nx.diameter(g)
-            r = nx.radius(g)
-            dS.append(d)
-            rS.append(r)
-        maxDiameter = np.max(dS)
-        avgDiameter = np.mean(dS)
-        minRadius = np.min(rS)
-        avgRadius = np.mean(rS)
-        subgraphs = len(graphs)
+                density = nx.density(pN)
+                graphs = list(nx.connected_component_subgraphs(pN))
+                dS = []
+                rS = []
+                for g in graphs:
+                    d = nx.diameter(g)
+                    r = nx.radius(g)
+                    dS.append(d)
+                    rS.append(r)
+                maxDiameter = np.max(dS)
+                avgDiameter = np.mean(dS)
+                minRadius = np.min(rS)
+                avgRadius = np.mean(rS)
+                subgraphs = len(graphs)
 
-        estrada = nx.estrada_index(pN)
+                estrada = nx.estrada_index(pN)
 
-        netWriter.writerows([[
-            str(i.nligands),
-            str(i.avgEps),
-            str(i.fitness),
-            str(i.budTime),
-            str(i.budPerc),
-            str(density),
-            str(maxDiameter),
-            str(avgDiameter),
-            str(minRadius),
-            str(avgRadius),
-            str(subgraphs),
-            str(estrada)
-            ]])
+                netWriter.writerows([[
+                    str(i.nligands),
+                    str(i.avgEps),
+                    str(i.fitness),
+                    str(i.budTime),
+                    str(i.budPerc),
+                    str(density),
+                    str(maxDiameter),
+                    str(avgDiameter),
+                    str(minRadius),
+                    str(avgRadius),
+                    str(subgraphs),
+                    str(estrada),
+                    str(pruneSteps[c])
+                    ]])
+            c+=1
 
         if i.budTime != -1:
             budIndividuals += 1
