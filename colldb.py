@@ -37,6 +37,8 @@ class Particle(Base):
     
     inst_id = Column(Integer, ForeignKey('instances.id'))
     instance = relationship('Instance',uselist=False)
+
+    walks = relationship('Walk',back_populates='particle')
     
     gen = Column('gen', Integer)
     fitness = Column('fitness', Numeric)
@@ -50,6 +52,15 @@ class Particle(Base):
     lininess = Column('lininess', Numeric)
     spottiness = Column('spottiness', Numeric)
     nligands = Column('nligands', Integer)
+
+class Walk(Base):
+    __tablename__ = 'walks'
+    pID = Column('id', Integer, primary_key=True)
+    
+    particle_id = Column(Integer, ForeignKey('particles.id'))
+    particle = relationship('Particle',uselist=False)
+
+    trajectory = Column('trajectory', PickleType)
 
 
 def sessToInst(session):
@@ -67,6 +78,15 @@ def indToParticle(ind):
     part.budPerc = ind.budPerc
     part.budTime = ind.budTime
     part.network = atools.buildLigandNetwork(ind.phenomePickle.particle.ligands)
+
+    for sim in ind.sims:
+        if len(sim.data) >0 and 'walk' in sim.data[-1]:
+            walk = Walk()
+            walk.trajectory = []
+            for s in sim.data:
+                walk.trajectory.append(s['walk'])
+            part.walks.append(walk)
+
     ff = atools.formFactor(ind.phenomePickle.particle.ligands)
     part.patchiness = ff[0]
     part.lininess = ff[1]
