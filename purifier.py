@@ -54,8 +54,8 @@ ffFilePath = os.path.join(outdir,'opti-ff.csv')
 netFilePaths = []
 
 minPrune = 0.0
-maxPrune = 2.6
-pruneStep = 0.5
+maxPrune = 2.1
+pruneStep = 0.25
 
 pruneSteps = [x for x in frange(minPrune,maxPrune,pruneStep)]
 
@@ -68,15 +68,20 @@ for n in netFilePaths:
         netWriter = atools.UnicodeWriter(netFile)
         netWriter.writerows([[
             "Ligand Number",
-            "Average Affinity",
+            "Mean Affinity",
             "Fitness",
-            "Average Budding Time",
+            "Mean Budding Time",
             "Budding Rate",
             "Density",
             "Max Diameter",
             "Mean Diameter",
+            "Min Diameter",
             "Min Radius",
-            "Average Radius",
+            "Mean Radius",
+            "Max Radius",
+            "Max Average Shortest Path",
+            "Mean Average Shortest Path",
+            "Min Average Shortest Path",
             "Subgraph Number",
             "Estrada Coefficient",
             "Pruning"
@@ -86,13 +91,16 @@ with open(ffFilePath, 'w') as ffFile:
     ffWriter = atools.UnicodeWriter(ffFile)
     ffWriter.writerows([[
         "Ligand Number",
-        "Average Affinity",
+        "Mean Affinity",
         "Fitness",
-        "Average Budding Time",
+        "Mean Budding Time",
         "Budding Rate",
         "Patchiness",
         "Lininess",
-        "Spottiness"
+        "Spottiness",
+        "Walks",
+        "End To End Distance",
+        "Furthest Ligands"
         ]])
 
 
@@ -128,6 +136,46 @@ with open(ffFilePath, 'w') as ffFile:
         if i.budTime > 0.0:
         	budded[nL][aE]+=1
 
+        walkStrs = ""
+        for walk in i.walks:
+            walkStr = "{"
+            stepCount = 0
+            for s in walk.trajectory:
+                walkStr+="s" + str(stepCount) + '['
+                for c in s[1]:
+                    walkStr += 'c' + str(c)
+                    walkStr += ';'
+                for d in s[2]:
+                    walkStr += 'd' + str(d)
+                    walkStr += ';'
+                if walkStr[-1] == ';':
+                    walkStr = walkStr[:-1]
+                walkStr += ']'
+                stepCount += 1
+            walkStr+="}"
+            walkStrs += walkStr
+
+        lNum = 0
+        dists = {}
+        for l in i.phenome.particle.ligands:
+            if l.eps > 0:
+                dists[lNum] = {}
+                mNum = 0
+                for m in i.phenome.particle.ligands:
+                    if m.eps > 0:
+                        dists[lNum][mNum] = np.sqrt(np.sum([x*x for x in np.subtract(atools.sphPol2Crt((l.rad,l.polAng,l.aziAng)),atools.sphPol2Crt((m.rad,m.polAng,m.aziAng)))]))
+                    mNum += 1 
+            lNum+=1
+        maxDist = 0
+        maxPair = ()
+        for k,v in dists.iteritems():
+            for k2,v2 in v.iteritems():
+                if v2 > maxDist:
+                    maxDist = v2
+                    maxPair = (k,k2)
+
+
+
         ffWriter.writerows([[
             str(i.nligands),
             str(i.avgEps),
@@ -136,7 +184,10 @@ with open(ffFilePath, 'w') as ffFile:
             str(i.budPerc),
             str(i.patchiness),
             str(i.lininess),
-            str(i.spottiness)
+            str(i.spottiness),
+            str(walkStrs),
+            str(maxDist),
+            '('+str(maxPair[0])+';'+str(maxPair[1])+')'
             ]])
         
         c = 0
@@ -149,15 +200,25 @@ with open(ffFilePath, 'w') as ffFile:
                 graphs = list(nx.connected_component_subgraphs(pN))
                 dS = []
                 rS = []
+                sPS = []
                 for g in graphs:
                     d = nx.diameter(g)
                     r = nx.radius(g)
+                    sp = nx.average_shortest_path_length(g)
                     dS.append(d)
                     rS.append(r)
+                    sPS.append(sp)
+
                 maxDiameter = np.max(dS)
                 avgDiameter = np.mean(dS)
+                minDiameter = np.min(dS)
                 minRadius = np.min(rS)
                 avgRadius = np.mean(rS)
+                maxRadius = np.max(dS)
+                maxASp = np.max(sPS)
+                avgASp = np.mean(sPS)
+                minASp = np.min(sPS)
+
                 subgraphs = len(graphs)
 
                 estrada = nx.estrada_index(pN)
@@ -171,8 +232,13 @@ with open(ffFilePath, 'w') as ffFile:
                     str(density),
                     str(maxDiameter),
                     str(avgDiameter),
+                    str(minDiameter),
                     str(minRadius),
                     str(avgRadius),
+                    str(maxRadius),
+                    str(maxASp),
+                    str(avgASp),
+                    str(minASp),
                     str(subgraphs),
                     str(estrada),
                     str(pruneSteps[c])
