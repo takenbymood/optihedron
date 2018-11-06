@@ -39,6 +39,7 @@ from tools import misctools
 from tools import listtools
 from tools import qtools
 from tools import vectools
+from tools import analysistools as atools
 
 from db import databaseconnection as dao
 
@@ -49,6 +50,8 @@ from nanoparticle import CoveredNanoParticlePhenome
 from membranesimulation import MembraneSimulation
 
 import json
+
+import networkx as nx
 
 parser = argparse.ArgumentParser(description='')
 
@@ -90,6 +93,9 @@ parser.add_argument('-xo', '--mate', default='defaultGeneWiseTwoPoint',
                     choices=['defaultGeneWiseTwoPoint', 'fixedActivationGeneWiseTwoPoint'])
 parser.add_argument('-sg','--startinggen',default=0, type=int,
                     help='starting generation')
+
+parser.add_argument('-ff','--fitnessfunction',default="budding",
+                    choices=['budding', 'diameter'])
 
 
 #Model Options
@@ -313,6 +319,8 @@ FIXEDLIGANDS = runArgs.fixedligands
 
 PARTICLES = []
 
+FITNESSFUNCTION = runArgs.fitnessfunction
+
 #god what a mess
 
 if runArgs != args:
@@ -347,7 +355,7 @@ if runArgs != args:
     setattr(args,"targetligands",TARGETLIGANDS)
     setattr(args,"fixedligands",FIXEDLIGANDS)
     setattr(args,"zoo",ZOO)
-
+    setattr(args,"fitnessfunction",FITNESSFUNCTION)
 
 
 def kill(p):
@@ -750,7 +758,7 @@ def evaluateParticle(np,simName):
 
 
 
-def evaluate(individual):
+def evaluateBudding(individual):
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle    
     simName = phenome.id + misctools.randomStr(10)
@@ -761,6 +769,27 @@ def evaluate(individual):
             with open(pickleFilePath, 'wb') as handle:
                 pickle.dump(r, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return r[0],
+
+def evaluateDiameter(individual):
+    minPrune = 0.0
+    maxPrune = 1.0
+    pruneStep = 0.1
+    phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    np = phenome.particle
+    r = evaluateBudding(individual)
+    n = atools.buildLigandNetwork(np.ligands)
+    diams = []
+    for p in atools.frange(minPrune,maxPrune,pruneStep):
+        pN = atools.pruneNetwork(n,p)
+        graphs = list(nx.connected_component_subgraphs(pN))
+        dS = []
+        for g in graphs:
+            d = nx.diameter(g)
+            dS.append(d)
+        diams.append(numpy.max(dS))
+    return numpy.mean(diams),
+
+
 
 def sel(pop,k):
     return tools.selTournament(pop,k,TSIZE)
@@ -1002,6 +1031,13 @@ def main():
        dbconn = None
 
     initPopFile = "init.json" if FILE == None else FILE
+
+    evaluate = None
+
+    if FITNESSFUNCTION == 'budding':
+        evaluate = evaluateBudding
+    elif FITNESSFUNCTION == 'diameter':
+        evaluate = evaluateDiameter
 
     ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,

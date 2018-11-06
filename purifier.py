@@ -24,11 +24,6 @@ import argparse
 
 import sys
 
-def frange(start, stop, step):
-    x = start
-    while x < stop:
-        yield x
-        x += step
 
 parser = argparse.ArgumentParser(description='')
 
@@ -54,10 +49,10 @@ ffFilePath = os.path.join(outdir,'opti-ff.csv')
 netFilePaths = []
 
 minPrune = 0.0
-maxPrune = 2.1
-pruneStep = 0.25
+maxPrune = 1.0
+pruneStep = 0.1
 
-pruneSteps = [x for x in frange(minPrune,maxPrune,pruneStep)]
+pruneSteps = [x for x in atools.frange(minPrune,maxPrune,pruneStep)]
 
 for pruning in pruneSteps:
     netFilePaths.append(os.path.join(outdir,'opti-net'+str(pruning)+'.csv'))
