@@ -20,7 +20,7 @@ def buildNanoParticleFromNetwork(G,weight,radius=4,sig=1):
     return particle
 
 
-def buildLigandNetwork(ligands, silent=True, ignoreZeros=False):
+def buildLigandNetwork(ligands, silent=True, ignoreZeros=True):
     if not silent:
         startTime = time.time()
     G=networkx.Graph()
@@ -1065,3 +1065,11 @@ def ensure_dir(file_path):
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+
+def frange(start, stop, step):
+    x = start
+    while x < stop:
+        yield x
+        x += step
