@@ -598,6 +598,7 @@ def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=ran
     b = False
     bt = -1
     stepData = []
+    dbData = []
     
     try:
         f,b,bt,dbData,stepData = evaluateNPWrapping(np,outFilePath,RUNTIME)
@@ -650,9 +651,10 @@ def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=ran
     except (OSError, IOError):
         print("Something went wrong...")
         print(outFilePath + ", Wrong file or file path")
+        return f,b,bt,dbData
     except:
         print('something unexpected went wrong...')
-
+        return f,b,bt,dbData
     print('{} fitness: {}'.format(simName, f))
     if not KEEPINPUT:
         sim.deleteFiles()
