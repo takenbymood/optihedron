@@ -160,6 +160,8 @@ parser.add_argument('-ki','--keepinput', action='store_true',
                     help='option to keep all input files the simulation generates')
 parser.add_argument('-kb','--keepbest', action='store_true',
                     help='option to store each generations best individual')
+parser.add_argument('-kw','--keepworst', action='store_true',
+                    help='option to store each generations worst individual')
 parser.add_argument('-wd','--wdir', default=os.path.dirname(os.path.realpath(__file__)),
                     help='option to set the working directory of the program')
 parser.add_argument('-i','--input', default=None, type=str, 
@@ -205,6 +207,7 @@ SAVERESULTS = args.saveresults
 KEEPINPUT = args.keepinput
 KEEPOUTPUT = args.keepoutput
 KEEPBEST = args.keepbest
+KEEPWORST = args.keepworst
 
 ZOO = args.zoo
 
@@ -889,10 +892,12 @@ def afterMigration(ga):
     if KEEPBEST:
         saveBest(ga.hof,ga.gen)
 
+    if KEEPWORST:
+        saveWorst(ga.islands,ga.gen)
+
     return
 
 def saveBest(hof,gen):
-
     if len(hof) < 1:
         return
     ind = hof[0]
@@ -901,7 +906,7 @@ def saveBest(hof,gen):
     sim = MembraneSimulation(
         'gen_'+str(gen)+"_best",
         np,
-        RUNTIME,
+        50000,
         TIMESTEP,            
         OUTDIR,
         HOFDIR,            
@@ -914,6 +919,35 @@ def saveBest(hof,gen):
     outFilePath = os.path.join(sim.outdir,sim.outName)
     sim.postProcessOutput(outFilePath)
 
+def saveWorst(pop,gen):
+    if len(pop) < 1:
+        return
+    minFit = 1e8
+    ind = pop[0]
+    for isle in pop:
+        for p in isle:
+            if p.fitness.values[-1] < minFit:
+                ind = p
+    phenome = CoveredNanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    np = phenome.particle
+    sim = MembraneSimulation(
+        'gen_'+str(gen)+"_worst",
+        np,
+        50000,
+        TIMESTEP,            
+        OUTDIR,
+        HOFDIR,            
+        TEMPLATEDATAPATH,
+        TEMPLATEINPUTPATH 
+        )
+    hofScriptPath = os.path.join(sim.filedir,sim.scriptName)
+    sim.saveFiles()
+    runSim(hofScriptPath)
+    outFilePath = os.path.join(sim.outdir,sim.outName)
+    sim.postProcessOutput(outFilePath)
+
+
+
 def saveHOF(hof):
     i = 1
     for ind in hof:
@@ -922,7 +956,7 @@ def saveHOF(hof):
         sim = MembraneSimulation(
             'hof_'+str(i),
             np,
-            RUNTIME,
+            50000,
             TIMESTEP,            
             OUTDIR,
             HOFDIR,            
