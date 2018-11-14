@@ -937,7 +937,7 @@ def cleanContactData(contactData, budTime):
     return contactDataTRIMMED
 
 def progressbar(it, prefix="", size=60):
-    count = len(it)
+    count = len(it) if len(it) > 0 else 1
     def _show(_i):
         x = int(size*_i/count)
         sys.stdout.write("%s[%s%s] %i/%i\r" % (prefix, "#"*x, "."*(size-x), _i, count))
