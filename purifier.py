@@ -131,25 +131,26 @@ with open(ffFilePath, 'w') as ffFile:
         if i.budTime > 0.0:
         	budded[nL][aE]+=1
 
-        walkStrs = ""
-        for walk in i.walks:
-            walkStr = "{"
-            stepCount = 0
-            for s in walk.trajectory:
-                if len(s[1])>0 or len(s[2])>0:
-                    walkStr+="s" + str(stepCount) + '['
-                    for c in s[1]:
-                        walkStr += 'c' + str(c)
-                        walkStr += ';'
-                    for d in s[2]:
-                        walkStr += 'd' + str(d)
-                        walkStr += ';'
-                    if walkStr[-1] == ';':
-                        walkStr = walkStr[:-1]
-                    walkStr += ']'
-                stepCount += 1
-            walkStr+="}"
-            walkStrs += walkStr
+        if i.walks != None:
+            walkStrs = ""
+            for walk in i.walks:
+                walkStr = "{"
+                stepCount = 0
+                for s in walk.trajectory:
+                    if len(s[1])>0 or len(s[2])>0:
+                        walkStr+="s" + str(stepCount) + '['
+                        for c in s[1]:
+                            walkStr += 'c' + str(c)
+                            walkStr += ';'
+                        for d in s[2]:
+                            walkStr += 'd' + str(d)
+                            walkStr += ';'
+                        if walkStr[-1] == ';':
+                            walkStr = walkStr[:-1]
+                        walkStr += ']'
+                    stepCount += 1
+                walkStr+="}"
+                walkStrs += walkStr
 
         lNum = 0
         dists = {}
