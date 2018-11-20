@@ -136,16 +136,17 @@ with open(ffFilePath, 'w') as ffFile:
             walkStr = "{"
             stepCount = 0
             for s in walk.trajectory:
-                walkStr+="s" + str(stepCount) + '['
-                for c in s[1]:
-                    walkStr += 'c' + str(c)
-                    walkStr += ';'
-                for d in s[2]:
-                    walkStr += 'd' + str(d)
-                    walkStr += ';'
-                if walkStr[-1] == ';':
-                    walkStr = walkStr[:-1]
-                walkStr += ']'
+                if len(s[1])>0 or len(s[2])>0:
+                    walkStr+="s" + str(stepCount) + '['
+                    for c in s[1]:
+                        walkStr += 'c' + str(c)
+                        walkStr += ';'
+                    for d in s[2]:
+                        walkStr += 'd' + str(d)
+                        walkStr += ';'
+                    if walkStr[-1] == ';':
+                        walkStr = walkStr[:-1]
+                    walkStr += ']'
                 stepCount += 1
             walkStr+="}"
             walkStrs += walkStr
