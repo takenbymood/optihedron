@@ -79,7 +79,10 @@ for n in netFilePaths:
             "Min Average Shortest Path",
             "Subgraph Number",
             "Estrada Coefficient",
-            "Pruning"
+            "Pruning",
+            "Max SmallWorld",
+            "Mean SmallWorld",
+            "Min SmallWorld"
         ]])
 
 with open(ffFilePath, 'w') as ffFile:
@@ -131,26 +134,26 @@ with open(ffFilePath, 'w') as ffFile:
         if i.budTime > 0.0:
         	budded[nL][aE]+=1
 
-        if i.walks != None:
-            walkStrs = ""
-            for walk in i.walks:
-                walkStr = "{"
-                stepCount = 0
-                for s in walk.trajectory:
-                    if len(s[1])>0 or len(s[2])>0:
-                        walkStr+="s" + str(stepCount) + '['
-                        for c in s[1]:
-                            walkStr += 'c' + str(c)
-                            walkStr += ';'
-                        for d in s[2]:
-                            walkStr += 'd' + str(d)
-                            walkStr += ';'
-                        if walkStr[-1] == ';':
-                            walkStr = walkStr[:-1]
-                        walkStr += ']'
-                    stepCount += 1
-                walkStr+="}"
-                walkStrs += walkStr
+        # if i.walks != None:
+        #     walkStrs = ""
+        #     for walk in i.walks:
+        #         walkStr = "{"
+        #         stepCount = 0
+        #         for s in walk.trajectory:
+        #             if len(s[1])>0 or len(s[2])>0:
+        #                 walkStr+="s" + str(stepCount) + '['
+        #                 for c in s[1]:
+        #                     walkStr += 'c' + str(c)
+        #                     walkStr += ';'
+        #                 for d in s[2]:
+        #                     walkStr += 'd' + str(d)
+        #                     walkStr += ';'
+        #                 if walkStr[-1] == ';':
+        #                     walkStr = walkStr[:-1]
+        #                 walkStr += ']'
+        #             stepCount += 1
+        #         walkStr+="}"
+        #         walkStrs += walkStr
 
         lNum = 0
         dists = {}
@@ -182,7 +185,7 @@ with open(ffFilePath, 'w') as ffFile:
             str(i.patchiness),
             str(i.lininess),
             str(i.spottiness),
-            str(walkStrs),
+            '',
             str(maxDist),
             '('+str(maxPair[0])+';'+str(maxPair[1])+')'
             ]])
@@ -198,6 +201,8 @@ with open(ffFilePath, 'w') as ffFile:
                 dS = []
                 rS = []
                 sPS = []
+                SWs = []
+
                 for g in graphs:
                     d = nx.diameter(g)
                     r = nx.radius(g)
@@ -205,16 +210,20 @@ with open(ffFilePath, 'w') as ffFile:
                     dS.append(d)
                     rS.append(r)
                     sPS.append(sp)
+                    SWs.append(atools.smallWorldNess(g))
 
                 maxDiameter = np.max(dS)
                 avgDiameter = np.mean(dS)
                 minDiameter = np.min(dS)
                 minRadius = np.min(rS)
                 avgRadius = np.mean(rS)
-                maxRadius = np.max(dS)
+                maxRadius = np.max(rS)
                 maxASp = np.max(sPS)
                 avgASp = np.mean(sPS)
                 minASp = np.min(sPS)
+                maxSW = np.max(SWs)
+                avgSW = np.mean(SWs)
+                minSW = np.min(SWs)
 
                 subgraphs = len(graphs)
 
@@ -238,7 +247,10 @@ with open(ffFilePath, 'w') as ffFile:
                     str(minASp),
                     str(subgraphs),
                     str(estrada),
-                    str(pruneSteps[c])
+                    str(pruneSteps[c]),
+                    str(maxSW),
+                    str(avgSW),
+                    str(minSW)
                     ]])
             c+=1
 

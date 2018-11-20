@@ -10,6 +10,7 @@ import holoviews as hv
 import csv, codecs, cStringIO
 import sys
 import math
+import random
 
 
 
@@ -165,9 +166,17 @@ def transparent_cmap(cmap, N=255):
 
 def smallWorldNess(G):
     gnmwG = gnmw(G)
+    attempts = 1
     RG = gnmRandomWeightedGraph(gnmwG[0],gnmwG[1],gnmwG[2])
+    while list(networkx.connected_component_subgraphs(RG)) > 1 and attempts < 10:
+        RG = gnmRandomWeightedGraph(gnmwG[0],gnmwG[1],gnmwG[2])
+        attempts += 1
+    if list(networkx.connected_component_subgraphs(RG)) > 1:
+        return 0
     pLengthG = networkx.average_shortest_path_length(G,weight='weight')
     pLengthRG = networkx.average_shortest_path_length(RG,weight='weight')
+    if pLengthRG <= 0 or pLengthG <= 0:
+        return 0
     clusteringG = networkx.average_clustering(G,weight='weight')
     clusteringRG = networkx.average_clustering(RG,weight='weight')
     SW = (clusteringG/clusteringRG)/(pLengthG/pLengthRG)
