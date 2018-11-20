@@ -168,10 +168,10 @@ def smallWorldNess(G):
     gnmwG = gnmw(G)
     attempts = 1
     RG = gnmRandomWeightedGraph(gnmwG[0],gnmwG[1],gnmwG[2])
-    while list(networkx.connected_component_subgraphs(RG)) > 1 and attempts < 10:
+    while len(list(networkx.connected_component_subgraphs(RG))) > 1 and attempts < 10:
         RG = gnmRandomWeightedGraph(gnmwG[0],gnmwG[1],gnmwG[2])
         attempts += 1
-    if list(networkx.connected_component_subgraphs(RG)) > 1:
+    if len(list(networkx.connected_component_subgraphs(RG))) > 1:
         return 0
     pLengthG = networkx.average_shortest_path_length(G,weight='weight')
     pLengthRG = networkx.average_shortest_path_length(RG,weight='weight')
@@ -179,6 +179,8 @@ def smallWorldNess(G):
         return 0
     clusteringG = networkx.average_clustering(G,weight='weight')
     clusteringRG = networkx.average_clustering(RG,weight='weight')
+    if clusteringRG <= 0:
+        return 0
     SW = (clusteringG/clusteringRG)/(pLengthG/pLengthRG)
     return SW
 
