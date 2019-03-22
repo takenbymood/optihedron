@@ -48,8 +48,8 @@ ffFilePath = os.path.join(outdir,'opti-ff.csv')
 
 netFilePaths = []
 
-minPrune = 0.0
-maxPrune = 1.0
+minPrune = 0.3
+maxPrune = 0.3
 pruneStep = 0.1
 
 pruneSteps = [x for x in atools.frange(minPrune,maxPrune,pruneStep)]
@@ -82,7 +82,8 @@ for n in netFilePaths:
             "Pruning",
             "Max SmallWorld",
             "Mean SmallWorld",
-            "Min SmallWorld"
+            "Min SmallWorld",
+            "Average Clustering"
         ]])
 
 with open(ffFilePath, 'w') as ffFile:
@@ -197,6 +198,7 @@ with open(ffFilePath, 'w') as ffFile:
                 pN = atools.pruneNetwork(i.network,pruneSteps[c])
 
                 density = nx.density(pN)
+                avgC = nx.average_clustering(pN)
                 graphs = list(nx.connected_component_subgraphs(pN))
                 dS = []
                 rS = []
@@ -224,6 +226,7 @@ with open(ffFilePath, 'w') as ffFile:
                 maxSW = np.max(SWs)
                 avgSW = np.mean(SWs)
                 minSW = np.min(SWs)
+                
 
                 subgraphs = len(graphs)
 
@@ -250,7 +253,8 @@ with open(ffFilePath, 'w') as ffFile:
                     str(pruneSteps[c]),
                     str(maxSW),
                     str(avgSW),
-                    str(minSW)
+                    str(minSW),
+                    str(avgC)
                     ]])
             c+=1
 
