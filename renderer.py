@@ -3,6 +3,7 @@ import argparse
 import sys
 import math
 import os
+import time
 
 from ovito.vis import Viewport, RenderSettings
 from ovito import dataset
@@ -48,17 +49,33 @@ def nanoparticleModifiers(node):
     end_value=0
     )
     node.modifiers.append(modifier)
+
+    transparencyModifier = ComputePropertyModifier()
+    transparencyModifier.output_property = "Transparency"
+    transparencyModifier.expressions = ["ParticleType == 1 ? Position.Z < -3 ? 0.85 : 0.8 : 0"]
+    node.modifiers.append(transparencyModifier)
+
     node.compute()
     return
 
+single = True 
 
-def renderScene(inpath,outpath,vp,timestep=0,size=(800,600),modifiers=[],endframe=False):
+def renderScene(inpath,outpath,timestep=0,size=(800,600),modifiers=[],endframe=False):
     # file imports
     node = ovito.io.import_file(inpath, multiple_frames = True)
     node.add_to_scene()
+
+    #ortho viewport setup
+    vp = Viewport(type = Viewport.Type.ORTHO)
+    vp.fov=30
+    vp.camera_pos = (5, -5, 5)
+    vp.camera_dir = (-1, 1, -0.8)
     node.source.cell.display.render_cell = False
-    # viewport setup
-    vp.zoom_all()
+
+    # top viewport setup
+    #vp = Viewport(type = Viewport.Type.TOP)
+    #vp.zoom_all()
+    
     # animation properties
     if not endframe:
         dataset.anim.current_frame=timestep
@@ -68,9 +85,9 @@ def renderScene(inpath,outpath,vp,timestep=0,size=(800,600),modifiers=[],endfram
     for mod in modifiers:
         mod(node)
     # rendering
-    vp.render(RenderSettings(filename=outpath, size=size,generate_alpha=True))
+    vp.render(RenderSettings(filename=outpath,size=size,generate_alpha=True))
     node.remove_from_scene()
-    return vp
+    return
 
 for f in files:
     simName = os.path.basename(os.path.normpath(f)).split('.')[0].split('_')[0]
@@ -84,6 +101,6 @@ for f in files:
 
     # outdir = os.path.join(args.out,simName) if args.test else args.out
     outdir = args.out
-    filePath = os.path.join(outdir,simName+".png")
-
-    renderScene(f,filePath,Viewport(type = Viewport.Type.TOP),timestep=100,modifiers=[nanoparticleModifiers],endframe=True)
+    filePath = os.path.join(outdir,simName+"_ortho.png")
+    if single:
+        renderScene(f,filePath,timestep=100,modifiers=[nanoparticleModifiers],endframe=True)
