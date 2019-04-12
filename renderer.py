@@ -8,6 +8,8 @@ import time
 from ovito.vis import Viewport, RenderSettings
 from ovito import dataset
 from ovito.modifiers import *
+from matplotlib import pyplot as plt
+
 
 parser = argparse.ArgumentParser()
 
@@ -22,6 +24,9 @@ argPathGroup.add_argument('-f','--file', default='', type=str,
 
 parser.add_argument('-o','--out', default=os.path.dirname(os.path.realpath(__file__)), type=str, 
                     help='path to the output directory')
+
+parser.add_argument('-g','--grid', default=False, action='store_true',
+                    help='option to produce a 3x3 grid of images')
 
 args = parser.parse_args()
 
@@ -58,9 +63,9 @@ def nanoparticleModifiers(node):
     node.compute()
     return
 
-single = True 
+single = not args.grid 
 
-def renderScene(inpath,outpath,timestep=0,size=(800,600),modifiers=[],endframe=False):
+def renderScene(inpath,outpath,timestep=0,size=(1024,720),modifiers=[],endframe=False):
     # file imports
     node = ovito.io.import_file(inpath, multiple_frames = True)
     node.add_to_scene()
@@ -75,7 +80,7 @@ def renderScene(inpath,outpath,timestep=0,size=(800,600),modifiers=[],endframe=F
     # top viewport setup
     #vp = Viewport(type = Viewport.Type.TOP)
     #vp.zoom_all()
-    
+
     # animation properties
     if not endframe:
         dataset.anim.current_frame=timestep
@@ -101,6 +106,37 @@ for f in files:
 
     # outdir = os.path.join(args.out,simName) if args.test else args.out
     outdir = args.out
-    filePath = os.path.join(outdir,simName+"_ortho.png")
     if single:
-        renderScene(f,filePath,timestep=100,modifiers=[nanoparticleModifiers],endframe=True)
+        filePath = os.path.join(outdir,simName+"_ortho.png")
+        renderScene(f,filePath,timestep=0,modifiers=[nanoparticleModifiers],endframe=True)
+    else:
+        interval = 31.25
+        filePaths=[]
+        for i in range(9):
+            ts = int(i*interval)
+            if ts > 250:
+                ts = 250
+            filePath = os.path.join(outdir,simName+"_ortho"+"_"+str(i)+".png")
+            filePaths.append(filePath)
+            renderScene(f,filePath,timestep=ts,modifiers=[nanoparticleModifiers],endframe=False)
+        plt.axis('off')
+        plt.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom=False,      # ticks along the bottom edge are off
+        top=False,         # ticks along the top edge are off
+        labelbottom=False) # labels along the bottom edge are off
+        fig = plt.figure(figsize = (16,9))
+        
+        imnum = 0
+        for i,p in enumerate(filePaths):
+            img = plt.imread(p)
+            ax = fig.add_subplot(3,3,i+1)
+            ax.axis('off')
+            ax.set_title(int(i*interval)*100)
+            ax.imshow(img)
+        plt.subplots_adjust(wspace=0, hspace=0)
+        plt.savefig(os.path.join(outdir,simName+"_grid.png"))
+        for i,p in enumerate(filePaths):
+            if os.path.exists(p):
+                os.remove(p)
