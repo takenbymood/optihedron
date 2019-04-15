@@ -9,6 +9,7 @@ from ovito.vis import Viewport, RenderSettings
 from ovito import dataset
 from ovito.modifiers import *
 from matplotlib import pyplot as plt
+import gc 
 
 
 parser = argparse.ArgumentParser()
@@ -24,6 +25,9 @@ argPathGroup.add_argument('-f','--file', default='', type=str,
 
 parser.add_argument('-o','--out', default=os.path.dirname(os.path.realpath(__file__)), type=str, 
                     help='path to the output directory')
+
+parser.add_argument('-l','--limit', default=-1, type=int, 
+                    help='maximum number of scenes to render')
 
 parser.add_argument('-g','--grid', default=False, action='store_true',
                     help='option to produce a 3x3 grid of images')
@@ -90,11 +94,19 @@ def renderScene(inpath,outpath,timestep=0,size=(1024,720),modifiers=[],endframe=
     for mod in modifiers:
         mod(node)
     # rendering
-    vp.render(RenderSettings(filename=outpath,size=size,generate_alpha=True))
+    img = vp.render(RenderSettings(filename=outpath,size=size,generate_alpha=True))
     node.remove_from_scene()
+    del node, vp, modifiers,img
+    gc.collect()
     return
 
+counter = 0
+
+outdir = args.out
+
+
 for f in files:
+
     simName = os.path.basename(os.path.normpath(f)).split('.')[0].split('_')[0]
 
     
@@ -104,8 +116,15 @@ for f in files:
     # end of nanoparticle specific stuff!
 
 
+
     # outdir = os.path.join(args.out,simName) if args.test else args.out
-    outdir = args.out
+    
+
+    if os.path.exists(os.path.join(outdir,simName+"_grid.png")):
+        continue
+    if counter >= args.limit:
+        print('limit reached, exiting')
+        break
     if single:
         filePath = os.path.join(outdir,simName+"_ortho.png")
         renderScene(f,filePath,timestep=0,modifiers=[nanoparticleModifiers],endframe=True)
@@ -135,8 +154,12 @@ for f in files:
             ax.axis('off')
             ax.set_title(int(i*interval)*100)
             ax.imshow(img)
-        plt.subplots_adjust(wspace=0, hspace=0)
-        plt.savefig(os.path.join(outdir,simName+"_grid.png"))
+        fig.subplots_adjust(wspace=0, hspace=0)
+        fig.savefig(os.path.join(outdir,simName+"_grid.png"))
+        fig.clf()
         for i,p in enumerate(filePaths):
             if os.path.exists(p):
                 os.remove(p)
+        counter += 1
+        plt.close()
+        gc.collect()
