@@ -11,6 +11,8 @@ import csv, codecs, cStringIO
 import sys
 import math
 import random
+from itertools import cycle
+from collections import namedtuple
 
 
 
@@ -1084,3 +1086,35 @@ def frange(start, stop, step):
     while x < stop:
         yield x
         x += step
+
+def readXYZA(filepath,headerSize=9):
+    data = {}
+    with open(filepath, "r") as f:
+        lines = f.readlines()
+        ts = 0
+        steps = []
+        hPos = 0
+        currentStep = {}
+        for i in range(len(lines)):
+            if str('ITEM: TIMESTEP') in lines[i]:
+                if 't' in currentStep:
+                    steps.append(currentStep)   
+                hPos = i
+                ts = int(lines[i+1])
+                currentStep = {'t':ts,'data':[]}
+            elif str('ITEM: NUMBER OF ATOMS') in lines[i]:
+                data['natoms'] = int(lines[i+1])  
+            elif str('ITEM: BOX BOUNDS') in lines[i]:
+                currentStep['xsize'] = [float(b) for b in lines[i+1].split(' ')]
+                currentStep['ysize'] = [float(b) for b in lines[i+2].split(' ')]
+                currentStep['zsize'] = [float(b) for b in lines[i+3].split(' ')]
+            elif str('ITEM: ATOMS') in lines[i]:
+                data['columns'] = lines[i].replace('\n','').split(' ')[2:]
+            if(i-hPos>headerSize):
+                atomStep = {}
+                atomData = lines[i].replace('\n','').split(' ')
+                for j,c in enumerate(data['columns']):
+                    atomStep[c] = float(atomData[j]) if '.' in atomData[j] else int(atomData[j])
+                currentStep['data'].append(atomStep)
+        data['steps'] = steps
+    return data
