@@ -89,7 +89,7 @@ class MembraneSimulation():
 		scriptTemp = scriptTemp.replace('_LIGAND GROUP PLACEHOLDER_', 'group				ligand 	type {}:{}\n'.format(3,2+len(self.protein.ligands)))
 		scriptTemp = scriptTemp.replace('_NANOPARTICLE GROUP PLACEHOLDER_', 'group				np      type 2:{}\n'.format(2+len(self.protein.ligands)))
 		scriptTemp = scriptTemp.replace('_LIGAND MEMBRANE INTERACTIONS PLACEHOLDER_', ligandMembraneInteractions)
-		scriptTemp = scriptTemp.replace('_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', 'dump			coords all custom {} {} id type x y z c_cls '+customDump+'\ndump_modify	coords sort id'.format(self.dumpres, os.path.join(self.outdir, self.outName)))	
+		scriptTemp = scriptTemp.replace('_MOLECULAR DYNAMICS DUMP PLACEHOLDER_', ('dump			coords all custom {} {} id type x y z c_cls'+'' if self.customDump == '' else ' ' +self.customDump+'\ndump_modify	coords sort id').format(self.dumpres, os.path.join(self.outdir, self.outName)))	
 		scriptTemp = scriptTemp.replace('_TIMESTEP PLACEHOLDER_', 'timestep       {}'.format(self.timestep))	
 		scriptTemp = scriptTemp.replace('_RUNTIME PLACEHOLDER_', 'run            {}'.format(self.run))
 

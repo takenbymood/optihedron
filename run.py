@@ -998,6 +998,11 @@ def main():
             return
         pmap = pools.ProcessPool(WORKERS).map
         results = pmap(mEval,[(v,k) for k,v in zooList.iteritems()])
+
+        #serialised
+        # results = []
+        # for k,v in zooList.iteritems():
+        #     results.append(mEval((v,k)))
         with open(os.path.join(DBDIR,ZOO.split('.')[0]+'.csv'), "a") as csv:
             for r in results:
                 csv.write(str(r[0]))
