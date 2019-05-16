@@ -52,7 +52,7 @@ spectra = []
 
 with open(spectrumFilePath, 'w') as specFile:
 	specWriter = atools.UnicodeWriter(specFile)
-	specWriter.writerows([['id','e','n','fitness','budtime','budfrac','mean_dist','spectrum']])
+	specWriter.writerows([['id','e','n','fitness','budtime','budfrac','mean_dist','max_dist','min_dist','spectrum']])
 
 for i in dbSession.query(Particle).yield_per(100):
 	nL = int(float(i.nligands))
@@ -69,7 +69,9 @@ for i in dbSession.query(Particle).yield_per(100):
 	mask = np.ones(adj.shape, dtype=bool)
 	np.fill_diagonal(mask, 0)
 	meanDist = adj[mask].mean()
-	spectra.append([str(int(i.pID)),str(float(i.avgEps)),str(float(i.nligands)),str(float(i.fitness)),str(float(i.budTime)),str(float(i.budPerc)),str(float(meanDist)),str(list(spectrum))])
+	minDist = adj[mask].min()
+	maxDist = adj[mask].max()
+	spectra.append([str(int(i.pID)),str(float(i.avgEps)),str(float(i.nligands)),str(float(i.fitness)),str(float(i.budTime)),str(float(i.budPerc)),str(float(meanDist)),str(float(maxDist)),str(float(minDist)),str(list(spectrum))])
 	if len(spectra) == 100:
 		with open(spectrumFilePath, 'a') as specFile:
 			specWriter = atools.UnicodeWriter(specFile)
