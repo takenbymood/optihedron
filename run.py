@@ -190,6 +190,12 @@ OUTDIR = os.path.join(WDIR,'out')
 RUNDIR = os.path.join(WDIR,'run')
 HOFDIR = os.path.join(WDIR,'hof')
 DBDIR = os.path.join(WDIR,'db')
+
+os.makedirs(OUTDIR)
+os.makedirs(RUNDIR)
+os.makedirs(HOFDIR)
+os.makedirs(DBDIR)
+
 TEMPLATEDIR = os.path.join(PDIR,'mem/template')
 TEMPLATEDATAPATH = os.path.join(TEMPLATEDIR,'data.template')
 TEMPLATEINPUTPATH = os.path.join(TEMPLATEDIR,'in.template')
