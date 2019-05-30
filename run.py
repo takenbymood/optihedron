@@ -191,10 +191,18 @@ RUNDIR = os.path.join(WDIR,'run')
 HOFDIR = os.path.join(WDIR,'hof')
 DBDIR = os.path.join(WDIR,'db')
 
-os.makedirs(OUTDIR)
-os.makedirs(RUNDIR)
-os.makedirs(HOFDIR)
-os.makedirs(DBDIR)
+if not os.path.isdir(OUTDIR):
+    os.makedirs(OUTDIR)
+
+if not os.path.isdir(RUNDIR):
+    os.makedirs(RUNDIR)
+
+if not os.path.isdir(HOFDIR):
+    os.makedirs(HOFDIR)
+
+if not os.path.isdir(DBDIR):
+    os.makedirs(DBDIR)
+
 
 TEMPLATEDIR = os.path.join(PDIR,'mem/template')
 TEMPLATEDATAPATH = os.path.join(TEMPLATEDIR,'data.template')
