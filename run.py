@@ -674,7 +674,7 @@ def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=ran
         sim.deleteFiles()
     if KEEPOUTPUT:
         sim.postProcessOutput(outFilePath)
-    elif os.path.exists(outFilePath):
+    if os.path.exists(outFilePath):
         try:
             os.remove(outFilePath)
             print "deleted file" + str(outFilePath)
