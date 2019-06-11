@@ -107,7 +107,7 @@ outdir = args.out
 
 for f in files:
 
-    simName = os.path.basename(os.path.normpath(f)).split('.')[0].split('_')[0]
+    simName = os.path.basename(os.path.normpath(f)).split('.')[0].replace('baseball','bb')
 
     
     # nanoparticle specific stuff

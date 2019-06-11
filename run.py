@@ -190,6 +190,20 @@ OUTDIR = os.path.join(WDIR,'out')
 RUNDIR = os.path.join(WDIR,'run')
 HOFDIR = os.path.join(WDIR,'hof')
 DBDIR = os.path.join(WDIR,'db')
+
+if not os.path.isdir(OUTDIR):
+    os.makedirs(OUTDIR)
+
+if not os.path.isdir(RUNDIR):
+    os.makedirs(RUNDIR)
+
+if not os.path.isdir(HOFDIR):
+    os.makedirs(HOFDIR)
+
+if not os.path.isdir(DBDIR):
+    os.makedirs(DBDIR)
+
+
 TEMPLATEDIR = os.path.join(PDIR,'mem/template')
 TEMPLATEDATAPATH = os.path.join(TEMPLATEDIR,'data.template')
 TEMPLATEINPUTPATH = os.path.join(TEMPLATEDIR,'in.template')
@@ -660,7 +674,7 @@ def evaluateParticleInstance(np,simName,rVec=vectools.randomUnitVector(),rAm=ran
         sim.deleteFiles()
     if KEEPOUTPUT:
         sim.postProcessOutput(outFilePath)
-    elif os.path.exists(outFilePath):
+    if os.path.exists(outFilePath):
         try:
             os.remove(outFilePath)
             print "deleted file" + str(outFilePath)
@@ -998,6 +1012,11 @@ def main():
             return
         pmap = pools.ProcessPool(WORKERS).map
         results = pmap(mEval,[(v,k) for k,v in zooList.iteritems()])
+
+        #serialised
+        # results = []
+        # for k,v in zooList.iteritems():
+        #     results.append(mEval((v,k)))
         with open(os.path.join(DBDIR,ZOO.split('.')[0]+'.csv'), "a") as csv:
             for r in results:
                 csv.write(str(r[0]))
