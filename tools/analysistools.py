@@ -258,6 +258,8 @@ def sameLigands(ligA, ligB):
 	else:
 		return False
 
+
+
 def greatArcDist(Ang1, Ang2, rad=4):
     #Ang = (PolarAng,AziAng)
     #https://math.stackexchange.com/questions/231221/great-arc-distance-between-two-points-on-a-unit-sphere
@@ -1095,13 +1097,19 @@ def readXYZA(filepath,headerSize=9):
         steps = []
         hPos = 0
         currentStep = {}
+        data['atoms'] = []
+        idIndex = -1
+        typeIndex = -1
+        storedAtomTypes = False
         for i in range(len(lines)):
             if str('ITEM: TIMESTEP') in lines[i]:
                 if 't' in currentStep:
-                    steps.append(currentStep)   
+                    steps.append(currentStep)
+                    storedAtomTypes = True   
                 hPos = i
                 ts = int(lines[i+1])
                 currentStep = {'t':ts,'data':[]}
+                
             elif str('ITEM: NUMBER OF ATOMS') in lines[i]:
                 data['natoms'] = int(lines[i+1])  
             elif str('ITEM: BOX BOUNDS') in lines[i]:
@@ -1110,9 +1118,17 @@ def readXYZA(filepath,headerSize=9):
                 currentStep['zsize'] = [float(b) for b in lines[i+3].split(' ')]
             elif str('ITEM: ATOMS') in lines[i]:
                 data['columns'] = lines[i].replace('\n','').split(' ')[2:]
-            if(i-hPos>headerSize):
+                if not storedAtomTypes:
+                    if 'id' in data['columns']:
+                        idIndex = data['columns'].index('id')
+                    if 'type' in data['columns']:
+                        typeIndex = data['columns'].index('type')
+            if(i-hPos>headerSize-1):
                 atomStep = {}
                 atomData = lines[i].replace('\n','').split(' ')
+                if not storedAtomTypes:
+                    if idIndex>=0 and typeIndex>=0:
+                        data['atoms'].append((int(atomData[idIndex]),int(atomData[typeIndex])))
                 for j,c in enumerate(data['columns']):
                     atomStep[c] = float(atomData[j]) if '.' in atomData[j] else int(atomData[j])
                 currentStep['data'].append(atomStep)
