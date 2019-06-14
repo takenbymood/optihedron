@@ -9,9 +9,9 @@ parser = argparse.ArgumentParser(description='')
 
 
 parser.add_argument('-i','--input', default=None, type=str, 
-                    help='Path of input or directory containing the input files. These must have the .xyza extension')
+					help='Path of input or directory containing the input files. These must have the .xyza extension')
 parser.add_argument('-o','--out', default='', type=str, 
-                    help='Output directory path')
+					help='Output directory path')
 
 
 
@@ -100,23 +100,27 @@ def main():
 			matFile = os.path.join(matPath,name+"_mat.csv")
 
 			with open(jitterFile, 'w') as file:
-			    for item in jitterData:
+				file.write("timestep,captured,freed\n")
+				for item in jitterData:
 					file.write("%s\n" % item)
 
 			with open(capFile, 'w') as file:
-			    for item in capData:
+				file.write("timestep,cap_id\n")
+				for item in capData:
 					file.write("%s\n" % item)
 
 			with open(freeFile, 'w') as file:
-			    for item in freeData:
+				file.write("timestep,free_id\n")
+				for item in freeData:
 					file.write("%s\n" % item)
 
 			with open(matFile, 'w') as file:
-			    for item in distMatr:
+				file.write("i,j,great_arc_distance\n")
+				for item in distMatr:
 					file.write("%s\n" % item)
 
 
 		
 
 if __name__ == "__main__":
-    main()
+	main()
