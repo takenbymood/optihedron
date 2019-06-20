@@ -114,7 +114,7 @@ def main():
 				for item in freeData:
 					file.write("%s\n" % item)
 
-			with open(matFile, 'w') as file:
+			with open(matFile, 'w') as file0210:
 				file.write("i,j,great_arc_distance\n")
 				for item in distMatr:
 					file.write("%s\n" % item)
