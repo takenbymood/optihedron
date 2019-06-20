@@ -78,7 +78,8 @@ if dbPath != "":
                 TEMPLATEDATAPATH,
                 TEMPLATEINPUTPATH,
                 rAxis=vectools.randomUnitVector(),
-                rAmount=random.uniform(0.3141,3.141)
+                rAmount=random.uniform(0.3141,3.141),
+                customDump='vx vy vz'
             )
             sim.saveFiles()
             if run:
