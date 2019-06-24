@@ -1,5 +1,6 @@
 import numpy as np
 import seaborn as sns
+import matplotlib
 import matplotlib.pyplot as plt
 import os
 import copy
@@ -13,7 +14,8 @@ import math
 import random
 from itertools import cycle
 from collections import namedtuple
-
+import pandas as pd
+from scipy.spatial import distance_matrix
 
 
 def buildNanoParticleFromNetwork(G,weight,radius=4,sig=1):
@@ -54,14 +56,16 @@ def pruneNetwork(G,pruning):
     pruneNodes = []
     GP = copy.deepcopy(G)
     maxW = 0
-    for n,w in G.nodes(data=True):
-        if w['weight'] <= 0.0:
-            pruneNodes.append(n)
+    if len(G.nodes()) > 0 and 'weight' in G.nodes(data=True)[0]:
+        for n,w in G.nodes(data=True):
+            if w['weight'] <= 0.0:
+                pruneNodes.append(n)
 
-    for e in GP.edges:
-        w = GP.get_edge_data(*e)['weight']
-        if(w<=pruning):
-            prunes.append(e)
+    if len(G.edges()) > 0:
+        for e in GP.edges:
+            w = GP.get_edge_data(*e)['weight']
+            if(w<=pruning):
+                prunes.append(e)
 
     GP.remove_edges_from(prunes)
     GP.remove_nodes_from(pruneNodes)
@@ -1134,3 +1138,54 @@ def readXYZA(filepath,headerSize=9):
                 currentStep['data'].append(atomStep)
         data['steps'] = steps
     return data
+
+def pointCloudToDataFrame(data):
+    #turns a series of xyz points into a nice pandas dataframe
+    df = pd.DataFrame(data,columns=['x','y','z'])
+    return df
+
+def pointCloudToDistanceMatrix(data):
+    #gets pairwise distances of a cloud of xyz points
+    df = pointCloudToDataFrame(data)
+    dists = distance_matrix(df.values, df.values)
+    return dists
+
+def pointCloudToInverseDistanceMatrix(data):
+    #gets inverse pairwise distances of a cloud of xyz points
+    df = atools.pointCloudToDataFrame(data)
+    distdf = pd.DataFrame(distance_matrix(df.values, df.values), index=df.index, columns=df.index)
+    distdf = distdf.apply(lambda a : [1.0/float(b) if b > 0 else 0.0 for b in a],axis=0)
+    dists = distdf.values
+    return dists
+
+def removeSelfLoops(G):
+    #removes the self edges from a graph
+    G.remove_edges_from(G.selfloop_edges())
+    return G
+
+def pointCloudToDistanceGraph(data, removeSelfEdges=True, inverse=False):
+    #the full package - turns a cloud of xyz points into a networkx graph with distances scaled by linear distance
+    dists = pointCloudToDistanceMatrix(data) if inverse else pointCloudToInverseDistanceMatrix(data)
+    dt = [('weight',float)]
+    A=np.matrix(dists,dtype=dt)
+    G = nx.from_numpy_matrix(A)
+    if removeSelfEdges:
+        G = removeSelfLoops(G)
+    return G
+
+def orthoProjection(data,scale=1.0,offset=0.0):
+    #turns 3D data into an orthographic projected version, useful!
+    ortho = []
+    for d in data:
+        b = []
+        b.append(scale*d[0] + offset)
+        b.append(scale*d[2] + offset)
+        ortho.append(b)
+    return ortho
+
+def pointCloudToPositionDictionary(data):
+    #makes a position dictionary in the form expected by networkx
+    posDict = {}
+    for i,d in enumerate(orthoProjection(data)):
+        posDict[i] = d
+    return posDict
