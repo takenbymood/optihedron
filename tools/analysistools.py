@@ -56,9 +56,9 @@ def pruneNetwork(G,pruning):
     pruneNodes = []
     GP = copy.deepcopy(G)
     maxW = 0
-    if len(G.nodes()) > 0 and 'weight' in G.nodes(data=True)[0]:
+    if len(G.nodes()) > 0:
         for n,w in G.nodes(data=True):
-            if w['weight'] <= 0.0:
+            if 'weight' not in w or w['weight'] <= 0.0:
                 pruneNodes.append(n)
 
     if len(G.edges()) > 0:
