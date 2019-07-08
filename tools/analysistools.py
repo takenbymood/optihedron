@@ -51,17 +51,17 @@ def buildLigandNetwork(ligands, silent=True, ignoreZeros=True):
         iIndex += 1
     return G
 
-def pruneNetwork(G,pruning):
+def pruneNetwork(G,pruning,pruneNodes=True,pruneEdges=True):
     prunes = []
     pruneNodes = []
     GP = copy.deepcopy(G)
     maxW = 0
-    if len(G.nodes()) > 0:
+    if pruneNodes and len(G.nodes()) > 0:
         for n,w in G.nodes(data=True):
             if 'weight' not in w or w['weight'] <= 0.0:
                 pruneNodes.append(n)
 
-    if len(G.edges()) > 0:
+    if pruneEdges and len(G.edges()) > 0:
         for e in GP.edges:
             w = GP.get_edge_data(*e)['weight']
             if(w<=pruning):
@@ -1130,6 +1130,8 @@ def readXYZA(filepath,headerSize=9):
             if(i-hPos>headerSize-1):
                 atomStep = {}
                 atomData = lines[i].replace('\n','').split(' ')
+                if len(atomData) != len(data['columns']):
+                    continue
                 if not storedAtomTypes:
                     if idIndex>=0 and typeIndex>=0:
                         data['atoms'].append((int(atomData[idIndex]),int(atomData[typeIndex])))
@@ -1138,6 +1140,26 @@ def readXYZA(filepath,headerSize=9):
                 currentStep['data'].append(atomStep)
         data['steps'] = steps
     return data
+
+def getBuddingTime(data):
+    #this takes an input from readxyza, not a filepath
+    if not 'c_cls' in data['columns']:
+        return -1
+    for s in data['steps']:
+        clus = []
+        for a in s['data']:
+            clus.append(a['c_cls'])
+        cSet = set(clus)
+        clusSizes = {}
+        for c in cSet:
+            clusSizes[c] = clus.count(c)
+        largeClusters = 0
+        for k,v in clusSizes.iteritems():
+            if v > 25:
+                largeClusters += 1
+        if largeClusters > 1:
+            return s['t']
+    return -1
 
 def pointCloudToDataFrame(data):
     #turns a series of xyz points into a nice pandas dataframe
@@ -1152,7 +1174,7 @@ def pointCloudToDistanceMatrix(data):
 
 def pointCloudToInverseDistanceMatrix(data):
     #gets inverse pairwise distances of a cloud of xyz points
-    df = atools.pointCloudToDataFrame(data)
+    df = pointCloudToDataFrame(data)
     distdf = pd.DataFrame(distance_matrix(df.values, df.values), index=df.index, columns=df.index)
     distdf = distdf.apply(lambda a : [1.0/float(b) if b > 0 else 0.0 for b in a],axis=0)
     dists = distdf.values
@@ -1168,7 +1190,7 @@ def pointCloudToDistanceGraph(data, removeSelfEdges=True, inverse=False):
     dists = pointCloudToDistanceMatrix(data) if inverse else pointCloudToInverseDistanceMatrix(data)
     dt = [('weight',float)]
     A=np.matrix(dists,dtype=dt)
-    G = nx.from_numpy_matrix(A)
+    G = networkx.from_numpy_matrix(A)
     if removeSelfEdges:
         G = removeSelfLoops(G)
     return G
@@ -1189,3 +1211,132 @@ def pointCloudToPositionDictionary(data):
     for i,d in enumerate(orthoProjection(data)):
         posDict[i] = d
     return posDict
+
+def getRotationData(simData):
+    coreId = -1
+    refId = -1
+    for i,a in enumerate(simData['steps'][0]['data']):
+        if a['type'] == 2:
+            coreId = i
+        if a['type'] == 3:
+            refId = i
+
+    r = []
+    rotation = []
+    
+    for i,s in enumerate(simData['steps']):
+        core = s['data'][coreId]
+        ref = s['data'][refId]
+        vCore = [core['x'],core['y'],core['z']]
+        vRef = [ref['x'],ref['y'],ref['z']]
+        r.append(np.subtract(vRef,vCore))
+        if i>0:
+            rotation.append(r[-1])
+            
+    return rotation
+
+def getPolarRotationData(simData):
+    rotation = getRotationData(simData)
+    return [crt2SphPol(r) for r in rotation]
+
+def getAngularDisplacement(simData):
+    rotation = getPolarRotationData(simData)
+    return [np.subtract(r,rotation[0]) for r in rotation]
+
+def getDisplacement(simData):
+    rotation = getRotationData(simData)
+    return [np.subtract(r,rotation[0]) for r in rotation]
+
+def plotRotationTrajectory(data):
+    colors = []
+    colStep = 1.0/float(len(data))
+    for i in range(len(data)):
+        colors.append((colStep*i,0.0,1.0-colStep*i,1.0))
+        
+    startPoint = 0
+    X, Y, Z = zip(*data[startPoint:])
+    fig = plt.figure(figsize=(13, 9))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(X,Y,Z,alpha=0.4)
+    ax.scatter(X, Y, Z,c=colors[startPoint:])
+    return fig
+
+def plotRotationTrajectoryOnSphere(data):
+    colors = []
+    colStep = 1.0/float(len(data))
+    for i in range(len(data)):
+        colors.append((colStep*i,0.0,1.0-colStep*i,1.0))
+        
+    startPoint = 0
+    X, Y, Z = zip(*data[startPoint:])
+    fig = plt.figure(figsize=(13, 9))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(X,Y,Z,alpha=0.4)
+    ax.set_xlim([-4.0,4.0])
+    ax.set_ylim([-4.0,4.0])
+    ax.set_zlim([-4.0,4.0])
+    u, v = np.mgrid[0:2*np.pi:200j, 0:np.pi:200j]
+    sx = 4.0*np.cos(u)*np.sin(v)
+    sy = 4.0*np.sin(u)*np.sin(v)
+    sz = 4.0*np.cos(v)
+    ax.plot_wireframe(sx, sy, sz, color="r",alpha=0.05)
+    ax.scatter(X, Y, Z,c=colors[startPoint:])
+    return fig
+
+def getCorr(trajvectors,delta):
+    trajcorr = [np.dot(t,trajvectors[i+delta]) for i,t in enumerate(trajvectors[1:len(trajvectors)-delta-1])]
+    corr = np.mean(trajcorr)
+    return corr
+
+def getCorrs(traj,deltas):
+    corrs = []
+    trajvectors = [t-traj[i] for i,t in enumerate(traj[1:])]
+    for d in range(deltas):
+        corr = getCorr(trajvectors,d)
+        corrs.append(corr)
+    return corrs
+
+def generateRotationSummary(traj,deltas):
+    summ = {}
+    corrs = getCorrs(traj,deltas)
+    trajdisplacement = [np.linalg.norm(t-traj[0]) for i,t in enumerate(traj[1:])]
+    trajmsd = [t*t for t in trajdisplacement]
+    
+    G = pointCloudToDistanceGraph(traj)
+
+    #REMOVE THIS NEXT TIME YOU LOAD THE KERNEL!
+    # for u,v,d in G.edges(data=True):
+    #     print d
+        
+    G=pruneNetwork(G,2.0,pruneNodes=False)
+
+    den = networkx.density(G)
+    clus = 0.0
+    if den > 0.0:
+        clus = networkx.average_clustering(G)
+
+    
+    summ['corrs'] = corrs
+    summ['msd'] = trajmsd
+    summ['graph'] = G
+    summ['density'] = den
+    summ['clustering'] = clus
+    return summ
+
+def generateSummaries(xyzapath):
+    xyzas = [os.path.join(xyzapath,f) for f in filter(lambda x: '.xyza' in x, os.listdir(xyzapath))]
+    summ = {}
+    n = len(xyzas)
+
+    for i,x in enumerate(xyzas):
+        print(str(x) + " file " + str(i+1) + " of " + str(n))
+        summ[x] = {}
+        d = readXYZA(x)
+        traj = getRotationData(d)
+        s = generateRotationSummary(traj,5)
+        bt = getBuddingTime(d)
+        summ[x] = s
+        summ[x]['bt'] = bt
+
+    return summ
+    
