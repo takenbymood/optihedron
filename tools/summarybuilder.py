@@ -17,6 +17,8 @@ args = parser.parse_args()
 xyzaPath = args.input
 outPath = args.output
 
+s = {}
+
 try:
     s = atools.generateSummaries(xyzaPath)
 except:
