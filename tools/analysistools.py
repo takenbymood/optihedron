@@ -1136,7 +1136,7 @@ def readXYZA(filepath,headerSize=9):
                     if idIndex>=0 and typeIndex>=0:
                         data['atoms'].append((int(atomData[idIndex]),int(atomData[typeIndex])))
                 for j,c in enumerate(data['columns']):
-                    atomStep[c] = float(atomData[j]) if '.' in atomData[j] else int(atomData[j])
+                    atomStep[c] = float(atomData[j]) if ('.' in atomData[j] or 'e' in atomData[j]) else int(atomData[j])
                 currentStep['data'].append(atomStep)
         data['steps'] = steps
     return data

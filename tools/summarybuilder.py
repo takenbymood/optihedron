@@ -33,6 +33,8 @@ data = []
 bmsd = []
 nmsd = []
 for k,v in s.iteritems():
+    if (len(bmsd) > 0 and len(nmsd) > 0) and (len(v['msd']) != len(bmsd) or len(v['msd']) != len(nmsd)):
+        continue
     data.append((k,v['density'],v['clustering'],v['bt'],'budding' if v['bt'] > 0.0 else 'non budding'))
     if v['bt'] > 0.0:
         bmsd = [bmsd[i]+t for i,t in enumerate(v['msd'])] if len(bmsd) > 0 else [t for i,t in enumerate(v['msd'])]
