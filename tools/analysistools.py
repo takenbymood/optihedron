@@ -1141,6 +1141,28 @@ def readXYZA(filepath,headerSize=9):
         data['steps'] = steps
     return data
 
+def dataToDataframe(data,filepath):
+    cols = ['timestep']
+    for c in data['columns']:
+        cols.append(c)
+
+    dfdata = []
+    for s in data['steps']:
+        for a in s['data']:
+            td = []
+            td.append(s['t'])
+            for j in data['columns']:
+                td.append(a[j])
+            dfdata.append(tuple(td))
+
+    df = pd.DataFrame(dfdata, columns = cols) 
+    df.to_csv(filepath.replace('xyza','csv'),index=False)
+
+def xyzaToDataframe(filepath,headerSize=9):
+    d = readXYZA(filepath,headerSize=9)
+    dataToDataframe(d,filepath)
+    return d
+
 def getBuddingTime(data):
     #this takes an input from readxyza, not a filepath
     if not 'c_cls' in data['columns']:
@@ -1323,6 +1345,8 @@ def generateRotationSummary(traj,deltas):
     summ['clustering'] = clus
     return summ
 
+
+
 def generateSummaries(xyzapath):
     xyzas = [os.path.join(xyzapath,f) for f in filter(lambda x: '.xyza' in x, os.listdir(xyzapath))]
     summ = {}
@@ -1331,7 +1355,7 @@ def generateSummaries(xyzapath):
     for i,x in enumerate(xyzas):
         print(str(x) + " file " + str(i+1) + " of " + str(n))
         summ[x] = {}
-        d = readXYZA(x)
+        d = xyzaToDataframe(x)
         traj = getRotationData(d)
         s = generateRotationSummary(traj,5)
         bt = getBuddingTime(d)
