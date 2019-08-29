@@ -1157,11 +1157,12 @@ def dataToDataframe(data,filepath):
 
     df = pd.DataFrame(dfdata, columns = cols) 
     df.to_csv(filepath.replace('xyza','csv'),index=False)
+    return df
 
 def xyzaToDataframe(filepath,headerSize=9):
     d = readXYZA(filepath,headerSize=9)
-    dataToDataframe(d,filepath)
-    return d
+    df = dataToDataframe(d,filepath)
+    return df
 
 def getBuddingTime(data):
     #this takes an input from readxyza, not a filepath
@@ -1234,7 +1235,7 @@ def pointCloudToPositionDictionary(data):
         posDict[i] = d
     return posDict
 
-def getRotationData(simData):
+def getRotationDataFromXYZA(simData):
     coreId = -1
     refId = -1
     for i,a in enumerate(simData['steps'][0]['data']):
@@ -1256,6 +1257,12 @@ def getRotationData(simData):
             rotation.append(r[-1])
             
     return rotation
+
+def getRotationData(d):
+    coreTraj=d[d.type==2].sort_values(by=['timestep'])[['x','y','z']].values
+    refTraj=d[d.type==3].sort_values(by=['timestep'])[['x','y','z']].values
+    rTraj = [np.subtract(refTraj[i],coreTraj[i]) for i,v in enumerate(coreTraj)]
+    return rTraj
 
 def getPolarRotationData(simData):
     rotation = getRotationData(simData)
