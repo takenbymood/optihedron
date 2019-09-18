@@ -1284,13 +1284,13 @@ def plotRotationTrajectory(data):
         
     startPoint = 0
     X, Y, Z = zip(*data[startPoint:])
-    fig = plt.figure(figsize=(13, 9))
+    fig = plt.figure(figsize=(13, 13))
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(X,Y,Z,alpha=0.4)
     ax.scatter(X, Y, Z,c=colors[startPoint:])
     return fig
 
-def plotRotationTrajectoryOnSphere(data):
+def plotRotationTrajectoryOnSphere(data,fig=plt.figure(figsize=(13, 13))):
     colors = []
     colStep = 1.0/float(len(data))
     for i in range(len(data)):
@@ -1298,7 +1298,6 @@ def plotRotationTrajectoryOnSphere(data):
         
     startPoint = 0
     X, Y, Z = zip(*data[startPoint:])
-    fig = plt.figure(figsize=(13, 9))
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(X,Y,Z,alpha=0.4)
     ax.set_xlim([-4.0,4.0])
