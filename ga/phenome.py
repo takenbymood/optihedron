@@ -23,5 +23,5 @@ class Phenome:
 		return None
 
 	def makeUniqueId(self,ind):
-		return hashlib.sha1(ind).hexdigest()
+		return hashlib.sha1(str(ind)).hexdigest()
 
