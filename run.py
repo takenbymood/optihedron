@@ -95,7 +95,7 @@ parser.add_argument('-sg','--startinggen',default=0, type=int,
                     help='starting generation')
 
 parser.add_argument('-ff','--fitnessfunction',default="budding",
-                    choices=['budding', 'diameter'])
+                    choices=['budding', 'diameter','smallworld'])
 
 
 #Model Options
@@ -808,6 +808,23 @@ def evaluateDiameter(individual):
         diams.append(numpy.max(dS))
     return numpy.mean(diams),
 
+def evaluateSmallWorld(individual):
+    p=0.3
+    phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
+    np = phenome.particle
+    n = atools.buildLigandNetwork(np.ligands)
+    sws = []
+    pN = atools.pruneNetwork(n,p)
+    graphs = list(nx.connected_component_subgraphs(pN))
+    sw = []
+    for g in graphs:
+        if len(g) > 10:
+            d = nx.algorithms.smallworld.omega(g)
+            sw.append(d)
+    if len(sw) >0:
+        sws.append(numpy.mean(sw)/len(sw))
+    return numpy.mean(sws),
+
 
 
 def sel(pop,k):
@@ -1028,6 +1045,8 @@ def main():
         return
 
 
+
+
     try:
         if not os.path.isdir(WDIR):
             mkdirs(WDIR)
@@ -1093,6 +1112,9 @@ def main():
         evaluate = evaluateBudding
     elif FITNESSFUNCTION == 'diameter':
         evaluate = evaluateDiameter
+    elif FITNESSFUNCTION == 'smallworld':
+        evaluate = evaluateSmallWorld
+
 
     ga = nga.NetworkedGeneticAlgorithm(
        genomeSize = GENOMESIZE,
