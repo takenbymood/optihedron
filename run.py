@@ -809,21 +809,48 @@ def evaluateDiameter(individual):
     return numpy.mean(diams),
 
 def evaluateSmallWorld(individual):
-    p=0.3
+    p=0.35
     phenome = CoveredNanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(individual,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle
+    swf = -1E8
+    f = -1E8
     n = atools.buildLigandNetwork(np.ligands)
     sws = []
     pN = atools.pruneNetwork(n,p)
     graphs = list(nx.connected_component_subgraphs(pN))
     sw = []
-    for g in graphs:
-        if len(g) > 10:
-            d = nx.algorithms.smallworld.omega(g)
-            sw.append(d)
-    if len(sw) >0:
-        sws.append(numpy.mean(sw)/len(sw))
-    return numpy.mean(sws),
+    sigs = []
+    maxNodes = 0
+    biggestG = None
+    try:
+        for g in graphs:
+            if len(g) > maxNodes:
+                maxNodes = len(g)
+                biggestG = g
+        # if biggestG != None:
+        #     swf = nx.algorithms.smallworld.omega(biggestG)
+        
+        for g in graphs:
+            if len(g)>3:
+                d = nx.algorithms.smallworld.omega(g)
+                # sig = nx.algorithms.smallworld.sigma(g)
+                if not math.isnan(d):
+                    sw.append(d)
+                # sigs.append(sig)
+        if len(sw) >0:
+            swf = numpy.mean(sw)
+            # sigf = numpy.mean(sigs)
+        if swf != None and not math.isnan(swf):
+            # f = 100.0/(abs(float(swf))*(float(len(graphs))**4.0))-0.5*float(len(graphs))  if swf != 0.0 else -1E100
+            f = numpy.exp(-(5.0*abs(float(swf))*(float(len(graphs))-0.5) + 0.1*(float(len(graphs))-0.5))) - 0.05*float(len(graphs)) -0.25*abs(float(swf)) + 1.0
+            print swf,len(graphs), f
+    except:
+        print "invalid network, removing individual"
+    if f<0:
+        f=0
+    if f>10:
+        f=10
+    return f,
 
 
 
@@ -923,23 +950,32 @@ def afterMigration(ga):
         commitSession(ga)
 
     if KEEPBEST:
-        saveBest(ga.hof,ga.gen)
+        saveBest(ga.islands,ga.gen)
 
     if KEEPWORST:
         saveWorst(ga.islands,ga.gen)
 
     return
 
-def saveBest(hof,gen):
-    if len(hof) < 1:
+def saveBest(pop,gen):
+    if len(pop) < 1:
         return
-    ind = hof[0]
+    if len(pop[0]) < 1:
+        return
+    ind = pop[0][0]
+    maxFit = ind.fitness.values[-1]
+    for isle in pop:
+        for p in isle:
+            if p.fitness.values[-1] > maxFit:
+                ind = p
+                maxFit = ind.fitness.values[-1]
+    print "saving:" + str(ind)+ ", fitness:" + str(ind.fitness.values[-1])
     phenome = CoveredNanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,EPSMIN,EPSMAX) if not PARTIAL else NanoParticlePhenome(ind,EXPRPLACES,EPSPLACES,POLANGPLACES,AZIANGPLACES,EPSMIN,EPSMAX)
     np = phenome.particle
     sim = MembraneSimulation(
         'gen_'+str(gen)+"_best",
         np,
-        50000,
+        25000,
         TIMESTEP,            
         OUTDIR,
         HOFDIR,            
@@ -953,6 +989,7 @@ def saveBest(hof,gen):
     sim.postProcessOutput(outFilePath)
 
 def saveWorst(pop,gen):
+
     if len(pop) < 1:
         return
     minFit = 1e8
@@ -966,7 +1003,7 @@ def saveWorst(pop,gen):
     sim = MembraneSimulation(
         'gen_'+str(gen)+"_worst",
         np,
-        50000,
+        25000,
         TIMESTEP,            
         OUTDIR,
         HOFDIR,            
@@ -989,7 +1026,7 @@ def saveHOF(hof):
         sim = MembraneSimulation(
             'hof_'+str(i),
             np,
-            50000,
+            25000,
             TIMESTEP,            
             OUTDIR,
             HOFDIR,            
@@ -1001,6 +1038,7 @@ def saveHOF(hof):
         runSim(hofScriptPath)
         outFilePath = os.path.join(sim.outdir,sim.outName)
         sim.postProcessOutput(outFilePath)
+        i+=1
 
 def mkdirs(directory):
     try:
