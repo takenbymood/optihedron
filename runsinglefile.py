@@ -15,10 +15,10 @@ parser.add_argument('-o','--out', default='', type=str,
 
 args = parser.parse_args()
 
-istr = "111111111111111111110011100110011011111011111111001111101110011111101101"
+istr = "101011011111011100110011111011111111011101101110011001011011111011011111"
 individual = [int(i) for i in istr]
 
-particle = nanoparticle.CoveredNanoParticlePhenome(individual,1,0,10,10)
+particle = nanoparticle.CoveredNanoParticlePhenome(individual,1,0,4,4)
 
 np = particle.particle
 
