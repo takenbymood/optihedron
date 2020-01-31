@@ -15,17 +15,17 @@ parser.add_argument('-o','--out', default='', type=str,
 
 args = parser.parse_args()
 
-istr = "101011011111011100110011111011111111011101101110011001011011111011011111"
+istr = "000000010001011100010001011100100000011100110000100011000001000001010000"
 individual = [int(i) for i in istr]
 
-particle = nanoparticle.CoveredNanoParticlePhenome(individual,1,0,4,4)
+particle = nanoparticle.CoveredNanoParticlePhenome(individual,1,0,11,11)
 
 np = particle.particle
 
 sim = mb.MembraneSimulation(
         args.input.split('/')[-1].split('.')[0],
         np,
-        5000,
+        50000,
         0.01,        
         args.out,
         os.path.dirname(args.input),
