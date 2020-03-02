@@ -9,12 +9,12 @@ This forked version of the larger (and messier) original repo is the one which i
 
 [optihedron-analysis](https://github.com/takenbymood/optihedron-analysis)
 
-The following commands will download the Feb2016 lammps release and make install it along with the Yuan membrane potential used in the study and connect it to python. The install script will also get all required pip packages from requirements.txt and install them in its own virtual environment, activate that environment and run a genetic algorithm on a 22 ligand particle with 11kT affinity. The output will be saved to db/datastore.db as a sqlite file, which is required for analysis of the results.
+The following commands will download the Feb2016 lammps release and make install it along with the Yuan membrane potential used in the study and connect it to python. The install script will also get all required pip packages from requirements.txt and install them in its own virtual environment, activate that environment and run a genetic algorithm on a 22 ligand particle with 11kT affinity. The output will be saved to db/datastore.db as a sqlite file, which is required for analysis of the results. It will also save the best individuals from each generation as lammps files along with their trajectories.
 
 ```bash
 source ./install.sh
 source ./activate.sh
-python run.py -n 10 -p 50 -d 1 -
+python run.py -n 10 -p 50 -d 1 -fl 22 -epmn 11 -epmx 11 -br 100 -tw 10 -sr -kb
 ```
 You will need wget, python2.7, pip and virtualenv to be installed for all of this to work. Please ensure you do that before running install.sh
 
@@ -67,6 +67,9 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 | Flag | Long | Default | Description  |
 | ----- | :-------- | :--- | :- |
 | -mpi | --mpi | False | Run LAMMPs using MPI, this is highly reccomended if you are running only 1 worker |
+| -w | --workers | 10 | Number of parallel workers to run (probably shouldn't exceed the number of cores you have) |
+| -np | --nodes | 4 | Number of nodes to run each MPI task on |
+| -tm | --timeout | 1800 | How long to wait before considering an mpi run broken |
 
 #### Data Options
 
@@ -81,3 +84,4 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 | -lw | --ligandweight | 10 | Reward for being at the target ligand number |
 | -pw | --penaltyweight | 10 | Penalty for higher than target affinity |
 | -tl | --targetligands | 1 | Ideal number of ligands |
+| -q | --qsub | False | Submit jobs to a cluster using qsub |
