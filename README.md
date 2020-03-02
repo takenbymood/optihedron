@@ -16,7 +16,7 @@ The following commands will download the Feb2016 lammps release and make install
 ```bash
 source ./install.sh
 source ./activate.sh
-python run.py -w 4 -n 3 -p 4 -d 1 -fl 22 -expr 1 -eps 0 -polang 0 -aziang 0 -epmn 11 -epmx 11 -br 100 -tw 10 -sr -kb
+python run.py -w 4 -n 30 -p 16 -d 1 -fl 22 -expr 1 -eps 0 -polang 0 -aziang 0 -epmn 11 -epmx 11 -br 100 -tw 10 -sr -kb
 ```
 You will need wget, python2.7, pip and virtualenv to be installed for all of this to work. Please ensure you do that before running install.sh
 
