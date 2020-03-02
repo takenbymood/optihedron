@@ -23,7 +23,7 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 #### Genetic Algorithm Options
 
 | Flag | Long | Default | Description  |
-| ----- | :---- | :--- | :- |
+| ----- | :-------- | :--- | :- |
 | -n | --ngen | 1 | The number of generations to run for before stopping |
 | -d | --demes | 1 | The number of demes/subpopulations |
 | -p | --population | 1 | The number of individuals in each deme |
@@ -43,18 +43,18 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 
 #### Model Options
 
-| Flag        | Default           | Description  |
-| ---- |:---| :-------------|
-| -s (--seed) | ```python int(time.time())``` | The number of generations to run for before stopping |
+| Flag | Long | Default | Description  |
+| ----- | :-------- | :--- | :- |
+| -s | --seed | ```python int(time.time())``` | The number of generations to run for before stopping |
 
 #### Concurrency Options
 
-| Flag        | Default           | Description  |
-| ------------- |:-------------| :-----|
-| -mpi (--mpi) | False | Run LAMMPs using MPI, this is highly reccomended if you are running only 1 worker |
+| Flag | Long | Default | Description  |
+| ----- | :-------- | :--- | :- |
+| -mpi | --mpi | False | Run LAMMPs using MPI, this is highly reccomended if you are running only 1 worker |
 
 #### Data Options
 
-| Flag        | Default           | Description  |
-| ------------- |:-------------| :-----|
-| -v (--verbose) | False | Flag to run the code in verbose mode (more printing) |
+| Flag | Long | Default | Description  |
+| ----- | :-------- | :--- | :- |
+| -v --verbose | False | Flag to run the code in verbose mode (more printing) |
