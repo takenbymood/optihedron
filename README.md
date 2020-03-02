@@ -46,6 +46,21 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 | Flag | Long | Default | Description  |
 | ----- | :-------- | :--- | :- |
 | -s | --seed | ```python int(time.time())``` | The number of generations to run for before stopping |
+| -hof | --hofsize | 5 | The size of the hall of fame (saves best individuals) |
+| -expr | --exprplaces | 1 | The number of bits in each gene for a ligand to switched on or off (off if all bits=0) |
+| -eps | --epsplaces | 8 | Number of bits in each gene to encode the value of epsilon (affinity) |
+| -epmn | --epsmin | 0 | Minimum value for epsilon for each ligand (affinity) |
+| -epmx | --epsmax | 15 | Maximum value for epsilon for each ligand (affinity) |
+| -r | --runtime | 25000 | Number of timesteps to run the LAMMPs simulation for |
+| -ts | --timestep | 0.01 | LAMMPs timestep size |
+| -rs | --repeats | 4 | Number of repeat simulations to run for each unique individual |
+| -br | --buddingreward | 400 | Reward for crossing the membrane |
+| -tw | --timeweight | 25 | Reward for fast budding (mutiplied by runtime/tb) |
+| -fl | --fixedligands | -1 | Number of ligands allowed on the particle (-1 allows any number) |
+| -pp | --partialpacking | False | Runs the algorithm in partial packing mode which allows free placement of ligands |
+| -polang | --polangplaces | 8 | Number of bits in each gene to encode polar position of a ligand (in pp mode) |
+| -aziang | --aziangplaces | 8 | Number of bits in each gene to encode azimuthal position of a ligand (in pp mode) |
+
 
 #### Concurrency Options
 
@@ -57,4 +72,12 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 
 | Flag | Long | Default | Description  |
 | ----- | :-------- | :--- | :- |
-| -v --verbose | False | Flag to run the code in verbose mode (more printing) |
+| -v | --verbose | False | Flag to run the code in verbose mode (more printing) |
+
+#### Deprecated Options
+
+| Flag | Long | Default | Description  |
+| ----- | :-------- | :--- | :- |
+| -lw | --ligandweight | 10 | Reward for being at the target ligand number |
+| -pw | --penaltyweight | 10 | Penalty for higher than target affinity |
+| -tl | --targetligands | 1 | Ideal number of ligands |
