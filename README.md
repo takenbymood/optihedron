@@ -105,6 +105,8 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 
 We acknowledge support from EPSRC (JCF), MRC (BB and AS), the ERC grant NEPA (JK and AS), the Royal Society (AS), the UK Materials and Molecular Modelling Hub for computational resources, which is partially funded by EPSRC (EP/P020194/1)
 
+Peter Winsberger for the implementation of the Yuan membrane model in LAMMPs https://github.com/pw359
+
 ## Citations
 
 1. Huajian Gao, Wendong Shi, and Lambert B Freund. Mechanics of receptor-mediated endocytosis
