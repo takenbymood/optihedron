@@ -23,7 +23,7 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 #### Genetic Algorithm Options
 
 | Flag        | Default           | Description  |
-| ------------- |:-------------| :-----|
+| ---- |:---| :-------------|
 | -n (--ngen) | 1 | The number of generations to run for before stopping |
 | -d (--demes) | 1 | The number of demes/subpopulations |
 | -p (--population) | 1 | The number of individuals in each deme |
@@ -44,7 +44,7 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 #### Model Options
 
 | Flag        | Default           | Description  |
-| ------------- |:-------------| :-----|
+| ---- |:---| :-------------|
 | -s (--seed) | ```python int(time.time())``` | The number of generations to run for before stopping |
 
 #### Concurrency Options
