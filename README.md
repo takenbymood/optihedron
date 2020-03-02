@@ -14,11 +14,13 @@ The following commands will download the Feb2016 lammps release and make install
 ```bash
 source ./install.sh
 source ./activate.sh
-python run.py -n 10 -p 50 -d 1 -fl 22 -epmn 11 -epmx 11 -br 100 -tw 10 -sr -kb
+python run.py -n 10 -p 50 -d 1 -fl 22 -epmn 11 -epmx 11 -br 100 -tw 10 -sr -kb -w 4
 ```
 You will need wget, python2.7, pip and virtualenv to be installed for all of this to work. Please ensure you do that before running install.sh
 
-The main script is unimaginatively titled "run.py" and has the following flags as options
+## Options
+
+The main script is unimaginatively titled "run.py" and has the following flags as options. Some of these have default values which do not make much sense for the fixed ligand number model described in the paper. If you are wanting to reproduce those results be sure to set -fl, -epmn, and -epmx accordingly.
 
 #### Genetic Algorithm Options
 
@@ -76,6 +78,16 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 | Flag | Long | Default | Description  |
 | ----- | :-------- | :--- | :- |
 | -v | --verbose | False | Flag to run the code in verbose mode (more printing) |
+| -sr | --saveresults | False | Save results in a database |
+| -ko | --keepoutput | False | Keep all .xyz and .xyza trajectories |
+| -ki | --keepinput | False | Keep all .in and .data LAMMPs files |
+| -kb | --keepbest | False | Keep the input and outputs of the best individual each generation |
+| -kw | --keepworst | False | Keep the input and outputs of the worst individual each generation |
+| -wd | --wdir | ```python os.path.dirname(os.path.realpath(__file__))``` | Sets the working directory |
+| -i | --input | None | Read parameters from a json file |
+| -db | --database | None | Path to the database file to read state from (for checkpointing) |
+| -dbs | --dbsession | -1 | Set the id of the session to reload from the specified database |
+| -z | --zoo | None | Set the input to a zoo file for benchmarking performance |
 
 #### Deprecated Options
 
@@ -85,3 +97,6 @@ The main script is unimaginatively titled "run.py" and has the following flags a
 | -pw | --penaltyweight | 10 | Penalty for higher than target affinity |
 | -tl | --targetligands | 1 | Ideal number of ligands |
 | -q | --qsub | False | Submit jobs to a cluster using qsub |
+
+
+
